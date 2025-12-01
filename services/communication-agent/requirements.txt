@@ -1,0 +1,15 @@
+functions-framework
+google-cloud-firestore
+google-cloud-aiplatform
+pydantic
+opentelemetry-api
+google-api-python-client
+requests
+msal
+fastapi
+uvicorn[standard]
+PyJWT
+cryptography
+itsdangerous
+google-cloud-tasks
+google-auth-oauthlib

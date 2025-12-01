@@ -1,0 +1,6 @@
+functions-framework
+pydantic
+requests
+pytz
+google-auth
+google-api-python-client

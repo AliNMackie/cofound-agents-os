@@ -1,0 +1,46 @@
+--- Terraform & Infrastructure ---
+
+terraform/terraform.tfvars
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+.tfstate.
+terraform.tfstate
+terraform.tfstate.backup
+
+--- Security & Secrets (CRITICAL) ---
+
+*key.json
+*credentials.json
+service-account.json
+*.pem
+.env
+
+--- Python ---
+
+.venv/
+venv/
+env/
+ENV/
+pycache/
+*.pyc
+*.pkl
+
+--- Node.js & Web ---
+
+node_modules/
+.firebase/
+firebase.json
+firestore.indexes.json
+firestore.rules
+
+--- System & Junk ---
+
+.DS_Store
+Thumbs.db
+
+--- Large Files & Archives ---
+
+*.zip
+*.tar.gz
+*.exe

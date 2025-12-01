@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Newsletter Engine Dashboard</title>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
+    
+    <style>
+        :root { --primary: #2563eb; --bg: #f8fafc; --card: #ffffff; --text: #1e293b; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        
+        /* Login Screen */
+        #auth-container { text-align: center; margin-top: 100px; }
+        .btn-login { background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 6px; font-size: 16px; cursor: pointer; }
+        
+        /* Dashboard Layout */
+        .card { background: var(--card); border-radius: 8px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 24px; }
+        h2, h3 { margin-top: 0; }
+        
+        /* Quick Add Section */
+        .input-group { display: flex; gap: 10px; margin-top: 10px; }
+        textarea { width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px; font-family: inherit; resize: vertical; min-height: 80px; }
+        input[type="text"] { flex: 1; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; }
+        select { padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; }
+        button.action-btn { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; white-space: nowrap; }
+        
+        /* Draft View */
+        #draft-content { line-height: 1.6; font-size: 16px; padding: 20px; border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; min-height: 300px; }
+        
+        /* Context Menu (Generative UI) */
+        #quick-actions-menu { display: none; position: absolute; z-index: 1000; background: white; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border-radius: 8px; padding: 4px; min-width: 150px; }
+        #quick-actions-menu button { display: block; width: 100%; text-align: left; border: none; background: none; padding: 8px 12px; font-size: 14px; color: var(--text); cursor: pointer; border-radius: 4px; }
+        #quick-actions-menu button:hover { background: #f1f5f9; color: var(--primary); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="auth-container">
+        <h1>Welcome to Your Newsletter Engine</h1>
+        <p>Log in to manage your knowledge base and drafts.</p>
+        <button class="btn-login" onclick="googleLogin()">Sign in with Google</button>
+    </div>
+
+    <div id="app" style="display:none;">
+        
+        <div class="card">
+            <h3>📝 Quick Add Context</h3>
+            <p style="font-size: 14px; color: #64748b; margin-bottom: 15px;">Paste a raw thought, a meeting note, or a URL. The AI will scrape and organize it.</p>
+            
+            <textarea id="adhoc-content" placeholder="Paste text notes here..."></textarea>
+            
+            <div class="input-group">
+                <input type="text" id="adhoc-url" placeholder="OR Paste a URL to scrape (e.g., TechCrunch, Substack)">
+                <select id="content-type">
+                    <option value="note">Personal Note</option>
+                    <option value="article">Industry Article</option>
+                    <option value="competitor_intel">Competitor Intel</option>
+                </select>
+                <button class="action-btn" onclick="submitAdhoc()">➕ Add to Brain</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h2>Latest Draft</h2>
+                <span style="font-size:12px; background:#dbeafe; color:#1e40af; padding:4px 8px; border-radius:12px;">Status: DRAFT</span>
+            </div>
+            <p style="font-size: 14px; color: #64748b;">Highlight any text to trigger the AI Editor.</p>
+            
+            <div id="draft-content">Loading latest draft...</div>
+        </div>
+
+    </div>
+</div>
+
+<div id="quick-actions-menu">
+    <button onclick="triggerAction('simplify')">📉 Simplify Jargon</button>
+    <button onclick="triggerAction('expand')">➕ Expand / Explain</button>
+    <button onclick="triggerAction('convert_table')">📊 Convert to Table</button>
+    <button onclick="triggerAction('make_punchier')">🥊 Make Punchier</button>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

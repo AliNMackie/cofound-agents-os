@@ -1,0 +1,13 @@
+.git
+.gitignore
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+terraform/
+*.md
+.DS_Store
+Thumbs.db
+*.exe

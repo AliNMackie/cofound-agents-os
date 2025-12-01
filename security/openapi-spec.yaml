@@ -1,0 +1,41 @@
+swagger: "2.0"
+info:
+  title: "Newsletter Engine API"
+  version: "1.0.0"
+host: "api-gateway-url.com"
+schemes: ["https"]
+paths:
+  /v1/ingest:
+    # 1. The Missing Piece: Handle Preflight (OPTIONS)
+    options:
+      summary: "CORS Preflight"
+      operationId: "corsIngest"
+      x-google-backend:
+        address: "https://europe-west2-newsletter-engine-9988.cloudfunctions.net/ingest_content"
+      responses:
+        200:
+          description: "CORS Success"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+              default: "https://newsletter-engine-9988.web.app"
+            Access-Control-Allow-Methods:
+              type: "string"
+              default: "POST, OPTIONS"
+            Access-Control-Allow-Headers:
+              type: "string"
+              default: "Content-Type, Authorization"
+    
+    # 2. The Actual Data Handler (POST)
+    post:
+      summary: "Ingest content (Text or URL)"
+      operationId: "ingestContent"
+      x-google-backend:
+        address: "https://europe-west2-newsletter-engine-9988.cloudfunctions.net/ingest_content"
+      responses:
+        200:
+          description: "Success"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+              default: "https://newsletter-engine-9988.web.app"

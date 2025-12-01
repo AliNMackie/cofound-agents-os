@@ -1,0 +1,67 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  SERVICE_NAME: invoice-agent-backend
+  REGION: us-central1
+
+jobs:
+  test-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r backend/requirements.txt
+        pip install pytest httpx
+
+    - name: Run tests
+      env:
+        # Set dummy env vars for tests since they mock clients but app initializes them
+        GOOGLE_CLOUD_PROJECT: test-project
+        STRIPE_SECRET_KEY: dummy
+        STRIPE_WEBHOOK_SECRET: dummy
+      run: |
+        export PYTHONPATH=$PYTHONPATH:.
+        pytest tests/
+
+    - name: Authenticate to Google Cloud
+      if: success()
+      uses: google-github-actions/auth@v1
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+    - name: Set up Cloud SDK
+      if: success()
+      uses: google-github-actions/setup-gcloud@v1
+      with:
+        project_id: ${{ env.PROJECT_ID }}
+
+    - name: Deploy to Cloud Run
+      if: success()
+      run: |
+        gcloud run deploy ${{ env.SERVICE_NAME }} \
+          --source backend/ \
+          --region ${{ env.REGION }} \
+          --project ${{ env.PROJECT_ID }} \
+          --service-account invoice-agent-sa@${{ env.PROJECT_ID }}.iam.gserviceaccount.com \
+          --allow-unauthenticated \
+          --set-env-vars GOOGLE_CLOUD_PROJECT=${{ env.PROJECT_ID }} \
+          --set-env-vars QUEUE_LOCATION=${{ env.REGION }} \
+          --set-env-vars QUEUE_NAME=invoice-processing-queue \
+          --set-env-vars STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY }} \
+          --set-env-vars STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET }}

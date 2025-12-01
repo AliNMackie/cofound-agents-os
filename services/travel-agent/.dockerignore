@@ -1,0 +1,46 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Environment variables
+.env
+*.env.local
+
+# Node.js
+node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+
+# OAuth credentials
+client_secrets.json
+
+# OS files
+.DS_Store
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Testing
+tests/__pycache__/
+.coverage
+
+# Archives
+*.zip
+*.tar.gz
+
+# Git
+.git/
+.gitignore

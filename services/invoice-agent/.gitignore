@@ -1,0 +1,30 @@
+--- Security ---
+
+.env
+node_modules
+*key.json
+*credentials.json
+service-account.json
+*.pem
+debug_log.txt
+
+--- Python ---
+
+pycache/
+*.pyc
+.venv/
+*.pkl
+
+--- Terraform ---
+
+.terraform/
+*.tfstate
+.tfstate.
+terraform.tfstate
+terraform.tfstate.backup
+.terraform.lock.hcl
+
+--- OS ---
+
+.DS_Store
+Thumbs.db

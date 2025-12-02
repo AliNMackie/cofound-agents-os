@@ -18,7 +18,7 @@ WORKDIR /app
 
 # Install Python dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt --retries 5 --timeout 60
 
 # Copy application code
 COPY src /app/src

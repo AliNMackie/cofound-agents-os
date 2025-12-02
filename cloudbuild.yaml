@@ -97,4 +97,6 @@ images:
   - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/vesper-gtm:$COMMIT_SHA'
 
 options:
+  machineType: 'N1_HIGHCPU_8'  # High CPU/memory for faster builds
   logging: CLOUD_LOGGING_ONLY
+  timeout: '3600s'              # 1 hour timeout

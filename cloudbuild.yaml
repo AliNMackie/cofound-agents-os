@@ -1,0 +1,100 @@
+steps:
+  # ==========================================================
+  # BUILD STEP: Build all agents in parallel
+  # ==========================================================
+  
+  # 1. Calendar Agent (Onboarding API)
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Build Calendar Agent'
+    args: ['build', '-t', 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/calendar-agent:$COMMIT_SHA', '.']
+    dir: 'services/calendar-agent/onboarding_api_source'
+    waitFor: ['-'] # Run immediately
+
+  # 2. Communication Agent
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Build Communication Agent'
+    args: ['build', '-t', 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/communication-agent:$COMMIT_SHA', '.']
+    dir: 'services/communication-agent'
+    waitFor: ['-']
+
+  # 3. Delivery Agent (Stripe Webhook)
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Build Delivery Agent'
+    args: ['build', '-t', 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/delivery-agent:$COMMIT_SHA', '.']
+    dir: 'services/delivery-agent/src/stripe-webhook-handler'
+    waitFor: ['-']
+
+  # 4. Invoice Agent (Backend)
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Build Invoice Agent'
+    args: ['build', '-t', 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/invoice-agent:$COMMIT_SHA', '.']
+    dir: 'services/invoice-agent/backend'
+    waitFor: ['-']
+
+  # 5. Sentinel Growth
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Build Sentinel Growth'
+    args: ['build', '-t', 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/sentinel-growth:$COMMIT_SHA', '.']
+    dir: 'services/sentinel-growth'
+    waitFor: ['-']
+
+  # 6. Travel Agent (Backend?)
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Build Travel Agent'
+    args: ['build', '-t', 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/travel-agent:$COMMIT_SHA', '.']
+    dir: 'services/travel-agent'
+    waitFor: ['-']
+
+  # 7. Travel Agent (Frontend)
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Build Travel Agent Frontend'
+    args: ['build', '-t', 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/travel-agent-frontend:$COMMIT_SHA', '.']
+    dir: 'services/travel-agent/frontend'
+    waitFor: ['-']
+
+  # 8. Vesper GTM Dashboard
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Build Vesper GTM'
+    args: ['build', '-t', 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/vesper-gtm:$COMMIT_SHA', '.']
+    dir: 'services/vesper-gtm/dashboard'
+    waitFor: ['-']
+
+  # ==========================================================
+  # PUSH STEP: Push all images to Artifact Registry
+  # ==========================================================
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Push All Images'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        docker push europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/calendar-agent:$COMMIT_SHA
+        docker push europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/communication-agent:$COMMIT_SHA
+        docker push europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/delivery-agent:$COMMIT_SHA
+        docker push europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/invoice-agent:$COMMIT_SHA
+        docker push europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/sentinel-growth:$COMMIT_SHA
+        docker push europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/travel-agent:$COMMIT_SHA
+        docker push europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/travel-agent-frontend:$COMMIT_SHA
+        docker push europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/vesper-gtm:$COMMIT_SHA
+    waitFor:
+      - 'Build Calendar Agent'
+      - 'Build Communication Agent'
+      - 'Build Delivery Agent'
+      - 'Build Invoice Agent'
+      - 'Build Sentinel Growth'
+      - 'Build Travel Agent'
+      - 'Build Travel Agent Frontend'
+      - 'Build Vesper GTM'
+
+images:
+  - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/calendar-agent:$COMMIT_SHA'
+  - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/communication-agent:$COMMIT_SHA'
+  - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/delivery-agent:$COMMIT_SHA'
+  - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/invoice-agent:$COMMIT_SHA'
+  - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/sentinel-growth:$COMMIT_SHA'
+  - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/travel-agent:$COMMIT_SHA'
+  - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/travel-agent-frontend:$COMMIT_SHA'
+  - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/vesper-gtm:$COMMIT_SHA'
+
+options:
+  logging: CLOUD_LOGGING_ONLY

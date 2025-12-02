@@ -96,8 +96,8 @@ images:
   - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/travel-agent-frontend:$COMMIT_SHA'
   - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/vesper-gtm:$COMMIT_SHA'
 
-timeout: '3600s'  # 1 hour timeout (Must be at root level)
+timeout: '3600s'
 
 options:
-  machineType: 'N1_HIGHCPU_8'  # High CPU/memory for faster builds
+  machineType: 'E2_HIGHCPU_8'
   logging: CLOUD_LOGGING_ONLY

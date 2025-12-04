@@ -1,7 +1,23 @@
+
+# Security & Credentials
+.env
+.env.*
+!.env.example
+*.json
+!package.json
+!tsconfig.json
+!firestore.indexes.json
+*.secret
+*.key
+*.pem
+*.p12
+
+# Python
 __pycache__/
 *.pyc
-.env
 .venv
 venv/
+
+# Documents
 *.pdf
 *.docx

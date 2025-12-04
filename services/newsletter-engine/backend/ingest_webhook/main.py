@@ -48,11 +48,11 @@ def ingest_content(request):
                 print(f"SCRAPE ERROR: {e}")
 
         # 6. Publish to Pub/Sub
-        publisher = pubsub_v1.PublisherClient()
+        publisher = pubsub_v1.PublisherClient(transport="rest")
         topic_path = publisher.topic_path(project_id, topic_id)
         data = json.dumps(request_json).encode("utf-8")
         future = publisher.publish(topic_path, data)
-        message_id = future.result()
+        message_id = future.result(timeout=10)
         
         return (f"Queued message {message_id}", 200, headers)
 

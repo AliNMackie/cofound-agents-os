@@ -1,0 +1,6 @@
+# london_lock_policy.yaml
+constraint: constraints/gcp.resourceLocations
+listPolicy:
+  allowedValues:
+    - in:europe-west2-locations
+  inheritFromParent: false

@@ -30,7 +30,7 @@ class ContentGenerator:
     def __init__(self):
         if settings.GOOGLE_API_KEY:
             genai.configure(api_key=settings.GOOGLE_API_KEY)
-            self.model = genai.GenerativeModel('gemini-1.5-flash') # Using a capable model
+            self.model = genai.GenerativeModel('gemini-1.5-flash-001') # Using a capable model
         else:
             logger.warning("GOOGLE_API_KEY not set. Content generation will fail if called.")
             self.model = None

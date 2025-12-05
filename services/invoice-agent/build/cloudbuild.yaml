@@ -1,17 +1,17 @@
 steps:
-  # Build the container image
+  # 1. Build the container image
   # explicit 'dir' set to 'backend' to match the location of the Dockerfile and Python source
   - name: 'gcr.io/cloud-builders/docker'
     id: 'Build'
     dir: 'backend'
     args: ['build', '-t', 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/invoice-agent:$SHORT_SHA', '.']
 
-  # Push the container image to Artifact Registry
+  # 2. Push the container image to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
     id: 'Push'
     args: ['push', 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/invoice-agent:$SHORT_SHA']
 
-  # Deploy container image to Cloud Run
+  # 3. Deploy container image to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     id: 'Deploy'
     entrypoint: gcloud
@@ -25,8 +25,9 @@ steps:
       - 'europe-west2'
       - '--platform'
       - 'managed'
+      # UPDATED: Using the Worker identity for runtime, not the deployment SA
       - '--service-account'
-      - 'cofound-deploy-sa@$PROJECT_ID.iam.gserviceaccount.com'
+      - 'cofound-agents-deploy@$PROJECT_ID.iam.gserviceaccount.com'
       - '--no-allow-unauthenticated'
 
 options:

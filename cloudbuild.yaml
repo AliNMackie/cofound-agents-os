@@ -38,7 +38,7 @@ steps:
     dir: 'services/sentinel-growth'
     waitFor: ['-']
 
-  # 6. Travel Agent (Backend?)
+  # 6. Travel Agent (Backend)
   - name: 'gcr.io/cloud-builders/docker'
     id: 'Build Travel Agent'
     args: ['build', '-t', 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/travel-agent:$COMMIT_SHA', '.']
@@ -85,6 +85,28 @@ steps:
       - 'Build Travel Agent'
       - 'Build Travel Agent Frontend'
       - 'Build Vesper GTM'
+
+  # ==========================================================
+  # DEPLOY STEP: Travel Agent Backend
+  # ==========================================================
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'Deploy Travel Agent'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'travel-agent'
+      - '--image'
+      - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/travel-agent:$COMMIT_SHA'
+      - '--region'
+      - 'europe-west2'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated' # TODO: Lock this down after testing!
+      - '--set-secrets'
+      - 'STRIPE_SECRET_KEY=travel-agent-stripe-secret-key:latest,FIREBASE_APPLICATION_CREDENTIALS=travel-agent-firebase-creds:latest,GOOGLE_CLIENT_ID=travel-agent-google-client-id:latest,GOOGLE_CLIENT_SECRET=travel-agent-google-client-secret:latest'
+    waitFor:
+      - 'Push All Images'
 
 images:
   - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/calendar-agent:$COMMIT_SHA'

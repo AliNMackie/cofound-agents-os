@@ -29,7 +29,7 @@ steps:
       - '--set-env-vars'
       - 'GCP_PROJECT_ID=cofound-agents-os-788e'
       - '--set-secrets'
-      - 'STRIPE_SECRET_KEY=travel-agent-stripe-secret-key:latest,FIREBASE_CREDENTIALS_JSON=travel-agent-firebase-creds:latest,GOOGLE_CLIENT_ID=travel-agent-google-client-id:latest,GOOGLE_CLIENT_SECRET=travel-agent-google-client-secret:latest,GOOGLE_OAUTH_CALLBACK_URL=travel-agent-oauth-callback:latest'
+      - 'STRIPE_SECRET_KEY=travel-agent-stripe-secret-key:latest,GOOGLE_CLIENT_ID=travel-agent-google-client-id:latest,GOOGLE_CLIENT_SECRET=travel-agent-google-client-secret:latest,GOOGLE_OAUTH_CALLBACK_URL=travel-agent-oauth-callback:latest'
 
 options:
   logging: CLOUD_LOGGING_ONLY

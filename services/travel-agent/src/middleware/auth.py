@@ -15,22 +15,20 @@ def initialize_firebase():
         cred_json_b64 = os.environ.get("FIREBASE_CREDENTIALS_JSON")
         
         if not cred_json_b64:
-            # For local development/testing, we can use a mock credential
-            print("WARNING: FIREBASE_CREDENTIALS_JSON not set. Using mock credentials for testing.")
-            cred = MagicMock(spec=credentials.Certificate)
+            print("FIREBASE_CREDENTIALS_JSON not set. Using Application Default Credentials.")
+            firebase_admin.initialize_app()
         else:
             try:
                 # Decode base64 and parse JSON
                 cred_json_str = base64.b64decode(cred_json_b64).decode('utf-8')
                 cred_dict = json.loads(cred_json_str)
                 cred = credentials.Certificate(cred_dict)
+                firebase_admin.initialize_app(cred)
             except Exception as e:
                 raise ValueError(
                     f"Failed to decode FIREBASE_CREDENTIALS_JSON: {str(e)}\n"
                     f"Ensure the value is a valid base64-encoded JSON string."
                 )
-        
-        firebase_admin.initialize_app(cred)
 
 def configure_cors(app):
     """Configures CORS for the Flask app."""

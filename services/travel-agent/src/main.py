@@ -132,7 +132,6 @@ def validate_environment():
     """Validate that required environment variables are set and have valid values."""
     required_vars = [
         'STRIPE_SECRET_KEY',
-        'FIREBASE_CREDENTIALS_JSON',
         'GOOGLE_CLIENT_ID',
         'GOOGLE_CLIENT_SECRET',
         'GCP_PROJECT_ID',

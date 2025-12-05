@@ -25,10 +25,16 @@ steps:
       - 'europe-west2'
       - '--platform'
       - 'managed'
-      # UPDATED: Using the Worker identity for runtime, not the deployment SA
       - '--service-account'
       - 'cofound-agents-deploy@$PROJECT_ID.iam.gserviceaccount.com'
       - '--no-allow-unauthenticated'
+      
+      # --- YOUR DB CONNECTION ---
+      # 1. Connect to Cloud SQL
+      - '--set-cloudsql-instances=cofound-agents-os-788e:europe-west2:cofound-db-primary'
+      
+      # 2. Inject Secrets
+      - '--set-secrets=DB_PASSWORD=invoice-agent-db-pass:latest'
 
 options:
   logging: CLOUD_LOGGING_ONLY

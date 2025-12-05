@@ -4,12 +4,12 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     id: 'Build'
     dir: 'backend'
-    args: ['build', '-t', 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/invoice-agent:$COMMIT_SHA', '.']
+    args: ['build', '-t', 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/invoice-agent:$SHORT_SHA', '.']
 
   # Push the container image to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
     id: 'Push'
-    args: ['push', 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/invoice-agent:$COMMIT_SHA']
+    args: ['push', 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/invoice-agent:$SHORT_SHA']
 
   # Deploy container image to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -20,7 +20,7 @@ steps:
       - 'deploy'
       - 'invoice-agent'
       - '--image'
-      - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/invoice-agent:$COMMIT_SHA'
+      - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/invoice-agent:$SHORT_SHA'
       - '--region'
       - 'europe-west2'
       - '--platform'
@@ -33,4 +33,4 @@ options:
   logging: CLOUD_LOGGING_ONLY
 
 images:
-  - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/invoice-agent:$COMMIT_SHA'
+  - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/invoice-agent:$SHORT_SHA'

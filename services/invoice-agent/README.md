@@ -1,6 +1,13 @@
 # Invoice Agent
 
+[![Deploy Invoice Agent](https://github.com/AliNMackie/cofound-agents-os/actions/workflows/deploy-invoice-agent.yaml/badge.svg)](https://github.com/AliNMackie/cofound-agents-os/actions/workflows/deploy-invoice-agent.yaml)
+
 This repository contains the code for a serverless invoice processing agent using Google Cloud Platform (GCP) and Stripe.
+
+## Deployment Status
+- **Region**: europe-west2 (London)
+- **Automated CI/CD**: GitHub Actions with Workload Identity Federation
+- **Path Filtering**: Monorepo-aware (only deploys on invoice-agent changes)
 
 ## Architecture
 

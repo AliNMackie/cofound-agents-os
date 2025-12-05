@@ -1,0 +1,47 @@
+name: Deploy Vesper GTM
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'services/vesper-gtm/**'
+  workflow_dispatch:
+
+env:
+  REGION: europe-west2
+
+jobs:
+  deploy:
+    name: Deploy Vesper GTM
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          token_format: 'access_token'
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: cofound-agents-deploy@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          version: '>= 416.0.0'
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Submit Cloud Build
+        run: |
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          gcloud builds submit services/vesper-gtm \
+            --config services/vesper-gtm/deploy/cloudbuild.yaml \
+            --project ${{ secrets.GCP_PROJECT_ID }} \
+            --service-account projects/${{ secrets.GCP_PROJECT_ID }}/serviceAccounts/cofound-agents-deploy@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
+            --substitutions=SHORT_SHA=$SHORT_SHA

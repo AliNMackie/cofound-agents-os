@@ -26,8 +26,10 @@ steps:
       - '--service-account'
       - 'cofound-agents-deploy@$PROJECT_ID.iam.gserviceaccount.com'
       - '--no-allow-unauthenticated'
+      - '--set-env-vars'
+      - 'GCP_PROJECT_ID=$PROJECT_ID,PORT=8080'
       - '--set-secrets'
-      - 'STRIPE_SECRET_KEY=travel-agent-stripe-secret-key:latest,FIREBASE_APPLICATION_CREDENTIALS=travel-agent-firebase-creds:latest,GOOGLE_CLIENT_ID=travel-agent-google-client-id:latest,GOOGLE_CLIENT_SECRET=travel-agent-google-client-secret:latest,GOOGLE_OAUTH_CALLBACK_URL=travel-agent-oauth-callback:latest,GCP_PROJECT_ID=travel-agent-google-client-id:latest'
+      - 'STRIPE_SECRET_KEY=travel-agent-stripe-secret-key:latest,FIREBASE_CREDENTIALS_JSON=travel-agent-firebase-creds:latest,GOOGLE_CLIENT_ID=travel-agent-google-client-id:latest,GOOGLE_CLIENT_SECRET=travel-agent-google-client-secret:latest,GOOGLE_OAUTH_CALLBACK_URL=travel-agent-oauth-callback:latest'
 
 options:
   logging: CLOUD_LOGGING_ONLY

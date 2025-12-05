@@ -39,7 +39,9 @@ jobs:
 
       - name: Submit Cloud Build
         run: |
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
           gcloud builds submit services/invoice-agent \
             --config services/invoice-agent/build/cloudbuild.yaml \
             --project ${{ secrets.GCP_PROJECT_ID }} \
-            --service-account projects/${{ secrets.GCP_PROJECT_ID }}/serviceAccounts/cofound-deploy-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com
+            --service-account projects/${{ secrets.GCP_PROJECT_ID }}/serviceAccounts/cofound-deploy-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
+            --substitutions=SHORT_SHA=$SHORT_SHA

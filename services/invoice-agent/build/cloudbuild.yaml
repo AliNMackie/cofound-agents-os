@@ -29,9 +29,6 @@ steps:
       - 'cofound-deploy-sa@$PROJECT_ID.iam.gserviceaccount.com'
       - '--no-allow-unauthenticated'
 
-substitutions:
-  _REGION: 'europe-west2'
-
 options:
   logging: CLOUD_LOGGING_ONLY
 

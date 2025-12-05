@@ -41,4 +41,5 @@ jobs:
         run: |
           gcloud builds submit services/invoice-agent \
             --config services/invoice-agent/build/cloudbuild.yaml \
-            --region ${{ env.REGION }}
+            --region ${{ env.REGION }} \
+            --project ${{ secrets.GCP_PROJECT_ID }}

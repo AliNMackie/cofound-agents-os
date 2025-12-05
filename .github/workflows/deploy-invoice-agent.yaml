@@ -29,7 +29,7 @@ jobs:
         with:
           token_format: 'access_token'
           workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
-          service_account: cofound-deploy-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com
+          service_account: cofound-agents-deploy@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
@@ -43,5 +43,5 @@ jobs:
           gcloud builds submit services/invoice-agent \
             --config services/invoice-agent/build/cloudbuild.yaml \
             --project ${{ secrets.GCP_PROJECT_ID }} \
-            --service-account projects/${{ secrets.GCP_PROJECT_ID }}/serviceAccounts/cofound-deploy-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
+            --service-account projects/${{ secrets.GCP_PROJECT_ID }}/serviceAccounts/cofound-agents-deploy@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
             --substitutions=SHORT_SHA=$SHORT_SHA

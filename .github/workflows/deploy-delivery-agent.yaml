@@ -1,0 +1,44 @@
+name: Deploy Delivery Agent
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'services/delivery-agent/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy Delivery Agent
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          token_format: 'access_token'
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: cofound-agents-deploy@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          version: '>= 416.0.0'
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Submit Cloud Build
+        run: |
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          gcloud builds submit services/delivery-agent \
+            --config services/delivery-agent/deploy/cloudbuild.yaml \
+            --project ${{ secrets.GCP_PROJECT_ID }} \
+            --service-account projects/${{ secrets.GCP_PROJECT_ID }}/serviceAccounts/cofound-agents-deploy@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
+            --substitutions=SHORT_SHA=$SHORT_SHA

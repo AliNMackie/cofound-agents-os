@@ -1,0 +1,45 @@
+name: Deploy Invoice Agent
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'services/invoice-agent/**'
+  workflow_dispatch:
+
+env:
+  REGION: europe-west2
+
+jobs:
+  deploy:
+    name: Deploy Invoice Agent
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          token_format: 'access_token'
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: cofound-deploy-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          version: '>= 416.0.0'
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Submit Cloud Build
+        run: |
+          gcloud builds submit services/invoice-agent \
+            --config services/invoice-agent/build/cloudbuild.yaml \
+            --region ${{ env.REGION }} \
+            --substitutions=_REGION=${{ env.REGION }}

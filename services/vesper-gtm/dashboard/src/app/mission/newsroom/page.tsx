@@ -263,7 +263,7 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
             };
 
             const apiUrl = process.env.NEXT_PUBLIC_NEWSLETTER_API_URL || "http://localhost:8089";
-            const endpoint = `${apiUrl}/generate`;
+            const endpoint = `${apiUrl}/draft`;
 
             const response = await fetch(endpoint, {
                 method: "POST",

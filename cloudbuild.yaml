@@ -59,6 +59,13 @@ steps:
     dir: 'services/vesper-gtm/dashboard'
     waitFor: ['-']
 
+  # 9. Newsletter Engine
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Build Newsletter Engine'
+    args: ['build', '-t', 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/newsletter-engine:$COMMIT_SHA', '.']
+    dir: 'services/newsletter-engine'
+    waitFor: ['-']
+
   # ==========================================================
   # PUSH STEP: Push all images to Artifact Registry
   # ==========================================================
@@ -76,6 +83,7 @@ steps:
         docker push europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/travel-agent:$COMMIT_SHA
         docker push europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/travel-agent-frontend:$COMMIT_SHA
         docker push europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/vesper-gtm:$COMMIT_SHA
+        docker push europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/newsletter-engine:$COMMIT_SHA
     waitFor:
       - 'Build Calendar Agent'
       - 'Build Communication Agent'
@@ -85,6 +93,7 @@ steps:
       - 'Build Travel Agent'
       - 'Build Travel Agent Frontend'
       - 'Build Vesper GTM'
+      - 'Build Newsletter Engine'
 
   # ==========================================================
   # DEPLOY STEP: Travel Agent Backend
@@ -108,6 +117,26 @@ steps:
     waitFor:
       - 'Push All Images'
 
+  # ==========================================================
+  # DEPLOY STEP: Newsletter Engine
+  # ==========================================================
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'Deploy Newsletter Engine'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'newsletter-engine'
+      - '--image'
+      - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/newsletter-engine:$COMMIT_SHA'
+      - '--region'
+      - 'europe-west2'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+    waitFor:
+      - 'Push All Images'
+
 images:
   - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/calendar-agent:$COMMIT_SHA'
   - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/communication-agent:$COMMIT_SHA'
@@ -117,6 +146,7 @@ images:
   - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/travel-agent:$COMMIT_SHA'
   - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/travel-agent-frontend:$COMMIT_SHA'
   - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/vesper-gtm:$COMMIT_SHA'
+  - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/newsletter-engine:$COMMIT_SHA'
 
 timeout: '3600s'
 

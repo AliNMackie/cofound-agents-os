@@ -58,7 +58,7 @@ export function Sidebar() {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="relative w-40 h-10"
+                            className="relative w-56 h-16"
                         >
                             <Image
                                 src="/ic-origin-logo-dark.png"

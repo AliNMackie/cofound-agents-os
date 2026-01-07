@@ -128,9 +128,9 @@ export default function NewsroomPage() {
     return (
         <div className="max-w-7xl mx-auto">
             <header className="mb-12">
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-lexi-text-secondary mb-2">Editor</p>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-text-secondary mb-2">Editor</p>
                 <h1 className="text-black">Intelligence Newsroom</h1>
-                <p className="mt-2 text-lexi-text-secondary text-sm max-w-xl">
+                <p className="mt-2 text-brand-text-secondary text-sm max-w-xl">
                     Generate high-conviction deal memos from failed auction data. Select your sources and define your analytical lens.
                 </p>
             </header>
@@ -139,25 +139,25 @@ export default function NewsroomPage() {
                 {/* LEFT: Sources (4 cols) */}
                 <div className="lg:col-span-4 space-y-6">
                     <div className="card overflow-hidden">
-                        <div className="p-4 border-b border-lexi-border bg-lexi-background flex items-center justify-between">
+                        <div className="p-4 border-b border-brand-border bg-brand-background flex items-center justify-between">
                             <h2 className="text-xs font-bold uppercase tracking-widest">Failed Auctions</h2>
-                            <span className="text-[10px] font-bold text-lexi-text-secondary bg-white px-2 py-0.5 border border-lexi-border rounded">LIVE DATA</span>
+                            <span className="text-[10px] font-bold text-brand-text-secondary bg-white px-2 py-0.5 border border-brand-border rounded">LIVE DATA</span>
                         </div>
-                        <div className="divide-y divide-lexi-border">
+                        <div className="divide-y divide-brand-border">
                             {MOCK_FAILED_LOTS.map((lot) => {
                                 const isSelected = selectedLotIds.includes(lot.lot_number);
                                 return (
                                     <div
                                         key={lot.lot_number}
                                         onClick={() => toggleLot(lot.lot_number)}
-                                        className={`p-4 cursor-pointer transition-colors group ${isSelected ? 'bg-black text-white' : 'bg-white hover:bg-lexi-background'}`}
+                                        className={`p-4 cursor-pointer transition-colors group ${isSelected ? 'bg-black text-white' : 'bg-white hover:bg-brand-background'}`}
                                     >
                                         <div className="flex justify-between items-start mb-1">
-                                            <span className={`text-[10px] font-bold uppercase tracking-widest ${isSelected ? 'text-gray-400' : 'text-lexi-text-secondary'}`}>Lot {lot.lot_number}</span>
+                                            <span className={`text-[10px] font-bold uppercase tracking-widest ${isSelected ? 'text-gray-400' : 'text-brand-text-secondary'}`}>Lot {lot.lot_number}</span>
                                             {isSelected && <CheckSquare className="h-3 w-3" />}
                                         </div>
                                         <p className="text-sm font-bold truncate">{lot.address.split(',')[0]}</p>
-                                        <div className={`flex items-center gap-3 mt-2 text-[10px] font-bold tracking-widest uppercase ${isSelected ? 'text-gray-400' : 'text-lexi-text-secondary'}`}>
+                                        <div className={`flex items-center gap-3 mt-2 text-[10px] font-bold tracking-widest uppercase ${isSelected ? 'text-gray-400' : 'text-brand-text-secondary'}`}>
                                             <span>Guide: {lot.guide_price}</span>
                                             <span className="opacity-30">|</span>
                                             <span className={isSelected ? 'text-red-400' : 'text-red-600'}>Bid: {lot.final_bid}</span>
@@ -166,7 +166,7 @@ export default function NewsroomPage() {
                                 );
                             })}
                         </div>
-                        <div className="p-4 bg-lexi-background border-t border-lexi-border flex justify-between items-center text-[10px] font-bold uppercase tracking-tighter">
+                        <div className="p-4 bg-brand-background border-t border-brand-border flex justify-between items-center text-[10px] font-bold uppercase tracking-tighter">
                             <span>{selectedLotIds.length} Lots selected</span>
                             <button onClick={() => setSelectedLotIds([])} className="hover:underline">Clear</button>
                         </div>
@@ -186,7 +186,7 @@ export default function NewsroomPage() {
                                             onClick={() => setSelectedTemplate(tmpl.id)}
                                             className={`text-[10px] font-bold uppercase tracking-widest py-2 rounded border transition-all ${selectedTemplate === tmpl.id
                                                 ? "bg-black text-white border-black"
-                                                : "bg-white text-lexi-text-secondary border-lexi-border hover:border-black"
+                                                : "bg-white text-brand-text-secondary border-brand-border hover:border-black"
                                                 }`}
                                         >
                                             {tmpl.label}
@@ -200,22 +200,22 @@ export default function NewsroomPage() {
                                     value={instructions}
                                     onChange={(e) => setInstructions(e.target.value)}
                                     placeholder="e.g. emphasize capital flight risk..."
-                                    className="w-full bg-lexi-background border border-lexi-border rounded-lg p-3 text-sm font-medium focus:ring-1 focus:ring-black focus:outline-none h-[74px] resize-none"
+                                    className="w-full bg-brand-background border border-brand-border rounded-lg p-3 text-sm font-medium focus:ring-1 focus:ring-black focus:outline-none h-[74px] resize-none"
                                 />
                             </div>
                         </div>
 
-                        <div className="flex items-center justify-between border-t border-lexi-border pt-8">
+                        <div className="flex items-center justify-between border-t border-brand-border pt-8">
                             <div className="flex items-center gap-4">
                                 <button
                                     onClick={() => setIncludeSignature(!includeSignature)}
-                                    className={`w-10 h-10 flex items-center justify-center rounded-lg border transition-all ${includeSignature ? 'bg-black text-white border-black' : 'border-lexi-border text-lexi-text-secondary'}`}
+                                    className={`w-10 h-10 flex items-center justify-center rounded-lg border transition-all ${includeSignature ? 'bg-black text-white border-black' : 'border-brand-border text-brand-text-secondary'}`}
                                 >
                                     <Stamp className="h-5 w-5" />
                                 </button>
                                 <div>
                                     <p className="text-[10px] font-bold uppercase tracking-widest text-black">Append Authority</p>
-                                    <p className="text-[10px] font-medium text-lexi-text-secondary uppercase">Sign as Partner</p>
+                                    <p className="text-[10px] font-medium text-brand-text-secondary uppercase">Sign as Partner</p>
                                 </div>
                             </div>
 
@@ -239,7 +239,7 @@ export default function NewsroomPage() {
                     {/* Output */}
                     {generatedDraft && (
                         <div className="card p-12 bg-white animate-in fade-in duration-700">
-                            <article className="prose prose-sm prose-neutral max-w-none prose-headings:font-bold prose-headings:tracking-tighter prose-p:text-lexi-text-primary prose-strong:text-black">
+                            <article className="prose prose-sm prose-neutral max-w-none prose-headings:font-bold prose-headings:tracking-tighter prose-p:text-brand-text-primary prose-strong:text-black">
                                 <ReactMarkdown>{generatedDraft}</ReactMarkdown>
                             </article>
                         </div>

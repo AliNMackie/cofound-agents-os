@@ -137,6 +137,26 @@ steps:
     waitFor:
       - 'Push All Images'
 
+  # ==========================================================
+  # DEPLOY STEP: Sentinel Growth
+  # ==========================================================
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'Deploy Sentinel Growth'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'sentinel-growth'
+      - '--image'
+      - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/sentinel-growth:$COMMIT_SHA'
+      - '--region'
+      - 'europe-west2'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+    waitFor:
+      - 'Push All Images'
+
 images:
   - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/calendar-agent:$COMMIT_SHA'
   - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/communication-agent:$COMMIT_SHA'

@@ -1,57 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import { Loader2, FilePenLine, CheckSquare, Square, Stamp } from "lucide-react";
-
-// Mock Data for "Failed Auctions"
-const MOCK_FAILED_LOTS = [
-    {
-        lot_number: "205",
-        auction_house: "Allsop",
-        address: "Unit 3, Industrial Estate, Leeds, LS11 9TY",
-        guide_price: "£250,000",
-        final_bid: "£210,000",
-        sector: "Industrial",
-        description: "Freehold industrial investment. Let until 2028. Failed to meet reserve.",
-    },
-    {
-        lot_number: "19",
-        auction_house: "Acuitus",
-        address: "High Street Retail Parade, Dover, CT16 1AB",
-        guide_price: "£400,000",
-        final_bid: "£320,000",
-        sector: "Retail",
-        description: "Parade of 3 shops with upper parts. High vacancy. Receiver sale.",
-    },
-    {
-        lot_number: "55",
-        auction_house: "Savills",
-        address: "Development Site, Old Road, Oxford, OX3 8TA",
-        guide_price: "£1.2m",
-        final_bid: "£950,000",
-        sector: "Land/Dev",
-        description: "0.5 acre site with lapsed planning for 12 flats. Environmental concerns raised.",
-    },
-    {
-        lot_number: "88",
-        auction_house: "Barnett Ross",
-        address: "12-14 Office Block, Harrow, HA1 2XY",
-        guide_price: "£650,000",
-        final_bid: "£645,000",
-        sector: "Office",
-        description: "Vacant office building suitable for PD conversion. Close to station.",
-    },
-    {
-        lot_number: "42",
-        auction_house: "Allsop",
-        address: "The Old Pub, Village Green, Kent, TN12 5ZZ",
-        guide_price: "£350,000",
-        final_bid: "£280,000",
-        sector: "Leisure",
-        description: "Grade II listed pub. Closed since 2023. Potential for residential change of use.",
-    },
-];
+import { DataTable } from "@/components/ui/data-table";
+import { formatPriceCompact } from "@/lib/utils/formatPrice";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 
 const TEMPLATES = [
     { id: "weekly_wrap", label: "Weekly Wrap" },
@@ -69,13 +27,36 @@ export default function NewsroomPage() {
     const [includeSignature, setIncludeSignature] = useState(true);
     const [generatedDraft, setGeneratedDraft] = useState("");
     const [loading, setLoading] = useState(false);
+    const [lots, setLots] = useState<any[]>([]);
+    const [fetchingLots, setFetchingLots] = useState(true);
+    const [pendingReviewData, setPendingReviewData] = useState<any | null>(null);
+    const [uploading, setUploading] = useState(false);
+
+    const fetchLots = async () => {
+        try {
+            const apiUrl = process.env.NEXT_PUBLIC_NEWSLETTER_API_URL || "http://localhost:8089";
+            const response = await fetch(`${apiUrl}/auctions`);
+            if (response.ok) {
+                const data = await response.json();
+                setLots(data);
+            }
+        } catch (err) {
+            console.error("Failed to fetch lots:", err);
+        } finally {
+            setFetchingLots(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchLots();
+    }, []);
 
     // Toggle Lot Selection
-    const toggleLot = (lotNum: string) => {
+    const toggleLot = (lotId: string) => {
         setSelectedLotIds((prev) =>
-            prev.includes(lotNum)
-                ? prev.filter((id) => id !== lotNum)
-                : [...prev, lotNum]
+            prev.includes(lotId)
+                ? prev.filter((id) => id !== lotId)
+                : [...prev, lotId]
         );
     };
 
@@ -89,14 +70,13 @@ export default function NewsroomPage() {
         setLoading(true);
         setGeneratedDraft("");
 
-        // Filter the raw data based on selection
-        const selectedData = MOCK_FAILED_LOTS.filter((lot) =>
-            selectedLotIds.includes(lot.lot_number)
+        const selectedData = lots.filter((lot) =>
+            selectedLotIds.includes(lot.company_name || lot.lot_number)
         );
 
         try {
             const payload = {
-                type: selectedTemplate, // Matching BUG REPORT requirement: { type: "weekly_wrap" }
+                type: selectedTemplate,
                 raw_data: selectedData,
                 template_id: selectedTemplate,
                 free_form_instruction: instructions,
@@ -107,8 +87,6 @@ export default function NewsroomPage() {
 
             const apiUrl = process.env.NEXT_PUBLIC_NEWSLETTER_API_URL || "http://localhost:8089";
             const endpoint = `${apiUrl}/generate`;
-
-            console.log(`Triggering generation at ${endpoint}...`);
 
             const response = await fetch(endpoint, {
                 method: "POST",
@@ -132,9 +110,6 @@ export default function NewsroomPage() {
         }
     };
 
-    const [pendingReviewData, setPendingReviewData] = useState<any | null>(null);
-    const [uploading, setUploading] = useState(false);
-
     // PDF Ingestion Handler
     const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -142,22 +117,16 @@ export default function NewsroomPage() {
 
         setUploading(true);
         try {
-            // Placeholder for PDF ingestion logic via multimodal endpoint
-            // In a real implementation, we'd send the file byte-stream
             const formData = new FormData();
             formData.append("file", file);
 
-            // Simulating API call to the new Sentinel endpoint
             const response = await fetch(`${process.env.NEXT_PUBLIC_NEWSLETTER_API_URL}/api/ingest-intelligence`, {
                 method: "POST",
-                body: JSON.stringify({ source_text: `PDF Content from ${file.name}`, source_origin: "manual_upload" }),
-                headers: { "Content-Type": "application/json" }
+                body: formData,
             });
 
             if (!response.ok) throw new Error("Upload failed");
             const data = await response.json();
-
-            // Trigger HITL Step
             setPendingReviewData(data);
         } catch (error: any) {
             alert("Upload Failed: " + error.message);
@@ -167,19 +136,68 @@ export default function NewsroomPage() {
     };
 
     const approveHitlData = () => {
-        // Logic to save pendingReviewData to real persistent store
         alert("Intelligence saved to database.");
         setPendingReviewData(null);
+        fetchLots(); // Refresh the list
     };
 
+    // DataTable columns
+    const columns = [
+        {
+            header: "Company",
+            accessorKey: "company_name" as const,
+            cell: (row: any) => (
+                <div className="flex flex-col">
+                    <span className="font-bold">{row.company_name || "Unknown"}</span>
+                    <span className="text-[10px] text-brand-text-secondary truncate max-w-[150px]">{row.company_description || "M&A Target"}</span>
+                </div>
+            )
+        },
+        {
+            header: "EBITDA",
+            accessorKey: "ebitda" as const,
+            cell: (row: any) => (
+                <span className="font-mono text-xs">{formatPriceCompact(row.ebitda || 0)}</span>
+            )
+        },
+        {
+            header: "Status",
+            accessorKey: "process_status" as const,
+            cell: (row: any) => (
+                <Badge variant={row.process_status?.toLowerCase().includes("failed") ? "destructive" : "secondary"}>
+                    {row.process_status || "Live"}
+                </Badge>
+            )
+        },
+        {
+            header: "Select",
+            accessorKey: "company_name" as const,
+            cell: (row: any) => {
+                const id = row.company_name || row.lot_number;
+                return (
+                    <button
+                        onClick={(e) => { e.stopPropagation(); toggleLot(id); }}
+                        className={cn(
+                            "h-6 w-6 rounded border flex items-center justify-center transition-colors",
+                            selectedLotIds.includes(id) ? "bg-black border-black text-white" : "border-brand-border"
+                        )}
+                    >
+                        {selectedLotIds.includes(id) && <CheckSquare className="h-3 w-3" />}
+                    </button>
+                );
+            }
+        }
+    ];
+
     return (
-        <div className="max-w-7xl mx-auto">
-            <header className="mb-12 flex justify-between items-end">
+        <div className="max-w-7xl mx-auto space-y-8">
+            {/* Header */}
+            <header className="flex justify-between items-end">
                 <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-text-secondary mb-2">Editor</p>
-                    <h1 className="text-black">Intelligence Newsroom</h1>
-                    <p className="mt-2 text-brand-text-secondary text-sm max-w-xl">
-                        Generate high-conviction deal memos from failed auction data. Select your sources and define your analytical lens.
+                    <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-brand-text-secondary mb-2">Deal Intelligence</p>
+                    <h1 className="text-4xl font-bold tracking-tighter text-black dark:text-white">Newsroom</h1>
+                    <p className="mt-2 text-brand-text-secondary text-sm max-w-xl dark:text-neutral-400">
+                        Convert raw Sentinel signals and PDF intelligence into high-conviction deal memos.
                     </p>
                 </div>
                 <div className="flex gap-4">
@@ -192,159 +210,152 @@ export default function NewsroomPage() {
                     />
                     <label
                         htmlFor="pdf-upload"
-                        className="btn-secondary flex items-center gap-2 cursor-pointer text-xs font-bold uppercase tracking-widest px-6 py-3"
+                        className="btn-secondary flex items-center gap-2 cursor-pointer text-[10px] font-bold uppercase tracking-widest px-6 py-3 dark:bg-neutral-900"
                     >
-                        {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Upload Deal Intelligence"}
+                        {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Stamp size={14} /> Upload Deal PDF</>}
                     </label>
                 </div>
             </header>
 
+            {/* HitL Review Panel */}
             {pendingReviewData && (
-                <div className="card p-8 mb-12 bg-brand-background border-2 border-black animate-in slide-in-from-top duration-500">
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-sm font-bold uppercase tracking-widest">Review Extracted Intelligence (HITL)</h2>
-                        <div className="flex gap-3">
-                            <button onClick={() => setPendingReviewData(null)} className="btn-secondary text-[10px] py-1 px-4">Discard</button>
-                            <button onClick={approveHitlData} className="btn-primary text-[10px] py-1 px-4">Save & Approve</button>
+                <Card className="border-2 border-black dark:border-white animate-in slide-in-from-top duration-500 overflow-hidden">
+                    <CardHeader className="flex flex-row items-center justify-between border-b bg-brand-background dark:bg-neutral-900">
+                        <div>
+                            <CardTitle className="text-sm uppercase tracking-widest">Review Extracted Intelligence</CardTitle>
+                            <CardDescription>Human-in-the-Loop verification required for PDF ingestion.</CardDescription>
                         </div>
-                    </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-xs">
-                            <thead className="border-b border-brand-border text-brand-text-secondary uppercase tracking-tighter">
-                                <tr>
-                                    <th className="py-2">Field</th>
-                                    <th className="py-2">Extracted Value</th>
-                                    <th className="py-2">Confidence</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-brand-border">
-                                <tr><td className="py-3 font-bold">Company Name</td><td className="py-3">{pendingReviewData.company_name}</td><td className="py-3 text-green-600">HIGH</td></tr>
-                                <tr><td className="py-3 font-bold">EBITDA</td><td className="py-3">{pendingReviewData.ebitda}</td><td className="py-3 text-green-600">HIGH</td></tr>
-                                <tr><td className="py-3 font-bold">Advisor</td><td className="py-3">{pendingReviewData.advisor}</td><td className="py-3 text-yellow-600">MEDIUM</td></tr>
-                                <tr><td className="py-3 font-bold">Status</td><td className="py-3">{pendingReviewData.process_status}</td><td className="py-3 text-green-600">HIGH</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                        <div className="flex gap-3">
+                            <Button variant="outline" size="sm" onClick={() => setPendingReviewData(null)}>Discard</Button>
+                            <Button variant="default" size="sm" onClick={approveHitlData}>Approve & Save</Button>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                        <Table>
+                            <TableHeader>
+                                <TableRow className="bg-white dark:bg-black">
+                                    <TableHead>Field</TableHead>
+                                    <TableHead>Extracted Value</TableHead>
+                                    <TableHead>Confidence</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                <TableRow><TableCell className="font-bold">Company Name</TableCell><TableCell>{pendingReviewData.company_name}</TableCell><TableCell className="text-green-600 font-bold">HIGH</TableCell></TableRow>
+                                <TableRow><TableCell className="font-bold">EBITDA</TableCell><TableCell>{pendingReviewData.ebitda}</TableCell><TableCell className="text-green-600 font-bold">HIGH</TableCell></TableRow>
+                                <TableRow><TableCell className="font-bold">Advisor</TableCell><TableCell>{pendingReviewData.advisor}</TableCell><TableCell className="text-yellow-600 font-bold">MEDIUM</TableCell></TableRow>
+                                <TableRow><TableCell className="font-bold">Status</TableCell><TableCell>{pendingReviewData.process_status}</TableCell><TableCell className="text-green-600 font-bold">HIGH</TableCell></TableRow>
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
             )}
 
-            <div className="grid grid-cols-1 gap-12 lg:grid-cols-12">
-                {/* LEFT: Sources (4 cols) */}
-                <div className="lg:col-span-4 space-y-6">
-                    <div className="card overflow-hidden">
-                        <div className="p-4 border-b border-brand-border bg-brand-background flex items-center justify-between">
-                            <h2 className="text-xs font-bold uppercase tracking-widest">Failed Auctions</h2>
-                            <span className="text-[10px] font-bold text-brand-text-secondary bg-white px-2 py-0.5 border border-brand-border rounded">LIVE DATA</span>
-                        </div>
-                        <div className="divide-y divide-brand-border">
-                            {MOCK_FAILED_LOTS.map((lot) => {
-                                const isSelected = selectedLotIds.includes(lot.lot_number);
-                                return (
-                                    <div
-                                        key={lot.lot_number}
-                                        onClick={() => toggleLot(lot.lot_number)}
-                                        className={`p-4 cursor-pointer transition-colors group ${isSelected ? 'bg-black text-white' : 'bg-white hover:bg-brand-background'}`}
-                                    >
-                                        <div className="flex justify-between items-start mb-1">
-                                            <span className={`text-[10px] font-bold uppercase tracking-widest ${isSelected ? 'text-gray-400' : 'text-brand-text-secondary'}`}>Lot {lot.lot_number}</span>
-                                            {isSelected && <CheckSquare className="h-3 w-3" />}
-                                        </div>
-                                        <p className="text-sm font-bold truncate">{lot.address.split(',')[0]}</p>
-                                        <div className={`flex items-center gap-3 mt-2 text-[10px] font-bold tracking-widest uppercase ${isSelected ? 'text-gray-400' : 'text-brand-text-secondary'}`}>
-                                            <span>Guide: {lot.guide_price}</span>
-                                            <span className="opacity-30">|</span>
-                                            <span className={isSelected ? 'text-red-400' : 'text-red-600'}>Bid: {lot.final_bid}</span>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                        <div className="p-4 bg-brand-background border-t border-brand-border flex justify-between items-center text-[10px] font-bold uppercase tracking-tighter">
-                            <span>{selectedLotIds.length} Lots selected</span>
-                            <button onClick={() => setSelectedLotIds([])} className="hover:underline">Clear</button>
-                        </div>
+            {/* Live Data Table */}
+            <Card className="overflow-hidden">
+                <div className="p-4 border-b border-brand-border dark:border-neutral-800 flex items-center justify-between">
+                    <h2 className="text-xs font-bold uppercase tracking-widest">Sentinel Live Feed</h2>
+                    <div className="flex items-center gap-2">
+                        <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                        </span>
+                        <span className="text-[10px] font-bold text-brand-text-secondary uppercase">Connected</span>
                     </div>
                 </div>
-
-                {/* RIGHT: Editor & Output (8 cols) */}
-                <div className="lg:col-span-8 space-y-8">
-                    <div className="card p-8">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                            <div>
-                                <label className="block text-xs font-bold uppercase tracking-widest mb-3">Analytical Lens</label>
-                                <div className="grid grid-cols-2 gap-2">
-                                    {TEMPLATES.map((tmpl) => (
-                                        <button
-                                            key={tmpl.id}
-                                            onClick={() => setSelectedTemplate(tmpl.id)}
-                                            className={`text-[10px] font-bold uppercase tracking-widest py-2 rounded border transition-all ${selectedTemplate === tmpl.id
-                                                ? "bg-black text-white border-black"
-                                                : "bg-white text-brand-text-secondary border-brand-border hover:border-black"
-                                                }`}
-                                        >
-                                            {tmpl.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                            <div>
-                                <label htmlFor="tone-modifier" className="block text-xs font-bold uppercase tracking-widest mb-3">Tone Modifier</label>
-                                <textarea
-                                    id="tone-modifier"
-                                    name="tone-modifier"
-                                    value={instructions}
-                                    onChange={(e) => setInstructions(e.target.value)}
-                                    placeholder="e.g. emphasize capital flight risk..."
-                                    className="w-full bg-brand-background border border-brand-border rounded-lg p-3 text-sm font-medium focus:ring-1 focus:ring-black focus:outline-none h-[74px] resize-none"
-                                    autoComplete="off"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="flex items-center justify-between border-t border-brand-border pt-8">
-                            <div className="flex items-center gap-4">
-                                <button
-                                    onClick={() => setIncludeSignature(!includeSignature)}
-                                    className={`w-10 h-10 flex items-center justify-center rounded-lg border transition-all ${includeSignature ? 'bg-black text-white border-black' : 'border-brand-border text-brand-text-secondary'}`}
-                                >
-                                    <Stamp className="h-5 w-5" />
-                                </button>
-                                <div>
-                                    <p className="text-[10px] font-bold uppercase tracking-widest text-black">Append Authority</p>
-                                    <p className="text-[10px] font-medium text-brand-text-secondary uppercase">Sign as Partner</p>
-                                </div>
-                            </div>
-
-                            <button
-                                onClick={handleGenerate}
-                                disabled={loading || selectedLotIds.length === 0}
-                                className="btn-primary min-w-[200px] flex items-center justify-center gap-3 uppercase text-xs tracking-[0.2em]"
-                            >
-                                {loading ? (
-                                    <>
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                        Generating
-                                    </>
-                                ) : (
-                                    "Build Memo"
-                                )}
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Output */}
-                    {generatedDraft && (
-                        <div className="card p-12 bg-white animate-in fade-in duration-700">
-                            <article className="prose prose-sm prose-neutral max-w-none prose-headings:font-bold prose-headings:tracking-tighter prose-p:text-brand-text-primary prose-strong:text-black">
-                                <ReactMarkdown>{generatedDraft}</ReactMarkdown>
-                            </article>
-                        </div>
+                <div className="p-4">
+                    {fetchingLots ? (
+                        <div className="py-12 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></div>
+                    ) : (
+                        <DataTable
+                            columns={columns}
+                            data={lots}
+                            searchKey="company_name"
+                        />
                     )}
                 </div>
-            </div>
+            </Card>
+
+            {/* Editor Panel */}
+            <Card className="p-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                    <div>
+                        <label className="block text-xs font-bold uppercase tracking-widest mb-3">Analytical Lens</label>
+                        <div className="grid grid-cols-2 gap-2">
+                            {TEMPLATES.map((tmpl) => (
+                                <button
+                                    key={tmpl.id}
+                                    onClick={() => setSelectedTemplate(tmpl.id)}
+                                    className={cn(
+                                        "text-[10px] font-bold uppercase tracking-widest py-2 rounded border transition-all",
+                                        selectedTemplate === tmpl.id
+                                            ? "bg-black text-white border-black"
+                                            : "bg-white text-brand-text-secondary border-brand-border hover:border-black dark:bg-neutral-900 dark:border-neutral-700"
+                                    )}
+                                >
+                                    {tmpl.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    <div>
+                        <label htmlFor="tone-modifier" className="block text-xs font-bold uppercase tracking-widest mb-3">Tone Modifier</label>
+                        <textarea
+                            id="tone-modifier"
+                            name="tone-modifier"
+                            value={instructions}
+                            onChange={(e) => setInstructions(e.target.value)}
+                            placeholder="e.g. emphasise capital flight risk..."
+                            className="w-full bg-brand-background border border-brand-border rounded-lg p-3 text-sm font-medium focus:ring-1 focus:ring-black focus:outline-none h-[74px] resize-none dark:bg-neutral-900 dark:border-neutral-700"
+                            autoComplete="off"
+                        />
+                    </div>
+                </div>
+
+                <div className="flex items-center justify-between border-t border-brand-border pt-8 dark:border-neutral-800">
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={() => setIncludeSignature(!includeSignature)}
+                            className={cn(
+                                "w-10 h-10 flex items-center justify-center rounded-lg border transition-all",
+                                includeSignature ? 'bg-black text-white border-black' : 'border-brand-border text-brand-text-secondary'
+                            )}
+                        >
+                            <Stamp className="h-5 w-5" />
+                        </button>
+                        <div>
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-black dark:text-white">Append Authority</p>
+                            <p className="text-[10px] font-medium text-brand-text-secondary uppercase">Sign as Partner</p>
+                        </div>
+                    </div>
+
+                    <Button
+                        onClick={handleGenerate}
+                        disabled={loading || selectedLotIds.length === 0}
+                        className="min-w-[200px] uppercase text-xs tracking-[0.2em]"
+                    >
+                        {loading ? (
+                            <>
+                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                Generating
+                            </>
+                        ) : (
+                            `Build Memo (${selectedLotIds.length})`
+                        )}
+                    </Button>
+                </div>
+            </Card>
+
+            {/* Output */}
+            {generatedDraft && (
+                <Card className="p-12 bg-white dark:bg-black animate-in fade-in duration-700">
+                    <article className="prose prose-sm prose-neutral max-w-none prose-headings:font-bold prose-headings:tracking-tighter prose-p:text-brand-text-primary prose-strong:text-black dark:prose-invert">
+                        <ReactMarkdown>{generatedDraft}</ReactMarkdown>
+                    </article>
+                </Card>
+            )}
 
             {/* Global FAB */}
-            <button className="fab uppercase text-[10px] tracking-[0.3em] flex items-center gap-3">
+            <button className="fixed bottom-8 right-8 bg-black text-white px-6 py-3 rounded-full shadow-2xl uppercase text-[10px] tracking-[0.3em] flex items-center gap-3 hover:bg-neutral-800 transition-colors dark:bg-white dark:text-black">
                 <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
                 System Active
             </button>

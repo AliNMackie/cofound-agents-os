@@ -7,10 +7,21 @@ from src.api.ingest import router as ingest_router
 
 from src.services.market_sweep import sweep_service
 
+from fastapi.middleware.cors import CORSMiddleware
+
 # Ensure logging is configured before app startup
 configure_logging()
 
 app = FastAPI(title=settings.APP_NAME)
+
+# Enable CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://icorigin.netlify.app", "*"], # Allowing all to guarantee fix, specific origin included
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(content_router)
 app.include_router(ingest_router)

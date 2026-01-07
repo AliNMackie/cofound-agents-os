@@ -89,7 +89,7 @@ export default function Home() {
   return (
     <div className="max-w-6xl mx-auto">
       <div className="mb-12">
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-lexi-text-secondary mb-2">Overview</p>
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-text-secondary mb-2">Overview</p>
         <h1 className="text-black mb-4">Pipeline Control</h1>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="card p-6">
@@ -110,14 +110,14 @@ export default function Home() {
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold">Inbox: High Intent</h2>
         <div className="flex items-center gap-2">
-          <button className="text-xs font-bold uppercase tracking-widest px-3 py-1 border border-lexi-border rounded hover:bg-lexi-background transition-colors">Filter</button>
-          <button className="text-xs font-bold uppercase tracking-widest px-3 py-1 border border-lexi-border rounded hover:bg-lexi-background transition-colors">Export</button>
+          <button className="text-xs font-bold uppercase tracking-widest px-3 py-1 border border-brand-border rounded hover:bg-brand-background transition-colors">Filter</button>
+          <button className="text-xs font-bold uppercase tracking-widest px-3 py-1 border border-brand-border rounded hover:bg-brand-background transition-colors">Export</button>
         </div>
       </div>
 
       {leads.length === 0 ? (
         <div className="card p-12 text-center">
-          <p className="text-lexi-text-secondary uppercase text-xs font-bold tracking-widest">No leads pending review.</p>
+          <p className="text-brand-text-secondary uppercase text-xs font-bold tracking-widest">No leads pending review.</p>
           <p className="mt-2 text-sm">All entries have been processed or moved to missions.</p>
         </div>
       ) : (
@@ -140,11 +140,11 @@ export default function Home() {
                     </span>
                   </div>
                   <h3 className="text-2xl font-bold text-black mb-1">{lead.profileData.name}</h3>
-                  <p className="text-sm font-semibold text-lexi-text-primary mb-2 italic">{lead.profileData.role}</p>
-                  <p className="text-sm text-lexi-text-secondary line-clamp-2 mb-6">{lead.profileData.bio}</p>
+                  <p className="text-sm font-semibold text-brand-text-primary mb-2 italic">{lead.profileData.role}</p>
+                  <p className="text-sm text-brand-text-secondary line-clamp-2 mb-6">{lead.profileData.bio}</p>
 
-                  <div className="bg-lexi-background p-6 rounded-lg border border-lexi-border font-mono text-[13px] leading-relaxed relative group">
-                    <div className="absolute top-4 right-4 text-[10px] font-bold uppercase text-lexi-text-secondary opacity-0 group-hover:opacity-100 transition-opacity">AI Draft</div>
+                  <div className="bg-brand-background p-6 rounded-lg border border-brand-border font-mono text-[13px] leading-relaxed relative group">
+                    <div className="absolute top-4 right-4 text-[10px] font-bold uppercase text-brand-text-secondary opacity-0 group-hover:opacity-100 transition-opacity">AI Draft</div>
                     {draftMessage}
                   </div>
                 </div>

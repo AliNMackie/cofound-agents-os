@@ -11,7 +11,7 @@ class AuctionIngestor:
     def __init__(self):
         if settings.GOOGLE_API_KEY:
             genai.configure(api_key=settings.GOOGLE_API_KEY)
-            self.model = genai.GenerativeModel('gemini-3-pro-preview')
+            self.model = genai.GenerativeModel('gemini-1.5-pro')
         else:
             logger.warning("GOOGLE_API_KEY not set. Extraction will fail.")
             self.model = None

@@ -25,12 +25,24 @@ class MarketSweepService:
             logger.error("Database not initialized, skipping sweep.")
             return {"status": "error", "detail": "Database unavailable"}
 
-        # Search terms
+        # High-Priority Entities and Keywords from IC ORIGIN roadmap
+        PRIORITY_KEYWORDS = [
+            "Failed Auction", "Passed In", "Postponed", "Process Restarted", 
+            "Debt Restructuring", "Sale Put on Hold"
+        ]
+        
+        ADVISORS = [
+            "Rothschild", "KPMG", "Deloitte", "Houlihan Lokey", "Grant Thornton"
+        ]
+
+        # Strategic queries combining priority keywords and advisors
         queries = [
-            "Private Equity acquisition",
-            "Company sale postponed",
-            "Distressed sale business",
-            "EBITDA sale process"
+            f'"{kw}" deal' for kw in PRIORITY_KEYWORDS
+        ] + [
+            f'"{adv}" auction process' for adv in ADVISORS
+        ] + [
+            "Willerby Group sale", "SSS Super Alloys acquisition", 
+            "Seasalt investment", "Mamas & Papas process"
         ]
         
         total_scanned = 0

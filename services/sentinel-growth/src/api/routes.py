@@ -72,3 +72,16 @@ async def generate_proposal(request: ProposalRequest):
     except Exception as e:
         log.error("Request failed", error=str(e))
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/auctions")
+async def get_auctions():
+    """Retrieves all ingested deal intelligence."""
+    try:
+        from google.cloud import firestore
+        db = firestore.Client()
+        docs = db.collection("auctions").order_by("ingested_at", direction=firestore.Query.DESCENDING).limit(50).stream()
+        return [doc.to_dict() for doc in docs]
+    except Exception as e:
+        logger.error("Failed to fetch auctions", error=str(e))
+        # Fallback to empty list so UI doesn't crash
+        return []

@@ -8,7 +8,7 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        lexi: {
+        brand: {
           primary: '#000000',
           secondary: '#FFFFFF',
           background: '#F5F5F5',
@@ -18,7 +18,12 @@ module.exports = {
             secondary: '#6B7280',
           },
           border: '#E5E5E5',
-        }
+        },
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
       },
       fontFamily: {
         sans: ['Inter', 'DM Sans', 'sans-serif'],

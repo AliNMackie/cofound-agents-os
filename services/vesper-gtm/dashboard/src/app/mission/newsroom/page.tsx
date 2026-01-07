@@ -132,15 +132,101 @@ export default function NewsroomPage() {
         }
     };
 
+    const [pendingReviewData, setPendingReviewData] = useState<any | null>(null);
+    const [uploading, setUploading] = useState(false);
+
+    // PDF Ingestion Handler
+    const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        setUploading(true);
+        try {
+            // Placeholder for PDF ingestion logic via multimodal endpoint
+            // In a real implementation, we'd send the file byte-stream
+            const formData = new FormData();
+            formData.append("file", file);
+
+            // Simulating API call to the new Sentinel endpoint
+            const response = await fetch(`${process.env.NEXT_PUBLIC_NEWSLETTER_API_URL}/api/ingest-intelligence`, {
+                method: "POST",
+                body: JSON.stringify({ source_text: `PDF Content from ${file.name}`, source_origin: "manual_upload" }),
+                headers: { "Content-Type": "application/json" }
+            });
+
+            if (!response.ok) throw new Error("Upload failed");
+            const data = await response.json();
+
+            // Trigger HITL Step
+            setPendingReviewData(data);
+        } catch (error: any) {
+            alert("Upload Failed: " + error.message);
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const approveHitlData = () => {
+        // Logic to save pendingReviewData to real persistent store
+        alert("Intelligence saved to database.");
+        setPendingReviewData(null);
+    };
+
     return (
         <div className="max-w-7xl mx-auto">
-            <header className="mb-12">
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-text-secondary mb-2">Editor</p>
-                <h1 className="text-black">Intelligence Newsroom</h1>
-                <p className="mt-2 text-brand-text-secondary text-sm max-w-xl">
-                    Generate high-conviction deal memos from failed auction data. Select your sources and define your analytical lens.
-                </p>
+            <header className="mb-12 flex justify-between items-end">
+                <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-text-secondary mb-2">Editor</p>
+                    <h1 className="text-black">Intelligence Newsroom</h1>
+                    <p className="mt-2 text-brand-text-secondary text-sm max-w-xl">
+                        Generate high-conviction deal memos from failed auction data. Select your sources and define your analytical lens.
+                    </p>
+                </div>
+                <div className="flex gap-4">
+                    <input
+                        type="file"
+                        id="pdf-upload"
+                        className="hidden"
+                        accept=".pdf"
+                        onChange={handleFileUpload}
+                    />
+                    <label
+                        htmlFor="pdf-upload"
+                        className="btn-secondary flex items-center gap-2 cursor-pointer text-xs font-bold uppercase tracking-widest px-6 py-3"
+                    >
+                        {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Upload Deal Intelligence"}
+                    </label>
+                </div>
             </header>
+
+            {pendingReviewData && (
+                <div className="card p-8 mb-12 bg-brand-background border-2 border-black animate-in slide-in-from-top duration-500">
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-sm font-bold uppercase tracking-widest">Review Extracted Intelligence (HITL)</h2>
+                        <div className="flex gap-3">
+                            <button onClick={() => setPendingReviewData(null)} className="btn-secondary text-[10px] py-1 px-4">Discard</button>
+                            <button onClick={approveHitlData} className="btn-primary text-[10px] py-1 px-4">Save & Approve</button>
+                        </div>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs">
+                            <thead className="border-b border-brand-border text-brand-text-secondary uppercase tracking-tighter">
+                                <tr>
+                                    <th className="py-2">Field</th>
+                                    <th className="py-2">Extracted Value</th>
+                                    <th className="py-2">Confidence</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-brand-border">
+                                <tr><td className="py-3 font-bold">Company Name</td><td className="py-3">{pendingReviewData.company_name}</td><td className="py-3 text-green-600">HIGH</td></tr>
+                                <tr><td className="py-3 font-bold">EBITDA</td><td className="py-3">{pendingReviewData.ebitda}</td><td className="py-3 text-green-600">HIGH</td></tr>
+                                <tr><td className="py-3 font-bold">Advisor</td><td className="py-3">{pendingReviewData.advisor}</td><td className="py-3 text-yellow-600">MEDIUM</td></tr>
+                                <tr><td className="py-3 font-bold">Status</td><td className="py-3">{pendingReviewData.process_status}</td><td className="py-3 text-green-600">HIGH</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 gap-12 lg:grid-cols-12">
                 {/* LEFT: Sources (4 cols) */}

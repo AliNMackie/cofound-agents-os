@@ -21,7 +21,7 @@ export function processLeads(leads: Lead[]): Lead[] {
     // It doesn't explicitly say where to put it in the Lead object.
     // The Lead interface defined previously doesn't have a 'draft' field.
     // I will add a 'DRAFT_CREATED' event to the history with the message content.
-
+    
     updatedLead.history = [
       ...updatedLead.history,
       {
@@ -41,9 +41,8 @@ export function processLeads(leads: Lead[]): Lead[] {
       // Auto-queue high potential leads
       updatedLead.status = 'queued';
     } else {
-      // NATIVE HITL: Flag for human review using Agent Engine terminology
-      // This state signals the orchestrator to pause execution for this lead
-      updatedLead.status = 'paused_for_human_input';
+      // Flag for human review otherwise
+      updatedLead.status = 'review';
     }
 
     return updatedLead;

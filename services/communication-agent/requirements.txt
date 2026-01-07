@@ -13,5 +13,3 @@ cryptography
 itsdangerous
 google-cloud-tasks
 google-auth-oauthlib
-google-cloud-aiplatform>=1.38.0
-

@@ -4,7 +4,7 @@ import { AuctionData, AuctionIngestRequest } from '@/types/sentinel';
 
 const SENTINEL_API_URL = process.env.NEXT_PUBLIC_SENTINEL_API_URL || 'https://sentinel-growth-hc7um252na-nw.a.run.app';
 
-export async function ingestAuction(request: AuctionIngestRequest): Promise\u003cAuctionData > {
+export async function ingestAuction(request: AuctionIngestRequest): Promise<AuctionData> {
     const response = await fetch(`${SENTINEL_API_URL}/ingest/auction`, {
         method: 'POST',
         headers: {
@@ -13,11 +13,11 @@ export async function ingestAuction(request: AuctionIngestRequest): Promise\u003
         body: JSON.stringify(request),
     });
 
-    if(!response.ok) {
-    throw new Error(`API error: ${response.statusText}`);
-}
+    if (!response.ok) {
+        throw new Error(`API error: ${response.statusText}`);
+    }
 
-return response.json();
+    return response.json();
 }
 
 // Mock data for development

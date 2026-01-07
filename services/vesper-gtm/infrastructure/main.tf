@@ -126,21 +126,21 @@ resource "google_cloud_run_v2_service" "vesper_n8n" {
 
 # --- Cloud Scheduler ---
 
-# resource "google_cloud_scheduler_job" "vesper_heartbeat" {
-#   name             = "vesper-heartbeat"
-#   description      = "Heartbeat for Vesper n8n"
-#   schedule         = "*/15 * * * *"
-#   time_zone        = "Europe/London"
-#   attempt_deadline = "320s"
-#
-#   http_target {
-#     http_method = "POST"
-#     uri         = google_cloud_run_v2_service.vesper_n8n.uri
-#
-#     oidc_token {
-#       service_account_email = google_service_account.scheduler_sa.email
-#     }
-#   }
-#
-#   depends_on = [google_project_service.scheduler]
-# }
+resource "google_cloud_scheduler_job" "vesper_heartbeat" {
+  name             = "vesper-heartbeat"
+  description      = "Heartbeat for Vesper n8n"
+  schedule         = "*/15 * * * *"
+  time_zone        = "Europe/London"
+  attempt_deadline = "320s"
+
+  http_target {
+    http_method = "POST"
+    uri         = google_cloud_run_v2_service.vesper_n8n.uri
+
+    oidc_token {
+      service_account_email = google_service_account.scheduler_sa.email
+    }
+  }
+
+  depends_on = [google_project_service.scheduler]
+}

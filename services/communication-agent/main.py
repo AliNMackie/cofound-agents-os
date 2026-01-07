@@ -14,7 +14,7 @@ from google.cloud import tasks_v2
 
 # Configuration
 PROJECT_ID = os.environ.get('PROJECT_ID')
-LOCATION = os.environ.get('LOCATION', 'europe-west2')
+LOCATION = os.environ.get('LOCATION', 'us-central1')
 TASK_QUEUE_NAME = os.environ.get('TASK_QUEUE_NAME', 'email-processing-queue')
 WORKER_FUNCTION_URL = os.environ.get('WORKER_FUNCTION_URL')
 

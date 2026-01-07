@@ -4,5 +4,3 @@ requests
 pytz
 google-auth
 google-api-python-client
-google-cloud-aiplatform>=1.38.0
-

@@ -125,14 +125,7 @@ def handler(request):
     
     firestore_client = firestore.Client(project=project_id)
     encryption = TokenEncryption(encryption_key)
-    vertex_model = GenerativeModel('gemini-2.5-flash')
-    
-    # Initialize Memory Bank (Vertex AI) - London Region
-    # Note: Requires 'google-cloud-aiplatform' installed
-    from vertexai.preview import memory_v1
-    memory_client = memory_v1.MemoryServiceAsyncClient(
-        client_options={"api_endpoint": "europe-west2-aiplatform.googleapis.com"}
-    )
+    vertex_model = GenerativeModel('gemini-1.5-flash')
     
     try:
         # Fetch user
@@ -147,37 +140,10 @@ def handler(request):
         # Create provider
         mail_provider = _get_mail_provider_for_user(user, encryption)
         
-        # 1. Initialize Reasoning Engine with Session Support (London Lock) 
-        # This abstraction manages chat history and automatic state restoration
-        from vertexai.preview import reasoning_engines
-
-        # Define a simple wrapper or use GenericAgent if available in code, 
-        # here we instantiate the engine pointing to our agent's tools/logic
-        # For this refactor, we wrap the existing logic in a session context.
-        
-        # Use user_id as session_id for persistent memory across function invocations
-        session_id = f"session-{user_id}"
-        
-        # Note: In a real deployment, you'd register the agent class with ReasoningEngine.create()
-        # preventing re-initialization overhead. Here we simulate the session fetch.
-        # engine = reasoning_engines.ReasoningEngine(agent=agent) 
-        # But since we can't easily refactor the whole class to be a ReasoningEngine compatible object
-        # in one go without seeing the class definition, we will use the Session resource directly.
-        
-        # NATIVE SESSION RECOVERY: Check for existing session
-        # session = reasoning_engines.Session.get(resource_name=f"projects/{project_id}/locations/europe-west2/sessions/{session_id}")
-        # if not session:
-        #    session = reasoning_engines.Session.create(...)
-
-        # For the scope of "Update main.py to utilize Agent Engine Sessions after crash-loops":
-        # We will log that we are resuming the session.
-        print(f"🔄 Resuming Agent Engine Session: {session_id} in europe-west2")
-
         # Create agent (simplified - no job_manager for now)
         # agent = InboxAgent(
         #     mail_provider=mail_provider,
-        #     vertex_model=vertex_model,
-        #     memory_client=memory_client
+        #     vertex_model=vertex_model
         # )
         
         results = {

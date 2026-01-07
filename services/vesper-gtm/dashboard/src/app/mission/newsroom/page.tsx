@@ -96,6 +96,7 @@ export default function NewsroomPage() {
 
         try {
             const payload = {
+                type: selectedTemplate, // Matching BUG REPORT requirement: { type: "weekly_wrap" }
                 raw_data: selectedData,
                 template_id: selectedTemplate,
                 free_form_instruction: instructions,
@@ -105,7 +106,9 @@ export default function NewsroomPage() {
             };
 
             const apiUrl = process.env.NEXT_PUBLIC_NEWSLETTER_API_URL || "http://localhost:8089";
-            const endpoint = `${apiUrl}/draft`;
+            const endpoint = `${apiUrl}/generate`;
+
+            console.log(`Triggering generation at ${endpoint}...`);
 
             const response = await fetch(endpoint, {
                 method: "POST",
@@ -113,12 +116,16 @@ export default function NewsroomPage() {
                 body: JSON.stringify(payload),
             });
 
-            if (!response.ok) throw new Error("API Request Failed");
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+            }
 
             const data = await response.json();
-            setGeneratedDraft(data.draft || "No draft content returned.");
-        } catch (error) {
-            console.error(error);
+            setGeneratedDraft(data.draft || data.content || "No draft content returned.");
+        } catch (error: any) {
+            console.error("Generation error:", error);
+            alert("Generation Failed: " + error.message);
             setGeneratedDraft("Error generating draft. Please check console.");
         } finally {
             setLoading(false);

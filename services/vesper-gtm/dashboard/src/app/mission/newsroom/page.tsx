@@ -104,7 +104,10 @@ export default function NewsroomPage() {
                     : null,
             };
 
-            const response = await fetch("/api/scout/draft", {
+            const apiUrl = process.env.NEXT_PUBLIC_NEWSLETTER_API_URL || "http://localhost:8089";
+            const endpoint = `${apiUrl}/draft`;
+
+            const response = await fetch(endpoint, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
@@ -151,8 +154,8 @@ export default function NewsroomPage() {
                                         key={lot.lot_number}
                                         onClick={() => toggleLot(lot.lot_number)}
                                         className={`cursor-pointer rounded-lg border p-4 transition-all hover:border-indigo-300 ${isSelected
-                                                ? "border-indigo-600 bg-indigo-50/50"
-                                                : "border-gray-200 bg-white"
+                                            ? "border-indigo-600 bg-indigo-50/50"
+                                            : "border-gray-200 bg-white"
                                             }`}
                                     >
                                         <div className="flex items-start justify-between">
@@ -208,8 +211,8 @@ export default function NewsroomPage() {
                                         key={tmpl.id}
                                         onClick={() => setSelectedTemplate(tmpl.id)}
                                         className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${selectedTemplate === tmpl.id
-                                                ? "bg-indigo-600 text-white"
-                                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                            ? "bg-indigo-600 text-white"
+                                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                                             }`}
                                     >
                                         {tmpl.label}
@@ -237,8 +240,8 @@ export default function NewsroomPage() {
                             <button
                                 onClick={() => setIncludeSignature(!includeSignature)}
                                 className={`flex items-center justify-center rounded-lg border p-2 transition-colors ${includeSignature
-                                        ? "border-indigo-600 bg-indigo-50 text-indigo-600"
-                                        : "border-gray-200 text-gray-400 hover:border-gray-300"
+                                    ? "border-indigo-600 bg-indigo-50 text-indigo-600"
+                                    : "border-gray-200 text-gray-400 hover:border-gray-300"
                                     }`}
                             >
                                 <Stamp className="h-5 w-5" />

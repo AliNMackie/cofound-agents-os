@@ -70,11 +70,15 @@ export default function MissionsPage() {
                                 Analyze Market Intelligence
                             </h2>
 
+                            <label htmlFor="intelligence-input" className="sr-only">Analyze Market Intelligence</label>
                             <textarea
+                                id="intelligence-input"
+                                name="intelligence-input"
                                 value={sourceText}
                                 onChange={(e) => setSourceText(e.target.value)}
                                 placeholder="Paste article text, news snippet, or market intelligence here..."
                                 className="w-full h-40 px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm"
+                                autoComplete="off"
                             />
 
                             {error && (

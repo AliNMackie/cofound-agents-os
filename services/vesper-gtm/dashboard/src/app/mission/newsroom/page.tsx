@@ -202,12 +202,15 @@ export default function NewsroomPage() {
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-xs font-bold uppercase tracking-widest mb-3">Tone Modifier</label>
+                                <label htmlFor="tone-modifier" className="block text-xs font-bold uppercase tracking-widest mb-3">Tone Modifier</label>
                                 <textarea
+                                    id="tone-modifier"
+                                    name="tone-modifier"
                                     value={instructions}
                                     onChange={(e) => setInstructions(e.target.value)}
                                     placeholder="e.g. emphasize capital flight risk..."
                                     className="w-full bg-brand-background border border-brand-border rounded-lg p-3 text-sm font-medium focus:ring-1 focus:ring-black focus:outline-none h-[74px] resize-none"
+                                    autoComplete="off"
                                 />
                             </div>
                         </div>

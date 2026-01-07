@@ -14,6 +14,7 @@ class InboxAgent:
         mail_provider: MailProvider,
         vertex_model: Any,  # Should be vertexai.generative_models.GenerativeModel
         idempotency_guard: IdempotencyGuard,
+        memory_client: Any = None # Vertex AI Memory Client
     ):
         """
         Initializes the InboxAgent.
@@ -22,10 +23,12 @@ class InboxAgent:
             mail_provider: An implementation of the MailProvider interface.
             vertex_model: An authenticated Vertex AI model resource.
             idempotency_guard: An instance of IdempotencyGuard.
+            memory_client: Optional Memory Client for context recall.
         """
         self._mail_provider = mail_provider
         self._vertex_model = vertex_model
         self._idempotency_guard = idempotency_guard
+        self._memory = memory_client
 
     def process_email(self, email_task: EmailTask) -> AgentOutput:
         """
@@ -49,10 +52,24 @@ class InboxAgent:
                 return AgentOutput(status=Status.SKIPPED)
 
             try:
-                # 2. Call Vertex AI to summarize and draft a reply
+                # 2. Retrieve User Habits from Memory Bank
+                habit_context = ""
+                try:
+                    # Using the sender/email task context to recall relevant habits
+                    # 'topic-based' recall: Queries specifically for this user's email tone
+                    memories = self._memory.query(
+                        query_text=f"What is the preferred email tone and style for {email_task.sender}?",
+                        filter=f'user_id == "{email_task.email_id}"' # Simplified filter for demo
+                    )
+                    if memories:
+                        habit_context = f"\n\nUser Habits/Preferences:\n{memories[0].text}"
+                except Exception as mem_err:
+                    span.add_event(f"Memory retrieval failed: {mem_err}")
+
+                # 3. Call Vertex AI to summarize and draft a reply
                 with tracer.start_as_current_span("generate_draft_content") as gen_span:
                     # The prompt is simplified for this example.
-                    prompt = f"Summarize this email and draft a professional reply to the sender:\n\n---\n\n{email_task.body}"
+                    prompt = f"Summarize this email and draft a professional reply to the sender:\n\n---\n\n{email_task.body}{habit_context}"
                     
                     # NOTE: Per privacy rules, the email body itself is not logged.
                     # The call to the model is traced, but not the content.
@@ -60,12 +77,12 @@ class InboxAgent:
                     draft_content = response.text
                     gen_span.set_attribute("draft.char_length", len(draft_content))
 
-                # 3. Spam Check
+                # 4. Spam Check
                 if "[SPAM]" in draft_content:
                     span.add_event("Spam detected; skipping draft creation.")
                     return AgentOutput(status=Status.SKIPPED)
 
-                # 4. Create a draft using the mail provider
+                # 5. Create a draft using the mail provider
                 with tracer.start_as_current_span("create_draft") as draft_span:
                     # A more robust implementation would parse the original subject.
                     subject = "Re: Your recent email"

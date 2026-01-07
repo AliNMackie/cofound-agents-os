@@ -14,10 +14,11 @@ provider "google" {
 
 # --- Secret Manager ---
 # Reference to the Google API Key secret (must be created manually or via separate process)
-data "google_secret_manager_secret_version" "google_api_key" {
-  secret  = "google-api-key"
-  version = "latest"
-}
+# TEMPORARILY COMMENTED OUT DUE TO PERMISSION ISSUES
+# data "google_secret_manager_secret_version" "google_api_key" {
+#   secret  = "google-api-key"
+#   version = "latest"
+# }
 
 # --- Service Account ---
 resource "google_service_account" "sentinel_sa" {
@@ -84,6 +85,20 @@ resource "google_project_iam_member" "sa_secret_accessor" {
   member  = "serviceAccount:${google_service_account.sentinel_sa.email}"
 }
 
+# Grant SA permission to access Firestore
+resource "google_project_iam_member" "sa_firestore_user" {
+  project = var.project_id
+  role    = "roles/datastore.user"
+  member  = "serviceAccount:${google_service_account.sentinel_sa.email}"
+}
+
+# Grant SA permission to invoke Cloud Run (for Scheduler)
+resource "google_project_iam_member" "sa_run_invoker" {
+  project = var.project_id
+  role    = "roles/run.invoker"
+  member  = "serviceAccount:${google_service_account.sentinel_sa.email}"
+}
+
 # --- Cloud Run Service ---
 resource "google_cloud_run_service" "default" {
   name     = var.service_name
@@ -111,10 +126,11 @@ resource "google_cloud_run_service" "default" {
           name  = "GOOGLE_CLOUD_PROJECT"
           value = var.project_id
         }
-        env {
-            name  = "GOOGLE_API_KEY"
-            value = data.google_secret_manager_secret_version.google_api_key.secret_data
-        }
+        # TEMPORARILY COMMENTED OUT - Secret access requires additional permissions
+        # env {
+        #     name  = "GOOGLE_API_KEY"
+        #     value = data.google_secret_manager_secret_version.google_api_key.secret_data
+        # }
       }
     }
   }
@@ -135,3 +151,29 @@ resource "google_logging_project_bucket_config" "default_log_bucket" {
     bucket_id      = "_Default"
     retention_days = 365
 }
+
+# --- Cloud Scheduler ---
+resource "google_project_service" "scheduler" {
+  service = "cloudscheduler.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "google_cloud_scheduler_job" "daily_market_sweep" {
+  name             = "daily-market-sweep"
+  description      = "Triggers the daily market sweep for auctions"
+  schedule         = "0 9 * * *"
+  time_zone        = "Europe/London"
+  attempt_deadline = "320s"
+
+  http_target {
+    http_method = "POST"
+    uri         = "${google_cloud_run_service.default.status[0].url}/tasks/sweep"
+
+    oidc_token {
+      service_account_email = google_service_account.sentinel_sa.email
+    }
+  }
+
+  depends_on = [google_project_service.scheduler]
+}
+

@@ -5,3 +5,5 @@ pandas
 openpyxl
 pytest
 httpx
+google-cloud-aiplatform>=1.38.0
+

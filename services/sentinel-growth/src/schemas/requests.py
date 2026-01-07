@@ -8,3 +8,7 @@ class ProposalRequest(BaseModel):
     financial_data: Dict[str, str]
     template_version: str = "v1"
     output_format: Literal['pdf', 'docx'] = "pdf"
+
+class AuctionIngestRequest(BaseModel):
+    source_text: str
+    source_origin: str = "market_intel"

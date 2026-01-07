@@ -1,5 +1,5 @@
 export type LeadPlatform = 'linkedin' | 'reddit';
-export type LeadStatus = 'new' | 'review' | 'queued' | 'active' | 'archived';
+export type LeadStatus = 'new' | 'review' | 'queued' | 'active' | 'archived' | 'paused_for_human_input';
 
 export interface LeadProfile {
   name: string;

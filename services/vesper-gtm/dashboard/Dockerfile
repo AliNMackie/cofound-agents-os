@@ -27,6 +27,9 @@ COPY . .
 # Uncomment the following line in case you want to disable telemetry during the build.
 # ENV NEXT_TELEMETRY_DISABLED 1
 
+# Fix permissions for node_modules/.bin executables
+RUN chmod -R +x ./node_modules/.bin
+
 RUN npm run build
 
 # Production image, copy all the files and run next

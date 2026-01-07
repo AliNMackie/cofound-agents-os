@@ -13,7 +13,7 @@ app = FastAPI()
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
 STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET")
 PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT", "default-project")
-LOCATION = os.environ.get("QUEUE_LOCATION", "us-central1")
+LOCATION = os.environ.get("QUEUE_LOCATION", "europe-west2")
 QUEUE_NAME = os.environ.get("QUEUE_NAME", "invoice-processing-queue")
 SERVICE_URL = os.environ.get("SERVICE_URL", "http://localhost:8080")
 
@@ -61,6 +61,22 @@ async def process_invoice(payload: TaskPayload):
     # Idempotency check: if already processed, skip
     if data.get("status") == "SENT":
         return {"status": "already_processed"}
+
+    # NATIVE HITL: Check for high-value invoice needing human approval through Agent Engine
+    if data.get("amount", 0) >= 1000 and data.get("status") != "APPROVED":
+        # In a full ADK implementation, this would yield a 'pause_for_human_input' event.
+        # Here we simulate the state persistence.
+        doc_ref.update({
+            "status": "PAUSED_FOR_APPROVAL",
+            "required_action": "approve_high_value",
+            "paused_at": datetime.datetime.now(datetime.timezone.utc)
+        })
+        print(f"Invoice {doc_id} paused for human approval (Amount >= $1000)")
+        return {
+            "status": "paused", 
+            "reason": "high_value_check", 
+            "message": "Waiting for resume signal via /resume_invoice"
+        }
 
     try:
         # 2. Create Stripe Customer
@@ -144,6 +160,64 @@ async def enqueue_invoice(invoice: InvoiceRequest):
 
     # 4. Return the document ID immediately
     return {"doc_id": doc_id}
+
+
+class ResumePayload(BaseModel):
+    doc_id: str
+    decision: str # 'APPROVE' or 'REJECT'
+
+
+@app.post("/resume_invoice")
+async def resume_invoice(payload: ResumePayload):
+    """
+    Simulates the 'resume_state' method of Act Agent Engine.
+    """
+    if not firestore_client or not tasks_client:
+        raise HTTPException(status_code=500, detail="GCP services not available")
+
+    doc_ref = firestore_client.collection("invoices").document(payload.doc_id)
+    doc = doc_ref.get()
+    
+    if not doc.exists:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+        
+    data = doc.to_dict()
+    
+    if data.get("status") != "PAUSED_FOR_APPROVAL":
+        return {"status": "error", "message": "Invoice is not paused"}
+        
+    if payload.decision == "APPROVE":
+        # Update status and re-dispatch logic
+        # In a real engine, we would pass the input back to the generator.
+        # Here we just manually update status to bypass the check and re-enqueue worker.
+        doc_ref.update({
+            "status": "APPROVED",
+            "approval_timestamp": datetime.datetime.now(datetime.timezone.utc)
+        })
+        
+        # Re-trigger worker
+        # Re-use existing enqueue logic or dispatch directly
+        parent = tasks_client.queue_path(PROJECT_ID, LOCATION, QUEUE_NAME)
+        task = {
+            "http_request": {
+                "http_method": tasks_v2.HttpMethod.POST,
+                "url": f"{SERVICE_URL}/process_worker",
+                "headers": {"Content-Type": "application/json"},
+                "body": json.dumps({"doc_id": payload.doc_id}).encode(),
+            }
+        }
+        tasks_client.create_task(request={"parent": parent, "task": task})
+        
+        return {"status": "resumed", "action": "approved_and_queued"}
+        
+    elif payload.decision == "REJECT":
+        doc_ref.update({
+            "status": "REJECTED",
+            "rejection_timestamp": datetime.datetime.now(datetime.timezone.utc)
+        })
+        return {"status": "resumed", "action": "rejected"}
+    
+    return {"status": "error", "message": "Invalid decision"}
 
 
 @app.post("/stripe_webhook")

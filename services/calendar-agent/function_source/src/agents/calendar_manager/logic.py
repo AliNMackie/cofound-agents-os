@@ -71,7 +71,7 @@ class MorningBriefingAgent:
         
         # In a real scenario, this would be sent to Vertex AI
         # For this task, we will simulate the LLM response
-        llm_prompt = f"Summarize this schedule. Warn about conflicts: {json.dumps(summary_data['conflicts'])}. Suggest lunch."
+        llm_prompt = f"Summarize this schedule. Warn about conflicts: {json.dumps(summary_data['conflicts'])}. Suggest lunch. {prefs_context}"
         
         # Simulate LLM response
         response = "Your schedule is busy today. You have a conflict between 'Team Sync' and 'Project Update'. Consider grabbing lunch at 12:30 PM."

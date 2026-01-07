@@ -1,0 +1,22 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Dependency/Cache directories
+node_modules
+venv/
+__pycache__/
+.mypy_cache/
+.pytest_cache/
+npm-debug.log*
+yarn-error.log
+
+# Logs and Local Files
+*.log
+*.sqlite3
+.DS_Store
+
+# Cloud Build specific files you don't need to upload
+cloudbuild.yaml
+# Add any other large directories specific to your project here!

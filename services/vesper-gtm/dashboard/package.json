@@ -10,9 +10,9 @@
   },
   "dependencies": {
     "firebase": "^10.0.0",
-    "next": "latest",
-    "react": "latest",
-    "react-dom": "latest"
+    "next": "16.0.7",
+    "react": "19.2.1",
+    "react-dom": "19.2.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "latest",

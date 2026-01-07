@@ -15,6 +15,7 @@ export const metadata: Metadata = {
 
 import { ThemeProvider } from "@/components/theme-provider";
 import { Sidebar } from "@/components/Sidebar";
+import { BackendPrewarm } from "@/components/BackendPrewarm";
 
 export default function RootLayout({
   children,
@@ -30,6 +31,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
+          {/* Pre-warm the Sentinel backend on app load */}
+          <BackendPrewarm />
+
           <div className="flex min-h-screen">
             <Sidebar />
 

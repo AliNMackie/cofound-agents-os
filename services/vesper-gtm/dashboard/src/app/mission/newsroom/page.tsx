@@ -54,33 +54,40 @@ export default function NewsroomPage() {
         setFetchError(null);
 
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_NEWSLETTER_API_URL || "http://localhost:8089";
+            // Use production Sentinel API URL, fallback to localhost for dev
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://sentinel-growth-1005792944830.europe-west2.run.app";
+            console.log("[Sentinel] Fetching auctions from:", apiUrl);
+
             const response = await fetch(`${apiUrl}/auctions`, {
                 method: "GET",
                 headers: { "Accept": "application/json" },
+                // Add timeout to prevent hanging
+                signal: AbortSignal.timeout(10000),
             });
 
             if (!response.ok) {
                 const statusText = `HTTP ${response.status}: ${response.statusText}`;
-                console.error("Fetch failed with status:", statusText);
+                console.error("[Sentinel] Fetch failed with status:", statusText);
                 throw new Error(statusText);
             }
 
             const data = await response.json();
+            console.log("[Sentinel] Received", data?.length || 0, "records");
 
             if (data && data.length > 0) {
                 setLots(data);
                 setUsingFallback(false);
             } else {
                 // API returned empty, use fallback
-                console.warn("API returned empty data, using fallback");
+                console.warn("[Sentinel] API returned empty data, switching to cached intelligence");
                 setLots(FALLBACK_LOTS);
                 setUsingFallback(true);
             }
         } catch (err: any) {
-            console.error("Failed to fetch lots:", err);
+            console.log("[Sentinel] Backend unreachable, switching to cached intelligence node.");
+            console.error("[Sentinel] Error details:", err.message || err);
             setFetchError(err.message || "Network error - using cached data");
-            // Use fallback data so UI is never empty
+            // Immediate fallback so UI is never empty
             setLots(FALLBACK_LOTS);
             setUsingFallback(true);
         } finally {

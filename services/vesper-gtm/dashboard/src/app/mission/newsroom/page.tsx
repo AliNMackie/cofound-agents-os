@@ -258,7 +258,7 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
                 free_form_instruction: instructions,
                 branding_instruction: applyBrandVoice && voiceAnalysis?.system_instruction ? voiceAnalysis.system_instruction : null,
                 user_signature: includeSignature
-                    ? '<br><strong>Alastair Mackie</strong><br><em>Partner, IC Origin</em><br><a href="mailto:ali@icorigin.com">ali@icorigin.com</a>'
+                    ? '<br><strong>Alastair Mackie</strong><br><em>Partner, IC Origin</em><br><a href="mailto:alastair@iapetusai.com">alastair@iapetusai.com</a>'
                     : null,
             };
 

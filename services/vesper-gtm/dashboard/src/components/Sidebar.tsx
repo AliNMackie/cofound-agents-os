@@ -133,7 +133,7 @@ export function Sidebar() {
                             className="text-xs"
                         >
                             <p className="font-bold text-brand-text-primary dark:text-white truncate">Alastair Mackie</p>
-                            <p className="text-brand-text-secondary dark:text-neutral-500 truncate">ali@icorigin.com</p>
+                            <p className="text-brand-text-secondary dark:text-neutral-500 truncate">alastair@iapetusai.com</p>
                         </motion.div>
                     )}
                 </div>

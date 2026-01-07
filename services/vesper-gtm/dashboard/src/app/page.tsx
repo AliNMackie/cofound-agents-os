@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { MorningPulse } from '@/components/MorningPulse';
 
 // Define types locally since we are in a separate app context
 type LeadPlatform = 'linkedin' | 'reddit';
@@ -87,31 +88,43 @@ export default function Home() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="mb-12">
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-text-secondary mb-2">Overview</p>
-        <h1 className="text-black mb-4">Pipeline Control</h1>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="card p-6">
-            <p className="text-xs font-bold uppercase tracking-widest mb-1">Pending Review</p>
-            <p className="text-6xl font-bold text-black">{leads.length}</p>
+    <div className="max-w-7xl mx-auto space-y-8">
+      {/* Header */}
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-brand-text-secondary mb-2">Command Centre</p>
+        <h1 className="text-4xl font-bold tracking-tighter text-black dark:text-white">Pipeline Control</h1>
+      </div>
+
+      {/* Two-Column Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Left Column: Morning Pulse (8 cols) */}
+        <div className="lg:col-span-8">
+          <MorningPulse />
+        </div>
+
+        {/* Right Column: Stats & Actions (4 cols) */}
+        <div className="lg:col-span-4 space-y-6">
+          <div className="card p-6 dark:bg-black dark:border-neutral-800">
+            <p className="text-[10px] font-bold uppercase tracking-widest mb-1 text-brand-text-secondary">Pending Review</p>
+            <p className="text-5xl font-bold text-black dark:text-white">{leads.length}</p>
           </div>
-          <div className="card p-6 opacity-50">
-            <p className="text-xs font-bold uppercase tracking-widest mb-1">In Queue</p>
-            <p className="text-6xl font-bold text-black">0</p>
+          <div className="card p-6 opacity-50 dark:bg-black dark:border-neutral-800">
+            <p className="text-[10px] font-bold uppercase tracking-widest mb-1 text-brand-text-secondary">In Queue</p>
+            <p className="text-5xl font-bold text-black dark:text-white">0</p>
           </div>
-          <div className="card p-6 opacity-50">
-            <p className="text-xs font-bold uppercase tracking-widest mb-1">Conversion</p>
-            <p className="text-6xl font-bold text-black">--</p>
+          <div className="card p-6 opacity-50 dark:bg-black dark:border-neutral-800">
+            <p className="text-[10px] font-bold uppercase tracking-widest mb-1 text-brand-text-secondary">Conversion</p>
+            <p className="text-5xl font-bold text-black dark:text-white">--</p>
           </div>
         </div>
       </div>
 
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold">Inbox: High Intent</h2>
+      {/* Lead Inbox Section */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold dark:text-white">Lead Review Queue</h2>
         <div className="flex items-center gap-2">
-          <button className="text-xs font-bold uppercase tracking-widest px-3 py-1 border border-brand-border rounded hover:bg-brand-background transition-colors">Filter</button>
-          <button className="text-xs font-bold uppercase tracking-widest px-3 py-1 border border-brand-border rounded hover:bg-brand-background transition-colors">Export</button>
+          <button className="text-[10px] font-bold uppercase tracking-widest px-3 py-1 border border-brand-border rounded hover:bg-brand-background transition-colors dark:border-neutral-700">Filter</button>
+          <button className="text-[10px] font-bold uppercase tracking-widest px-3 py-1 border border-brand-border rounded hover:bg-brand-background transition-colors dark:border-neutral-700">Export</button>
         </div>
       </div>
 

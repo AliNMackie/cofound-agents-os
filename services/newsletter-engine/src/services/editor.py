@@ -79,26 +79,61 @@ Context (Failed Auctions):
 Specific Instructions:
 {user_notes}
 
-Task: Write a sector breakdown analysis.
+Task: Write a market sweep summary.
 """,
-        "market_sweep": """
-Role: Data Analyst.
-Task: A rapid-fire, comprehensive list of every failed lot.
-Focus: Pure data. No fluff. Just the facts, the numbers, and the result.
-Tone: Concise, Bulleted, High-density.
+        "morning_pulse": """
+Role: Senior M&A Associate at Neish Capital.
+Task: Synthesise urgent capital structure intelligence for the IC ORIGIN morning briefing.
+Focus: The 2026/27 maturity wall. Identify 'Zombie Assets' held by PE firms for >5 years. Monitor BoE 4% floor vs Fed 3.5% targets to predict refinancing velocity.
+Tone: Sharp, Analytical, Conviction-driven. This is the "Morning Pulse" — the intelligence that moves capital.
 
-Constraint: List format. Citation format: [Lot {{number}}, {{auction_house}}]. Include Address and Guide Price.
 Constraint: Strictly use UK English spelling and vocabulary (e.g., 'Realise', 'Programme', 'Centre', 'Labour').
 Constraint: Format all currency as GBP (£) unless specified otherwise.
-Constraint: Maintain a professional London Financial City standard tone (no hyperbole).
+Constraint: Cite sources for every specific deal using format [Source: {{publication}}].
+Constraint: End with a "Conviction Score" (0-100) and a one-line "Action Signal" recommendation.
+Constraint: Include the watermark "IC ORIGIN: Proprietary Capital Structure Intelligence" at the end.
 
-Context (Failed Auctions):
+Signal Data:
 {context_data}
 
 Specific Instructions:
 {user_notes}
 
-Task: Write a market sweep summary.
+Task: Write a high-conviction intelligence briefing for the signal(s) above. Structure:
+1. **Headline Summary** (2-3 sentences)
+2. **Maturity Wall Analysis** (Position within 2026/27 exposure)
+3. **Zombie Asset Indicators** (PE hold duration, EBITDA trajectory)
+4. **Monetary Policy Impact** (BoE/Fed divergence implications)
+5. **Conviction Score & Action Signal**
+""",
+        "weekly_wrap_intelligence": """
+Role: Senior Partner at Neish Capital / IC ORIGIN.
+Task: Produce the Friday Weekly Intelligence Wrap — a Scope Ratings / PwC-calibre analytical document.
+Focus: Aggregate the top 5 'High Conviction' signals from the week. Identify macro themes and emerging patterns.
+Tone: Authoritative, Macro-aware, Publication-ready.
+
+Constraint: Strictly use UK English spelling and vocabulary.
+Constraint: Format all currency as GBP (£) unless specified otherwise.
+Constraint: Include sector breakdown where applicable.
+Constraint: Include the watermark "IC ORIGIN: Proprietary Capital Structure Intelligence" at the end.
+
+Weekly Signal Summary:
+{context_data}
+
+Specific Instructions:
+{user_notes}
+
+Task: Write the Weekly Wrap Intelligence Report. Structure:
+1. **Executive Summary** (Week's key theme in 3 sentences)
+2. **Top 5 Signals** (Ranked by conviction score)
+3. **Sector Heatmap** (Which sectors are stressed/clearing)
+4. **Monetary Policy Watch** (BoE/Fed/ECB implications)
+5. **Maturity Wall Tracker** (Upcoming 2026/27 exposures)
+6. **Outlook & Positioning** (1-2 paragraph forward view)
+
+---
+*IC ORIGIN: Proprietary Capital Structure Intelligence*
+*Weekly Intelligence Wrap — Prepared for Limited Distribution*
 """
     }
 

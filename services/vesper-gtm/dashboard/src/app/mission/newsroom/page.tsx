@@ -126,159 +126,132 @@ export default function NewsroomPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 p-6 font-sans text-gray-900">
-            <header className="mb-8 flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-                        IC Origin Newsroom
-                    </h1>
-                    <p className="mt-1 text-gray-500">
-                        AI-Powered Failed Auction Analysis & Deal Origination
-                    </p>
-                </div>
+        <div className="max-w-7xl mx-auto">
+            <header className="mb-12">
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-lexi-text-secondary mb-2">Editor</p>
+                <h1 className="text-black">Intelligence Newsroom</h1>
+                <p className="mt-2 text-lexi-text-secondary text-sm max-w-xl">
+                    Generate high-conviction deal memos from failed auction data. Select your sources and define your analytical lens.
+                </p>
             </header>
 
-            <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-                {/* LEFT COLUMN: Source Data */}
-                <div className="flex flex-col gap-6">
-                    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-                        <h2 className="mb-4 text-lg font-semibold flex items-center gap-2">
-                            <FilePenLine className="h-5 w-5 text-indigo-600" />
-                            Source: Failed Auctions
-                        </h2>
-                        <div className="space-y-3">
+            <div className="grid grid-cols-1 gap-12 lg:grid-cols-12">
+                {/* LEFT: Sources (4 cols) */}
+                <div className="lg:col-span-4 space-y-6">
+                    <div className="card overflow-hidden">
+                        <div className="p-4 border-b border-lexi-border bg-lexi-background flex items-center justify-between">
+                            <h2 className="text-xs font-bold uppercase tracking-widest">Failed Auctions</h2>
+                            <span className="text-[10px] font-bold text-lexi-text-secondary bg-white px-2 py-0.5 border border-lexi-border rounded">LIVE DATA</span>
+                        </div>
+                        <div className="divide-y divide-lexi-border">
                             {MOCK_FAILED_LOTS.map((lot) => {
                                 const isSelected = selectedLotIds.includes(lot.lot_number);
                                 return (
                                     <div
                                         key={lot.lot_number}
                                         onClick={() => toggleLot(lot.lot_number)}
-                                        className={`cursor-pointer rounded-lg border p-4 transition-all hover:border-indigo-300 ${isSelected
-                                            ? "border-indigo-600 bg-indigo-50/50"
-                                            : "border-gray-200 bg-white"
-                                            }`}
+                                        className={`p-4 cursor-pointer transition-colors group ${isSelected ? 'bg-black text-white' : 'bg-white hover:bg-lexi-background'}`}
                                     >
-                                        <div className="flex items-start justify-between">
-                                            <div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-bold text-gray-900">
-                                                        Lot {lot.lot_number}: {lot.auction_house}
-                                                    </span>
-                                                    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
-                                                        {lot.sector}
-                                                    </span>
-                                                </div>
-                                                <p className="mt-1 text-sm text-gray-600">{lot.address}</p>
-                                                <div className="mt-2 text-xs text-gray-500">
-                                                    Guide: {lot.guide_price} | Bid:{" "}
-                                                    <span className="font-medium text-red-600">
-                                                        {lot.final_bid}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <div className="mt-1">
-                                                {isSelected ? (
-                                                    <CheckSquare className="h-5 w-5 text-indigo-600" />
-                                                ) : (
-                                                    <Square className="h-5 w-5 text-gray-300" />
-                                                )}
-                                            </div>
+                                        <div className="flex justify-between items-start mb-1">
+                                            <span className={`text-[10px] font-bold uppercase tracking-widest ${isSelected ? 'text-gray-400' : 'text-lexi-text-secondary'}`}>Lot {lot.lot_number}</span>
+                                            {isSelected && <CheckSquare className="h-3 w-3" />}
+                                        </div>
+                                        <p className="text-sm font-bold truncate">{lot.address.split(',')[0]}</p>
+                                        <div className={`flex items-center gap-3 mt-2 text-[10px] font-bold tracking-widest uppercase ${isSelected ? 'text-gray-400' : 'text-lexi-text-secondary'}`}>
+                                            <span>Guide: {lot.guide_price}</span>
+                                            <span className="opacity-30">|</span>
+                                            <span className={isSelected ? 'text-red-400' : 'text-red-600'}>Bid: {lot.final_bid}</span>
                                         </div>
                                     </div>
                                 );
                             })}
                         </div>
-                        <div className="mt-4 flex justify-between text-sm text-gray-500">
-                            <span>{selectedLotIds.length} lots selected</span>
-                            <button onClick={() => setSelectedLotIds([])} className="hover:text-indigo-600">Clear All</button>
+                        <div className="p-4 bg-lexi-background border-t border-lexi-border flex justify-between items-center text-[10px] font-bold uppercase tracking-tighter">
+                            <span>{selectedLotIds.length} Lots selected</span>
+                            <button onClick={() => setSelectedLotIds([])} className="hover:underline">Clear</button>
                         </div>
                     </div>
                 </div>
 
-                {/* RIGHT COLUMN: The Writer */}
-                <div className="flex flex-col gap-6">
-                    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-                        <h2 className="mb-4 text-lg font-semibold">Configuration</h2>
-
-                        {/* Template Selector */}
-                        <div className="mb-6">
-                            <label className="mb-2 block text-sm font-medium text-gray-700">
-                                Analysis Persona
-                            </label>
-                            <div className="flex flex-wrap gap-2">
-                                {TEMPLATES.map((tmpl) => (
-                                    <button
-                                        key={tmpl.id}
-                                        onClick={() => setSelectedTemplate(tmpl.id)}
-                                        className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${selectedTemplate === tmpl.id
-                                            ? "bg-indigo-600 text-white"
-                                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                                            }`}
-                                    >
-                                        {tmpl.label}
-                                    </button>
-                                ))}
+                {/* RIGHT: Editor & Output (8 cols) */}
+                <div className="lg:col-span-8 space-y-8">
+                    <div className="card p-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                            <div>
+                                <label className="block text-xs font-bold uppercase tracking-widest mb-3">Analytical Lens</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {TEMPLATES.map((tmpl) => (
+                                        <button
+                                            key={tmpl.id}
+                                            onClick={() => setSelectedTemplate(tmpl.id)}
+                                            className={`text-[10px] font-bold uppercase tracking-widest py-2 rounded border transition-all ${selectedTemplate === tmpl.id
+                                                ? "bg-black text-white border-black"
+                                                : "bg-white text-lexi-text-secondary border-lexi-border hover:border-black"
+                                                }`}
+                                        >
+                                            {tmpl.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold uppercase tracking-widest mb-3">Tone Modifier</label>
+                                <textarea
+                                    value={instructions}
+                                    onChange={(e) => setInstructions(e.target.value)}
+                                    placeholder="e.g. emphasize capital flight risk..."
+                                    className="w-full bg-lexi-background border border-lexi-border rounded-lg p-3 text-sm font-medium focus:ring-1 focus:ring-black focus:outline-none h-[74px] resize-none"
+                                />
                             </div>
                         </div>
 
-                        {/* Custom Instructions */}
-                        <div className="mb-6">
-                            <label className="mb-2 block text-sm font-medium text-gray-700">
-                                Additional Instructions
-                            </label>
-                            <textarea
-                                value={instructions}
-                                onChange={(e) => setInstructions(e.target.value)}
-                                placeholder="e.g. Focus on the Leeds deal specifically..."
-                                className="w-full rounded-lg border border-gray-300 p-3 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                rows={3}
-                            />
-                        </div>
+                        <div className="flex items-center justify-between border-t border-lexi-border pt-8">
+                            <div className="flex items-center gap-4">
+                                <button
+                                    onClick={() => setIncludeSignature(!includeSignature)}
+                                    className={`w-10 h-10 flex items-center justify-center rounded-lg border transition-all ${includeSignature ? 'bg-black text-white border-black' : 'border-lexi-border text-lexi-text-secondary'}`}
+                                >
+                                    <Stamp className="h-5 w-5" />
+                                </button>
+                                <div>
+                                    <p className="text-[10px] font-bold uppercase tracking-widest text-black">Append Authority</p>
+                                    <p className="text-[10px] font-medium text-lexi-text-secondary uppercase">Sign as Partner</p>
+                                </div>
+                            </div>
 
-                        {/* Signature Toggle */}
-                        <div className="mb-6 flex items-center gap-3">
                             <button
-                                onClick={() => setIncludeSignature(!includeSignature)}
-                                className={`flex items-center justify-center rounded-lg border p-2 transition-colors ${includeSignature
-                                    ? "border-indigo-600 bg-indigo-50 text-indigo-600"
-                                    : "border-gray-200 text-gray-400 hover:border-gray-300"
-                                    }`}
+                                onClick={handleGenerate}
+                                disabled={loading || selectedLotIds.length === 0}
+                                className="btn-primary min-w-[200px] flex items-center justify-center gap-3 uppercase text-xs tracking-[0.2em]"
                             >
-                                <Stamp className="h-5 w-5" />
+                                {loading ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        Generating
+                                    </>
+                                ) : (
+                                    "Build Memo"
+                                )}
                             </button>
-                            <div className="text-sm">
-                                <span className="block font-medium text-gray-700">Append Signature</span>
-                                <span className="text-gray-500">Automatically sign as Alastair Mackie</span>
-                            </div>
                         </div>
-
-                        {/* Generate Button */}
-                        <button
-                            onClick={handleGenerate}
-                            disabled={loading || selectedLotIds.length === 0}
-                            className="flex w-full items-center justify-center gap-2 rounded-lg bg-black px-4 py-3 font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-                        >
-                            {loading ? (
-                                <>
-                                    <Loader2 className="h-5 w-5 animate-spin" />
-                                    Analysing...
-                                </>
-                            ) : (
-                                "Generate Draft"
-                            )}
-                        </button>
                     </div>
 
-                    {/* Output Preview */}
+                    {/* Output */}
                     {generatedDraft && (
-                        <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
-                            <div className="prose prose-indigo max-w-none">
+                        <div className="card p-12 bg-white animate-in fade-in duration-700">
+                            <article className="prose prose-sm prose-neutral max-w-none prose-headings:font-bold prose-headings:tracking-tighter prose-p:text-lexi-text-primary prose-strong:text-black">
                                 <ReactMarkdown>{generatedDraft}</ReactMarkdown>
-                            </div>
+                            </article>
                         </div>
                     )}
                 </div>
             </div>
+
+            {/* Global FAB */}
+            <button className="fab uppercase text-[10px] tracking-[0.3em] flex items-center gap-3">
+                <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+                System Active
+            </button>
         </div>
     );
 }

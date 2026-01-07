@@ -44,8 +44,6 @@ export default function Home() {
       const querySnapshot = await getDocs(q);
       const leadsData: Lead[] = [];
       querySnapshot.forEach((doc) => {
-        // We assume the data matches the interface.
-        // In a real app, use a converter or validation.
         leadsData.push({ id: doc.id, ...doc.data() } as Lead);
       });
       setLeads(leadsData);
@@ -69,7 +67,6 @@ export default function Home() {
     try {
       const leadRef = doc(db, 'leads', id);
       await updateDoc(leadRef, { status: newStatus });
-      // Remove from local state
       setLeads((prev) => prev.filter((lead) => lead.id !== id));
     } catch (error) {
       console.error('Error updating status:', error);
@@ -79,65 +76,91 @@ export default function Home() {
 
   if (loading) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center p-24">
-        <div className="text-xl">Loading...</div>
-      </main>
+      <div className="flex min-h-[60vh] flex-col items-center justify-center">
+        <div className="flex items-center gap-3">
+          <div className="w-2 h-2 bg-black rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+          <div className="w-2 h-2 bg-black rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+          <div className="w-2 h-2 bg-black rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+        </div>
+      </div>
     );
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center p-8 bg-gray-900 text-gray-100">
-      <h1 className="text-4xl font-bold mb-8 text-blue-400">Vesper Dashboard (Antigravity)</h1>
+    <div className="max-w-6xl mx-auto">
+      <div className="mb-12">
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-lexi-text-secondary mb-2">Overview</p>
+        <h1 className="text-black mb-4">Pipeline Control</h1>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="card p-6">
+            <p className="text-xs font-bold uppercase tracking-widest mb-1">Pending Review</p>
+            <p className="text-6xl font-bold text-black">{leads.length}</p>
+          </div>
+          <div className="card p-6 opacity-50">
+            <p className="text-xs font-bold uppercase tracking-widest mb-1">In Queue</p>
+            <p className="text-6xl font-bold text-black">0</p>
+          </div>
+          <div className="card p-6 opacity-50">
+            <p className="text-xs font-bold uppercase tracking-widest mb-1">Conversion</p>
+            <p className="text-6xl font-bold text-black">--</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-xl font-bold">Inbox: High Intent</h2>
+        <div className="flex items-center gap-2">
+          <button className="text-xs font-bold uppercase tracking-widest px-3 py-1 border border-lexi-border rounded hover:bg-lexi-background transition-colors">Filter</button>
+          <button className="text-xs font-bold uppercase tracking-widest px-3 py-1 border border-lexi-border rounded hover:bg-lexi-background transition-colors">Export</button>
+        </div>
+      </div>
 
       {leads.length === 0 ? (
-        <div className="text-xl text-gray-400">No leads pending review.</div>
+        <div className="card p-12 text-center">
+          <p className="text-lexi-text-secondary uppercase text-xs font-bold tracking-widest">No leads pending review.</p>
+          <p className="mt-2 text-sm">All entries have been processed or moved to missions.</p>
+        </div>
       ) : (
-        <div className="w-full max-w-5xl space-y-4">
+        <div className="grid grid-cols-1 gap-4">
           {leads.map((lead) => {
-            // Extract the latest draft message
             const draftEvent = [...lead.history]
               .reverse()
               .find((e) => e.type === 'DRAFT_CREATED');
             const draftMessage = draftEvent?.details?.draft || 'No draft available.';
 
             return (
-              <div key={lead.id} className="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h2 className="text-2xl font-semibold text-white">{lead.profileData.name}</h2>
-                    <p className="text-gray-400 text-sm">{lead.profileData.role}</p>
-                    <p className="text-gray-500 text-xs mt-1">{lead.profileData.bio}</p>
-                  </div>
-                  <div className="text-right">
-                    <span className={`inline-block px-2 py-1 rounded text-xs font-bold uppercase mr-2 ${lead.platform === 'linkedin' ? 'bg-blue-600' : 'bg-orange-600'}`}>
+              <div key={lead.id} className="card p-8 flex flex-col md:flex-row gap-8 items-start hover:border-black transition-colors duration-300">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-4">
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest text-white ${lead.platform === 'linkedin' ? 'bg-[#0077b5]' : 'bg-[#ff4500]'}`}>
                       {lead.platform}
                     </span>
-                    <div className="mt-2 text-sm">
-                      <div className="flex items-center justify-end gap-2">
-                        <span>ICP: <span className="text-green-400">{lead.scores.icp_fit}</span></span>
-                        <span>Intent: <span className="text-yellow-400">{lead.scores.intent}</span></span>
-                      </div>
-                    </div>
+                    <span className="text-xs font-bold text-green-600 uppercase tracking-widest">
+                      Match: {lead.scores.icp_fit}%
+                    </span>
+                  </div>
+                  <h3 className="text-2xl font-bold text-black mb-1">{lead.profileData.name}</h3>
+                  <p className="text-sm font-semibold text-lexi-text-primary mb-2 italic">{lead.profileData.role}</p>
+                  <p className="text-sm text-lexi-text-secondary line-clamp-2 mb-6">{lead.profileData.bio}</p>
+
+                  <div className="bg-lexi-background p-6 rounded-lg border border-lexi-border font-mono text-[13px] leading-relaxed relative group">
+                    <div className="absolute top-4 right-4 text-[10px] font-bold uppercase text-lexi-text-secondary opacity-0 group-hover:opacity-100 transition-opacity">AI Draft</div>
+                    {draftMessage}
                   </div>
                 </div>
 
-                <div className="bg-gray-900 p-4 rounded mb-4">
-                  <h3 className="text-xs font-bold text-gray-500 uppercase mb-2">Draft Message</h3>
-                  <p className="text-gray-300 font-mono text-sm whitespace-pre-wrap">{draftMessage}</p>
-                </div>
-
-                <div className="flex gap-4 justify-end">
-                  <button
-                    onClick={() => updateStatus(lead.id, 'archived')}
-                    className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded text-white font-semibold transition-colors"
-                  >
-                    Reject
-                  </button>
+                <div className="flex flex-col gap-3 w-full md:w-32">
                   <button
                     onClick={() => updateStatus(lead.id, 'queued')}
-                    className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded text-white font-semibold transition-colors"
+                    className="btn-primary w-full py-2.5 text-xs uppercase tracking-[0.15em]"
                   >
                     Approve
+                  </button>
+                  <button
+                    onClick={() => updateStatus(lead.id, 'archived')}
+                    className="btn-secondary w-full py-2.5 text-xs uppercase tracking-[0.15em]"
+                  >
+                    Reject
                   </button>
                 </div>
               </div>
@@ -145,6 +168,6 @@ export default function Home() {
           })}
         </div>
       )}
-    </main>
+    </div>
   );
 }

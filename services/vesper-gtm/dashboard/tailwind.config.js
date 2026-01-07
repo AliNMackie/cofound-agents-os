@@ -6,8 +6,28 @@ module.exports = {
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        lexi: {
+          primary: '#000000',
+          secondary: '#FFFFFF',
+          background: '#F5F5F5',
+          surface: '#FFFFFF',
+          text: {
+            primary: '#1a1a1a',
+            secondary: '#6B7280',
+          },
+          border: '#E5E5E5',
+        }
+      },
+      fontFamily: {
+        sans: ['Inter', 'DM Sans', 'sans-serif'],
+      },
+      borderRadius: {
+        'lg': '8px',
+        'xl': '12px',
+      },
+    },
   },
   plugins: [],
-  darkMode: 'class', // Enable dark mode manually if needed, or rely on media
 }

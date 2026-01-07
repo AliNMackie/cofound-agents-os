@@ -57,6 +57,11 @@ export default function Home() {
   };
 
   useEffect(() => {
+    if (!process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
+      console.warn('Firebase API Key missing. Dashboard will remain in offline mode.');
+      setLoading(false);
+      return;
+    }
     fetchLeads();
   }, []);
 
@@ -83,7 +88,7 @@ export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center p-8 bg-gray-900 text-gray-100">
       <h1 className="text-4xl font-bold mb-8 text-blue-400">Vesper Dashboard (Antigravity)</h1>
-      
+
       {leads.length === 0 ? (
         <div className="text-xl text-gray-400">No leads pending review.</div>
       ) : (
@@ -109,8 +114,8 @@ export default function Home() {
                     </span>
                     <div className="mt-2 text-sm">
                       <div className="flex items-center justify-end gap-2">
-                         <span>ICP: <span className="text-green-400">{lead.scores.icp_fit}</span></span>
-                         <span>Intent: <span className="text-yellow-400">{lead.scores.intent}</span></span>
+                        <span>ICP: <span className="text-green-400">{lead.scores.icp_fit}</span></span>
+                        <span>Intent: <span className="text-yellow-400">{lead.scores.intent}</span></span>
                       </div>
                     </div>
                   </div>

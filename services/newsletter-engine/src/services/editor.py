@@ -169,7 +169,7 @@ Task: Write the Weekly Wrap Intelligence Report. Structure:
             
         return formatted_text
 
-    async def generate_draft(self, raw_data: List[Dict[str, Any]], user_notes: Optional[str] = "", template_id: str = "weekly_wrap", user_signature: Optional[str] = None) -> str:
+    async def generate_draft(self, raw_data: List[Dict[str, Any]], user_notes: Optional[str] = "", template_id: str = "weekly_wrap", user_signature: Optional[str] = None, branding_instruction: Optional[str] = None) -> str:
         
         # Select Template
         if template_id not in self.PROMPT_TEMPLATES:
@@ -178,18 +178,40 @@ Task: Write the Weekly Wrap Intelligence Report. Structure:
         # Pre-process Data
         context_string = self._format_auction_data(raw_data)
         
-        # Construct Prompt
-        prompt = self.PROMPT_TEMPLATES[template_id].format(
+        # Construct Core Template
+        base_prompt = self.PROMPT_TEMPLATES[template_id].format(
             context_data=context_string, 
             user_notes=user_notes or "No specific instructions."
         )
+
+        # Build The Final System Prompt with strict overrides
+        branding_block = ""
+        if branding_instruction:
+            branding_block = f"""
+            ### BRAND VOICE INSTRUCTIONS (MUST FOLLOW)
+            You are ghostwriting for a specific author. Adhere strictly to their voice profile:
+            {branding_instruction}
+            """
+
+        final_prompt = f"""
+        {base_prompt}
+
+        {branding_block}
+
+        ### CRITICAL OVERRIDES (NON-NEGOTIABLE)
+        Regardless of the Brand Voice above, you MUST strictly adhere to these rules:
+        1. **SPELLING:** Use UK English ONLY (e.g., 'Realise', 'Programme', 'Centre', 'Labour', 'Defence', 'Organise').
+        2. **CURRENCY:** All monetary values MUST be in GBP (£). Never use USD ($) or EUR (€) unless explicitly quoting a foreign source. 
+           - Format: £1.5m, £500k.
+        3. **NO AMERICANISMS:** Avoid terms like 'Real Estate' (use 'Property'), 'Restroom' (use 'Toilet/Loo'), 'Trash' (use 'Rubbish').
+        """
 
         try:
             generated_content = ""
             if not hasattr(self, 'model'):
                  generated_content = f"Error: Google API Key not configured. Mock draft for {template_id}.\n\nContext Preview:\n{context_string[:200]}..."
             else:
-                response = await self.model.generate_content_async(prompt)
+                response = await self.model.generate_content_async(final_prompt)
                 generated_content = response.text
             
             # Append Signature if provided

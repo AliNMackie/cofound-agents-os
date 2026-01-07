@@ -14,3 +14,6 @@ class DraftRequest(BaseModel):
     
     # The user's saved HTML signature
     user_signature: Optional[str] = None
+
+    # The branding voice instruction block (optional)
+    branding_instruction: Optional[str] = None

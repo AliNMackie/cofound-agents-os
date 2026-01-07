@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
-import { Loader2, FilePenLine, CheckSquare, Square, Stamp, RefreshCw, AlertCircle, BookOpen, Sparkles } from "lucide-react";
+import { Loader2, FilePenLine, CheckSquare, Square, Stamp, RefreshCw, AlertCircle, BookOpen, Sparkles, Fingerprint, Upload, Save, CheckCircle2 } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
 import { formatPriceCompact } from "@/lib/utils/formatPrice";
 import { Badge } from "@/components/ui/badge";
@@ -87,7 +87,13 @@ export default function NewsroomPage() {
     const [usingFallback, setUsingFallback] = useState(false);
     const [pendingReviewData, setPendingReviewData] = useState<any | null>(null);
     const [uploading, setUploading] = useState(false);
-    const [activeTab, setActiveTab] = useState<"newsletter" | "prompts">("newsletter");
+    const [activeTab, setActiveTab] = useState<"newsletter" | "prompts" | "brand_voice">("newsletter");
+
+    // Brand Voice State
+    const [voiceAnalysis, setVoiceAnalysis] = useState<any | null>(null);
+    const [analyzingVoice, setAnalyzingVoice] = useState(false);
+    const [applyBrandVoice, setApplyBrandVoice] = useState(true);
+    const [voiceSaved, setVoiceSaved] = useState(false);
 
     // Handler for selecting a prompt from the library
     const handleSelectPrompt = (prompt: string) => {
@@ -201,7 +207,25 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
 
     useEffect(() => {
         fetchLots();
+        // Fetch saved voice profile on load
+        fetchSavedVoice();
     }, []);
+
+    const fetchSavedVoice = async () => {
+        try {
+            const apiUrl = process.env.NEXT_PUBLIC_NEWSLETTER_API_URL || "http://localhost:8089";
+            // Hardcoded user_id for demo/prototype; in prod use auth context
+            const response = await fetch(`${apiUrl}/brand-voice/user_123`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data && data.analysis_summary) {
+                    setVoiceAnalysis(data);
+                }
+            }
+        } catch (e) {
+            console.error("Failed to fetch brand voice", e);
+        }
+    };
 
     // Toggle Lot Selection
     const toggleLot = (lotId: string) => {
@@ -232,6 +256,7 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
                 raw_data: selectedData,
                 template_id: selectedTemplate,
                 free_form_instruction: instructions,
+                branding_instruction: applyBrandVoice && voiceAnalysis?.system_instruction ? voiceAnalysis.system_instruction : null,
                 user_signature: includeSignature
                     ? '<br><strong>Alastair Mackie</strong><br><em>Partner, IC Origin</em><br><a href="mailto:ali@icorigin.com">ali@icorigin.com</a>'
                     : null,
@@ -284,6 +309,54 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
             alert("Upload Failed: " + error.message);
         } finally {
             setUploading(false);
+        }
+    };
+
+    // Brand Voice Upload Handler
+    const handleVoiceUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        setAnalyzingVoice(true);
+        setVoiceAnalysis(null);
+        setVoiceSaved(false);
+
+        try {
+            const formData = new FormData();
+            formData.append("file", file);
+
+            const apiUrl = process.env.NEXT_PUBLIC_NEWSLETTER_API_URL || "http://localhost:8089";
+            const response = await fetch(`${apiUrl}/brand-voice/analyze`, {
+                method: "POST",
+                body: formData,
+            });
+
+            if (!response.ok) throw new Error("Analysis failed");
+            const data = await response.json();
+            setVoiceAnalysis(data);
+        } catch (error: any) {
+            alert("Analysis Failed: " + error.message);
+        } finally {
+            setAnalyzingVoice(false);
+        }
+    };
+
+    const saveVoiceProfile = async () => {
+        if (!voiceAnalysis) return;
+        try {
+            const apiUrl = process.env.NEXT_PUBLIC_NEWSLETTER_API_URL || "http://localhost:8089";
+            await fetch(`${apiUrl}/brand-voice/save`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    user_id: "user_123", // Demo ID
+                    voice_data: voiceAnalysis
+                })
+            });
+            setVoiceSaved(true);
+            setTimeout(() => setVoiceSaved(false), 3000);
+        } catch (e) {
+            alert("Failed to save profile");
         }
     };
 
@@ -407,6 +480,19 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
                     Prompt Library
                 </button>
 
+                <button
+                    onClick={() => setActiveTab("brand_voice")}
+                    className={cn(
+                        "flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-lg transition-all",
+                        activeTab === "brand_voice"
+                            ? "bg-black text-white dark:bg-white dark:text-black"
+                            : "text-brand-text-secondary hover:bg-brand-background dark:hover:bg-neutral-900"
+                    )}
+                >
+                    <Fingerprint size={14} />
+                    Brand Identity
+                </button>
+
                 {/* Draft from Notebook Button - visible when API offline */}
                 {(fetchError || usingFallback) && (
                     <Button
@@ -425,6 +511,88 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
             {/* Prompt Library Tab */}
             {activeTab === "prompts" && (
                 <PromptLibrary onSelectPrompt={handleSelectPrompt} />
+            )}
+
+            {/* Brand Voice Tab */}
+            {activeTab === "brand_voice" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in duration-500">
+                    <Card className="p-8 h-fit">
+                        <CardHeader className="px-0 pt-0">
+                            <CardTitle className="uppercase tracking-widest text-sm">Upload Sample Data</CardTitle>
+                            <CardDescription>Upload a past newsletter, blog post, or brand guidelines PDF to extract your unique Voice DNA.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="px-0">
+                            <div className="border-2 border-dashed border-brand-border rounded-lg p-12 text-center hover:bg-brand-background transition-colors dark:border-neutral-800 dark:hover:bg-neutral-900">
+                                <input
+                                    type="file"
+                                    id="voice-upload"
+                                    className="hidden"
+                                    accept=".pdf,.txt,.md"
+                                    onChange={handleVoiceUpload}
+                                />
+                                <label htmlFor="voice-upload" className="cursor-pointer flex flex-col items-center gap-4">
+                                    <div className="w-16 h-16 bg-black text-white rounded-full flex items-center justify-center dark:bg-white dark:text-black">
+                                        {analyzingVoice ? <Loader2 className="animate-spin" /> : <Upload />}
+                                    </div>
+                                    <span className="text-xs font-bold uppercase tracking-widest text-brand-text-secondary">
+                                        {analyzingVoice ? "Analyzing Voice DNA..." : "Click to Upload PDF / Text"}
+                                    </span>
+                                </label>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className={cn("p-8 transition-opacity duration-500", !voiceAnalysis && "opacity-50 pointer-events-none")}>
+                        <CardHeader className="px-0 pt-0 flex flex-row items-start justify-between">
+                            <div>
+                                <CardTitle className="uppercase tracking-widest text-sm flex items-center gap-2">
+                                    <Fingerprint size={16} />
+                                    Detected Voice Profile
+                                </CardTitle>
+                                <CardDescription>Gemini 3 Pro Analysis</CardDescription>
+                            </div>
+                            {voiceAnalysis && (
+                                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-900">
+                                    Analysis Complete
+                                </Badge>
+                            )}
+                        </CardHeader>
+                        <CardContent className="px-0 space-y-6">
+                            <div>
+                                <label className="text-[10px] font-bold uppercase tracking-widest text-brand-text-secondary mb-2 block">Tonal Summary</label>
+                                <div className="bg-brand-background p-4 rounded-lg text-sm italic dark:bg-neutral-900">
+                                    "{voiceAnalysis?.analysis_summary || "Upload a sample to see analysis..."}"
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-[10px] font-bold uppercase tracking-widest text-brand-text-secondary mb-2 block">System Instruction Block</label>
+                                <div className="bg-neutral-100 p-4 rounded-lg text-xs font-mono h-40 overflow-y-auto dark:bg-neutral-950 text-neutral-600 dark:text-neutral-400">
+                                    {voiceAnalysis?.system_instruction || "No instruction generated yet..."}
+                                </div>
+                            </div>
+
+                            <div className="flex items-center justify-between pt-4 border-t border-brand-border dark:border-neutral-800">
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => setApplyBrandVoice(!applyBrandVoice)}
+                                        className={cn("w-10 h-6 rounded-full relative transition-colors", applyBrandVoice ? "bg-black dark:bg-white" : "bg-gray-200 dark:bg-neutral-800")}
+                                    >
+                                        <div className={cn("absolute top-1 left-1 w-4 h-4 bg-white dark:bg-black rounded-full transition-all", applyBrandVoice ? "translate-x-4" : "")} />
+                                    </button>
+                                    <span className="text-[10px] font-bold uppercase tracking-widest">Apply to Future Drafts</span>
+                                </div>
+                                <Button
+                                    onClick={saveVoiceProfile}
+                                    disabled={!voiceAnalysis}
+                                    className={cn("text-xs uppercase tracking-widest", voiceSaved && "bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700")}
+                                >
+                                    {voiceSaved ? <><CheckCircle2 className="mr-2 h-4 w-4" /> Saved</> : <><Save className="mr-2 h-4 w-4" /> Save Profile</>}
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
             )}
 
             {/* Newsletter Tab */}

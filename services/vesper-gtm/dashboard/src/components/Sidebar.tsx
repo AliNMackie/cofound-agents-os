@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Image from "next/image";
 import {
     LayoutDashboard,
     Newspaper,
@@ -53,14 +54,27 @@ export function Sidebar() {
             <div className="flex items-center justify-between p-6 border-b border-brand-border dark:border-neutral-800">
                 <AnimatePresence mode="wait">
                     {!isCollapsed && (
-                        <motion.span
+                        <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="text-xl font-bold tracking-tighter uppercase dark:text-white"
+                            className="relative w-40 h-10"
                         >
-                            IC ORIGIN
-                        </motion.span>
+                            <Image
+                                src="/ic-origin-logo-dark.png"
+                                alt="IC Origin Intelligence Terminal"
+                                fill
+                                className="object-contain object-left dark:hidden"
+                                priority
+                            />
+                            <Image
+                                src="/ic-origin-logo-light.png"
+                                alt="IC Origin Intelligence Terminal"
+                                fill
+                                className="object-contain object-left hidden dark:block"
+                                priority
+                            />
+                        </motion.div>
                     )}
                 </AnimatePresence>
                 {isCollapsed && <Gem className="h-6 w-6 text-black dark:text-white mx-auto" />}

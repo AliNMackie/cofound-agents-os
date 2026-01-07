@@ -12,10 +12,7 @@ load_dotenv()
 app = FastAPI(title="Newsletter Engine API")
 editor = NewsletterEditor()
 
-class DraftRequest(BaseModel):
-    raw_data: str
-    user_notes: Optional[str] = ""
-    template_type: Optional[str] = "weekly_memo"
+from src.schemas import DraftRequest
 
 class DraftResponse(BaseModel):
     draft: str
@@ -28,17 +25,18 @@ async def health_check():
 @app.post("/draft", response_model=DraftResponse)
 async def create_draft(request: DraftRequest):
     """
-    Generate a newsletter draft using AI based on the provided data and template.
+    Generate a newsletter draft using AI based on the provided failed auction data and template.
     """
     draft = await editor.generate_draft(
-        context_data=request.raw_data,
-        user_notes=request.user_notes,
-        template_type=request.template_type
+        raw_data=request.raw_data,
+        user_notes=request.free_form_instruction,
+        template_id=request.template_id,
+        user_signature=request.user_signature
     )
     
     return DraftResponse(
         draft=draft,
-        template_used=request.template_type
+        template_used=request.template_id
     )
 
 if __name__ == "__main__":

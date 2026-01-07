@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/utils/formatDate";
+import { SourceAttribution } from "@/components/SourceAttribution";
 
 // Signal Categories
 type SignalCategory = "REFINANCING" | "FOMC_PIVOT" | "DISTRESSED_ASSET";
@@ -258,7 +259,10 @@ export function MorningPulse({ className }: MorningPulseProps) {
                                                         <div className="grid grid-cols-2 gap-4 mb-4">
                                                             <div>
                                                                 <p className="text-[10px] uppercase tracking-widest text-brand-text-secondary mb-1">Source</p>
-                                                                <p className="text-xs font-medium dark:text-white">{signal.source || "Sentinel Live Feed"}</p>
+                                                                <SourceAttribution
+                                                                    sourceName={signal.source || "Sentinel Live Feed"}
+                                                                    category="ADVISOR"
+                                                                />
                                                             </div>
                                                             <div>
                                                                 <p className="text-[10px] uppercase tracking-widest text-brand-text-secondary mb-1">Conviction Score</p>

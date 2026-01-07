@@ -12,13 +12,15 @@ import {
     ChevronRight,
     Settings,
     HelpCircle,
-    Gem
+    Gem,
+    Network
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const sidebarLinks = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
     { href: "/mission/newsroom", label: "Newsroom", icon: Newspaper },
+    { href: "/sources", label: "Sources", icon: Network },
     { href: "/missions", label: "Market Watch", icon: Search },
 ];
 

@@ -134,7 +134,7 @@ export function MorningPulse({ className }: MorningPulseProps) {
             };
 
             const apiUrl = process.env.NEXT_PUBLIC_NEWSLETTER_API_URL || "http://localhost:8089";
-            const response = await fetch(`${apiUrl}/generate`, {
+            const response = await fetch(`${apiUrl}/draft`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)

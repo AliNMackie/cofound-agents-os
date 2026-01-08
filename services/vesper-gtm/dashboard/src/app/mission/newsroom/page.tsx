@@ -107,12 +107,11 @@ export default function NewsroomPage() {
         setGeneratedDraft("");
 
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://sentinel-growth-1005792944830.europe-west2.run.app";
-            const response = await fetch(`${apiUrl}/generate`, {
+            const apiUrl = process.env.NEXT_PUBLIC_NEWSLETTER_API_URL || "https://newsletter-engine-1005792944830.europe-west2.run.app";
+            const response = await fetch(`${apiUrl}/draft`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    type: selectedTemplate,
                     raw_data: lots.length > 0 ? lots.slice(0, 5) : FALLBACK_LOTS.slice(0, 5),
                     template_id: selectedTemplate,
                     free_form_instruction: `${instructions}\n\n--- MACRO CONTEXT (Notebook) ---\n${NOTEBOOK_CONTEXT}`,

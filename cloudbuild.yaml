@@ -55,7 +55,23 @@ steps:
   # 8. Vesper GTM Dashboard
   - name: 'gcr.io/cloud-builders/docker'
     id: 'Build Vesper GTM'
-    args: ['build', '-t', 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/vesper-gtm:$COMMIT_SHA', '.']
+    args: 
+      - 'build'
+      - '-t'
+      - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/vesper-gtm:$COMMIT_SHA'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyCoTXMQfMjhfGyhbG296Jc08cv8AwoI-00'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=newsletter-engine-9988.firebaseapp.com'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_FIREBASE_PROJECT_ID=newsletter-engine-9988'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=newsletter-engine-9988.firebasestorage.app'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=99727052460'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_FIREBASE_APP_ID=1:99727052460:web:2bde35c737279a3a4d1909'
+      - '.'
     dir: 'services/vesper-gtm/dashboard'
     waitFor: ['-']
 

@@ -14,7 +14,7 @@ class StyleAnalyzer:
         else:
             genai.configure(api_key=api_key)
             # USAGE: "gemini-3-pro-preview" for advanced vibe-coding
-            self.model = genai.GenerativeModel('gemini-1.5-pro-preview-0409') # Fallback to 1.5-pro if 3 not available in lib yet, but aiming for 3 capabilities via system prompt structure
+            self.model = genai.GenerativeModel('gemini-3-flash') # Standardising on 3-flash
             # Ideally: self.model = genai.GenerativeModel('gemini-3-pro-preview')
         
         # Initialize Firestore

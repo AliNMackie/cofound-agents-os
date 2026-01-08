@@ -38,3 +38,7 @@ async def trigger_market_sweep():
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
+
+@app.get("/version")
+def version_check():
+    return {"version": "1.0.1-fix-secrets"}

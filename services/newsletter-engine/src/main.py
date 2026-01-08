@@ -38,6 +38,10 @@ class DraftResponse(BaseModel):
 async def health_check():
     return {"status": "ok"}
 
+@app.get("/version")
+async def version_check():
+    return {"version": "1.0.1-fix-secrets"}
+
 @app.post("/draft", response_model=DraftResponse)
 async def create_draft(request: DraftRequest):
     """

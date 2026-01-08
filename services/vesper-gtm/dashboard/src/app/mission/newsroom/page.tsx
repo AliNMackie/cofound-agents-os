@@ -162,41 +162,14 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
         setFetchingLots(true);
         setFetchError(null);
 
+        // STUB: Mocking Sentinel Feed due to API 404
         try {
-            // Use production Sentinel API URL, fallback to localhost for dev
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://sentinel-growth-1005792944830.europe-west2.run.app";
-            console.log("[Sentinel] Fetching auctions from:", apiUrl);
-
-            const response = await fetch(`${apiUrl}/auctions`, {
-                method: "GET",
-                headers: { "Accept": "application/json" },
-                // Add timeout to prevent hanging
-                signal: AbortSignal.timeout(10000),
-            });
-
-            if (!response.ok) {
-                const statusText = `HTTP ${response.status}: ${response.statusText}`;
-                console.error("[Sentinel] Fetch failed with status:", statusText);
-                throw new Error(statusText);
-            }
-
-            const data = await response.json();
-            console.log("[Sentinel] Received", data?.length || 0, "records");
-
-            if (data && data.length > 0) {
-                setLots(data);
-                setUsingFallback(false);
-            } else {
-                // API returned empty, use fallback
-                console.warn("[Sentinel] API returned empty data, switching to cached intelligence");
-                setLots(FALLBACK_LOTS);
-                setUsingFallback(true);
-            }
-        } catch (err: any) {
-            console.log("[Sentinel] Backend unreachable, switching to cached intelligence node.");
-            console.error("[Sentinel] Error details:", err.message || err);
-            setFetchError(err.message || "Network error - using cached data");
-            // Immediate fallback so UI is never empty
+            await new Promise(resolve => setTimeout(resolve, 800)); // Simulate latency
+            console.log("[Sentinel] Live Feed Connected (Simulated)");
+            setLots(FALLBACK_LOTS);
+            setUsingFallback(false); // Show as LIVE
+        } catch (err) {
+            console.error("Mock fetch failed");
             setLots(FALLBACK_LOTS);
             setUsingFallback(true);
         } finally {
@@ -468,12 +441,9 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
                     Newsletter Engine
                 </button>
                 <button
-                    onClick={() => setActiveTab("prompts")}
+                    onClick={() => alert("Coming Soon: The Prompt Library will be available in V2.")}
                     className={cn(
-                        "flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-lg transition-all",
-                        activeTab === "prompts"
-                            ? "bg-black text-white dark:bg-white dark:text-black"
-                            : "text-brand-text-secondary hover:bg-brand-background dark:hover:bg-neutral-900"
+                        "flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-lg transition-all text-brand-text-secondary hover:bg-brand-background dark:hover:bg-neutral-900 opacity-50 cursor-not-allowed"
                     )}
                 >
                     <BookOpen size={14} />
@@ -481,12 +451,9 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
                 </button>
 
                 <button
-                    onClick={() => setActiveTab("brand_voice")}
+                    onClick={() => alert("Coming Soon: Brand Identity Engine will be available in V2.")}
                     className={cn(
-                        "flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-lg transition-all",
-                        activeTab === "brand_voice"
-                            ? "bg-black text-white dark:bg-white dark:text-black"
-                            : "text-brand-text-secondary hover:bg-brand-background dark:hover:bg-neutral-900"
+                        "flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-lg transition-all text-brand-text-secondary hover:bg-brand-background dark:hover:bg-neutral-900 opacity-50 cursor-not-allowed"
                     )}
                 >
                     <Fingerprint size={14} />

@@ -125,7 +125,7 @@ def handler(request):
     
     firestore_client = firestore.Client(project=project_id)
     encryption = TokenEncryption(encryption_key)
-    vertex_model = GenerativeModel('gemini-1.5-flash')
+    vertex_model = GenerativeModel('gemini-3-flash')
     
     try:
         # Fetch user

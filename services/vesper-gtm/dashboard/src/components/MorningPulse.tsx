@@ -112,6 +112,7 @@ export function MorningPulse({ className }: MorningPulseProps) {
     const [loading, setLoading] = useState(true);
     const [generating, setGenerating] = useState<string | null>(null);
     const [expandedId, setExpandedId] = useState<string | null>(null);
+    const [selectedSector, setSelectedSector] = useState<string | null>(null);
 
     useEffect(() => {
         // Simulate API fetch
@@ -130,7 +131,8 @@ export function MorningPulse({ className }: MorningPulseProps) {
                 type: "morning_pulse",
                 raw_data: [signal],
                 template_id: "morning_pulse",
-                free_form_instruction: `Focus on: ${signal.headline}. Analyse through Neish Capital lens with emphasis on 2026/27 maturity wall implications.`
+                free_form_instruction: `Focus on: ${signal.headline}. Analyse through Neish Capital lens with emphasis on 2026/27 maturity wall implications.`,
+                user_sector: selectedSector
             };
 
             const apiUrl = process.env.NEXT_PUBLIC_NEWSLETTER_API_URL || "http://localhost:8089";
@@ -277,6 +279,27 @@ export function MorningPulse({ className }: MorningPulseProps) {
                                                             <p className="text-xs text-brand-text-primary dark:text-neutral-300 leading-relaxed">
                                                                 {signal.analysis}
                                                             </p>
+                                                        </div>
+
+                                                        <div className="mb-4">
+                                                            <label htmlFor="sector-select" className="text-[10px] uppercase tracking-widest text-brand-text-secondary mb-1 block">
+                                                                Extraction Sector
+                                                            </label>
+                                                            <div className="relative">
+                                                                <select
+                                                                    id="sector-select"
+                                                                    className="w-full bg-brand-background dark:bg-neutral-800 border border-brand-border dark:border-neutral-700 text-xs text-brand-text-primary dark:text-neutral-300 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-accent appearance-none cursor-pointer"
+                                                                    value={selectedSector || ""}
+                                                                    onChange={(e) => setSelectedSector(e.target.value || null)}
+                                                                >
+                                                                    <option value="">Real Estate (Default)</option>
+                                                                    <option value="marine_logistics">Marine / Logistics</option>
+                                                                    <option value="tech_ma">Tech / M&A</option>
+                                                                </select>
+                                                                <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-brand-text-secondary">
+                                                                    <ChevronRight className="h-3 w-3 rotate-90" />
+                                                                </div>
+                                                            </div>
                                                         </div>
 
                                                         <Button

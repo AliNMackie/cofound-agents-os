@@ -21,7 +21,7 @@ async def extract_auction_data(request: AuctionIngestRequest):
 
     try:
         # Use the reusable service (now with enrichment)
-        auction_data = await auction_ingestor.ingest_auction_text(request.source_text, request.source_origin)
+        auction_data = await auction_ingestor.ingest_auction_text(request.source_text, request.source_origin, request.user_sector)
         
         log.info("Extraction successful", 
                 company=auction_data.company_name,

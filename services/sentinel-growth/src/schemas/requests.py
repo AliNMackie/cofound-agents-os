@@ -12,3 +12,4 @@ class ProposalRequest(BaseModel):
 class AuctionIngestRequest(BaseModel):
     source_text: str
     source_origin: str = "market_intel"
+    user_sector: Optional[str] = None

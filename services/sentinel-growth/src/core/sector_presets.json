@@ -1,0 +1,88 @@
+{
+    "sectors": {
+        "real_estate": {
+            "id": "sec_re_001",
+            "label": "Real Estate (Josh)",
+            "standard_sources": [
+                {
+                    "id": "src_re_001",
+                    "name": "The Gazette (Property & Insolvency)",
+                    "url": "https://www.thegazette.co.uk/insolvency/notice?categorycode=2450",
+                    "type": "watch",
+                    "frequency": "daily"
+                },
+                {
+                    "id": "src_re_002",
+                    "name": "Allsop Commercial Auctions",
+                    "url": "https://www.allsop.co.uk/commercial-auctions",
+                    "type": "snapshot",
+                    "frequency": "weekly"
+                }
+            ],
+            "extraction_schema": [
+                "property_address",
+                "guide_price",
+                "yield_percent",
+                "tenure_type",
+                "lease_expiry",
+                "insolvency_practitioner"
+            ]
+        },
+        "tech_ma": {
+            "id": "sec_tech_001",
+            "label": "Tech / M&A",
+            "standard_sources": [
+                {
+                    "id": "src_tech_001",
+                    "name": "TechCrunch (Deals)",
+                    "url": "https://techcrunch.com/category/startups/",
+                    "type": "watch",
+                    "frequency": "hourly"
+                },
+                {
+                    "id": "src_tech_002",
+                    "name": "Sifted (European VC)",
+                    "url": "https://sifted.eu/sector/fintech",
+                    "type": "snapshot",
+                    "frequency": "daily"
+                }
+            ],
+            "extraction_schema": [
+                "company_name",
+                "funding_round",
+                "valuation_post_money",
+                "lead_investor",
+                "burn_rate_estimated",
+                "runway_months"
+            ]
+        },
+        "marine_logistics": {
+            "id": "sec_mar_001",
+            "label": "Marine / Logistics",
+            "standard_sources": [
+                {
+                    "id": "src_mar_001",
+                    "name": "Lloyd's List (Vessels)",
+                    "url": "https://lloydslist.maritimeintelligence.informa.com/",
+                    "type": "watch",
+                    "frequency": "daily"
+                },
+                {
+                    "id": "src_mar_002",
+                    "name": "Baltic Exchange (Indices)",
+                    "url": "https://www.balticexchange.com/",
+                    "type": "snapshot",
+                    "frequency": "daily"
+                }
+            ],
+            "extraction_schema": [
+                "vessel_name",
+                "imo_number",
+                "charter_rate_daily",
+                "route_origin",
+                "route_destination",
+                "cargo_type_teu"
+            ]
+        }
+    }
+}

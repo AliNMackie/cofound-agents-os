@@ -135,7 +135,7 @@ export function MorningPulse({ className }: MorningPulseProps) {
                 user_sector: selectedSector
             };
 
-            const apiUrl = process.env.NEXT_PUBLIC_NEWSLETTER_API_URL || "http://localhost:8089";
+            const apiUrl = process.env.NEXT_PUBLIC_NEWSLETTER_API_URL || "https://newsletter-engine-193875309190.europe-west2.run.app";
             const response = await fetch(`${apiUrl}/draft`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },

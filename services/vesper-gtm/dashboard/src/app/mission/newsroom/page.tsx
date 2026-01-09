@@ -441,9 +441,12 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
                     Newsletter Engine
                 </button>
                 <button
-                    onClick={() => alert("Coming Soon: The Prompt Library will be available in V2.")}
+                    onClick={() => setActiveTab("prompts")}
                     className={cn(
-                        "flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-lg transition-all text-brand-text-secondary hover:bg-brand-background dark:hover:bg-neutral-900 opacity-50 cursor-not-allowed"
+                        "flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-lg transition-all",
+                        activeTab === "prompts"
+                            ? "bg-black text-white dark:bg-white dark:text-black"
+                            : "text-brand-text-secondary hover:bg-brand-background dark:hover:bg-neutral-900"
                     )}
                 >
                     <BookOpen size={14} />
@@ -451,9 +454,12 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
                 </button>
 
                 <button
-                    onClick={() => alert("Coming Soon: Brand Identity Engine will be available in V2.")}
+                    onClick={() => setActiveTab("brand_voice")}
                     className={cn(
-                        "flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-lg transition-all text-brand-text-secondary hover:bg-brand-background dark:hover:bg-neutral-900 opacity-50 cursor-not-allowed"
+                        "flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-lg transition-all",
+                        activeTab === "brand_voice"
+                            ? "bg-black text-white dark:bg-white dark:text-black"
+                            : "text-brand-text-secondary hover:bg-brand-background dark:hover:bg-neutral-900"
                     )}
                 >
                     <Fingerprint size={14} />

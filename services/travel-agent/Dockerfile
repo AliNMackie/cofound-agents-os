@@ -18,4 +18,4 @@ ENV PYTHONUNBUFFERED=1
 EXPOSE 8080
 
 # Run the application using module syntax
-CMD ["python", "-m", "src.main"]
+CMD exec uvicorn src.main:app --host 0.0.0.0 --port ${PORT}

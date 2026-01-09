@@ -1,6 +1,14 @@
 FROM python:3.11-slim
+
 WORKDIR /app
+
 COPY requirements.txt .
-RUN pip install -r requirements.txt --retries 5 --timeout 60
-COPY main.py .
-CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 main:app
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+ENV PORT=8080
+
+EXPOSE 8080
+
+CMD exec uvicorn main:app --host 0.0.0.0 --port ${PORT}

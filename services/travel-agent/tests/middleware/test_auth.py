@@ -1,45 +1,46 @@
 import pytest
 from unittest.mock import patch, MagicMock
-from flask import Flask, g, jsonify
-from src.middleware.auth import require_auth
+from fastapi import FastAPI, Depends, Request
+from fastapi.testclient import TestClient
+from src.middleware.auth import get_current_user, security
 from firebase_admin import auth
 
 @pytest.fixture
 def app():
-    """Create a Flask app for testing."""
-    app = Flask(__name__)
-    app.config['TESTING'] = True
+    """Create a FastAPI app for testing."""
+    app = FastAPI()
 
-    @app.route('/test')
-    @require_auth
-    def test_route():
-        return jsonify({'user_id': g.user_id})
+    @app.get("/test")
+    def test_route(user_id: str = Depends(get_current_user)):
+        return {"user_id": user_id}
 
     return app
 
-@patch('firebase_admin.auth.verify_id_token')
-def test_require_auth_success(mock_verify_token, app):
-    """Tests that the decorator grants access with a valid token."""
+@pytest.fixture
+def client(app):
+    return TestClient(app)
+
+@patch('src.middleware.auth.auth.verify_id_token')
+def test_require_auth_success(mock_verify_token, client):
+    """Tests that the dependency grants access with a valid token."""
     mock_verify_token.return_value = {'uid': 'test_user'}
-    client = app.test_client()
     
     response = client.get('/test', headers={'Authorization': 'Bearer valid_token'})
     
     assert response.status_code == 200
-    assert response.get_json() == {'user_id': 'test_user'}
+    assert response.json() == {'user_id': 'test_user'}
 
-def test_require_auth_no_header(app):
-    """Tests that the decorator denies access without an Authorization header."""
-    client = app.test_client()
+def test_require_auth_no_header(client):
+    """Tests that the dependency denies access without an Authorization header."""
     response = client.get('/test')
-    assert response.status_code == 401
+    assert response.status_code == 403 # HTTPBearer returns 403 if missing scheme, or 401 if missing
 
-@patch('firebase_admin.auth.verify_id_token')
-def test_require_auth_invalid_token(mock_verify_token, app):
-    """Tests that the decorator denies access with an invalid token."""
+@patch('src.middleware.auth.auth.verify_id_token')
+def test_require_auth_invalid_token(mock_verify_token, client):
+    """Tests that the dependency denies access with an invalid token."""
     mock_verify_token.side_effect = auth.InvalidIdTokenError('Invalid token')
-    client = app.test_client()
     
     response = client.get('/test', headers={'Authorization': 'Bearer invalid_token'})
     
     assert response.status_code == 401
+

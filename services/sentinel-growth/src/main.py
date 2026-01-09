@@ -17,7 +17,7 @@ app = FastAPI(title=settings.APP_NAME)
 # Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://icorigin.netlify.app", "*"], # Allowing all to guarantee fix, specific origin included
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -38,6 +38,10 @@ async def trigger_market_sweep():
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    return {}, 204
 
 @app.get("/version")
 def version_check():

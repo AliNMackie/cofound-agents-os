@@ -173,7 +173,7 @@ steps:
       - '--set-secrets'
       - 'GOOGLE_API_KEY=google-api-key:latest'
       - '--set-env-vars'
-      - 'GEMINI_MODEL=gemini-3-flash'
+      - 'GEMINI_MODEL=gemini-3-pro-preview'
     waitFor:
       - 'Push All Images'
 

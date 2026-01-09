@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Dict, Any, List
 import os
 from dotenv import load_dotenv
 
@@ -17,7 +17,7 @@ app = FastAPI(title="Newsletter Engine API")
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, you might want to restrict this
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -37,6 +37,10 @@ class DraftResponse(BaseModel):
 @app.get("/health")
 async def health_check():
     return {"status": "ok"}
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    return {}, 204
 
 @app.get("/version")
 async def version_check():

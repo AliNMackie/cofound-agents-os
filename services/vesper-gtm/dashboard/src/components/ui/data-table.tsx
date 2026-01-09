@@ -48,7 +48,12 @@ export function DataTable<TData>({
             <div className="flex items-center justify-between">
                 <div className="relative w-72">
                     <Search className="absolute left-3 top-2.5 h-4 w-4 text-brand-text-secondary" />
+                    <label htmlFor={`search-${String(searchKey)}`} className="sr-only">
+                        Filter by {String(searchKey)}
+                    </label>
                     <Input
+                        id={`search-${String(searchKey)}`}
+                        name={`search-${String(searchKey)}`}
                         placeholder={`Filter by ${String(searchKey)}...`}
                         value={searchQuery}
                         onChange={(e) => {

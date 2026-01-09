@@ -17,3 +17,6 @@ class DraftRequest(BaseModel):
 
     # The branding voice instruction block (optional)
     branding_instruction: Optional[str] = None
+
+    # The Industry Context macro string (optional)
+    industry_context: Optional[str] = None

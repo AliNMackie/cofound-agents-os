@@ -1,0 +1,3 @@
+This is a sample text to test the brand voice analysis. It should demonstrate a professional yet approachable tone.
+We never start sentences with "And". We value clarity above all else.
+Our rhythm is staccato. Short sentences. Punchy.

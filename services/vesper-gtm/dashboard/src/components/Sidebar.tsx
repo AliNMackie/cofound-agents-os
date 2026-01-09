@@ -23,6 +23,7 @@ const sidebarLinks = [
     { href: "/mission/newsroom", label: "Newsroom", icon: Newspaper },
     { href: "/sources", label: "Sources", icon: Network },
     { href: "/missions", label: "Market Watch", icon: Search },
+    { href: "/settings/sources", label: "Settings", icon: Settings },
 ];
 
 export function Sidebar() {

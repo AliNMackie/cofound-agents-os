@@ -26,32 +26,41 @@ class MarketSweepService:
             return {"status": "error", "detail": "Database unavailable"}
 
         # High-Priority Entities and Keywords from IC ORIGIN roadmap
-        PRIORITY_KEYWORDS = [
-            "Failed Auction", "Passed In", "Postponed", "Process Restarted", 
-            "Debt Restructuring", "Sale Put on Hold"
-        ]
+        # Fetch dynamic sources from Firestore
+        sources_ref = self.db.collection("settings").document("global").collection("data_sources")
+        docs = sources_ref.where("active", "==", True).stream()
         
-        ADVISORS = [
-            "Rothschild", "KPMG", "Deloitte", "Houlihan Lokey", "Grant Thornton"
-        ]
+        dynamic_sources = []
+        for doc in docs:
+            data = doc.to_dict()
+            if data.get("type") == "RSS":
+                dynamic_sources.append(data.get("url"))
 
-        # Strategic queries combining priority keywords and advisors
-        queries = [
-            f'"{kw}" deal' for kw in PRIORITY_KEYWORDS
-        ] + [
-            f'"{adv}" auction process' for adv in ADVISORS
-        ] + [
-            "Willerby Group sale", "SSS Super Alloys acquisition", 
-            "Seasalt investment", "Mamas & Papas process"
-        ]
-        
+        # Fallback to defaults if no dynamic sources found (during migration)
+        if not dynamic_sources:
+            PRIORITY_KEYWORDS = [
+                "Failed Auction", "Passed In", "Postponed", "Process Restarted", 
+                "Debt Restructuring", "Sale Put on Hold"
+            ]
+            ADVISORS = [
+                "Rothschild", "KPMG", "Deloitte", "Houlihan Lokey", "Grant Thornton"
+            ]
+            queries = [f'"{kw}" deal' for kw in PRIORITY_KEYWORDS] + \
+                      [f'"{adv}" auction process' for adv in ADVISORS]
+            
+            # Convert queries to RSS URLs
+            for query in queries:
+                 dynamic_sources.append(f"https://news.google.com/rss/search?q={query.replace(' ', '+')}&hl=en-GB&gl=GB&ceid=GB:en")
+
         total_scanned = 0
         new_deals = 0
 
-        for query in queries:
-            rss_url = f"https://news.google.com/rss/search?q={query.replace(' ', '+')}&hl=en-GB&gl=GB&ceid=GB:en"
+        for rss_url in dynamic_sources:
+            # RSS URL is now direct from DB or constructed above
+            query_label = rss_url  # checking simplistic logging
+
             
-            logger.info("Fetching RSS feed", query=query)
+            logger.info("Fetching RSS feed", url=rss_url)
             feed = feedparser.parse(rss_url)
             
             # Limit to top 10 per query to avoid spam/cost
@@ -92,7 +101,7 @@ class MarketSweepService:
                     doc_data["source_link"] = link
                     doc_data["published_at"] = published
                     doc_data["ingested_at"] = datetime.datetime.now(datetime.timezone.utc)
-                    doc_data["query_source"] = query
+                    doc_data["query_source"] = "dynamic_feed"
                     
                     self.collection.add(doc_data)
                     new_deals += 1

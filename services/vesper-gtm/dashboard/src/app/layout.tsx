@@ -16,6 +16,7 @@ export const metadata: Metadata = {
 import { ThemeProvider } from "@/components/theme-provider";
 import { Sidebar } from "@/components/Sidebar";
 import { BackendPrewarm } from "@/components/BackendPrewarm";
+import { IndustrySwitcher } from "@/components/IndustrySwitcher";
 
 export default function RootLayout({
   children,
@@ -46,6 +47,7 @@ export default function RootLayout({
                   <span className="dark:text-white">IC ORIGIN Intelligence</span>
                 </div>
                 <div className="flex items-center gap-4">
+                  <IndustrySwitcher />
                   <button className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-text-secondary hover:text-black transition-colors dark:text-neutral-500 dark:hover:text-white">UK Localisation (Active)</button>
                   <button className="bg-black text-white px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-widest dark:bg-white dark:text-black hover:opacity-90 transition-opacity">Upgrade</button>
                 </div>

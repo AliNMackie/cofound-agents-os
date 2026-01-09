@@ -169,7 +169,7 @@ Task: Write the Weekly Wrap Intelligence Report. Structure:
             
         return formatted_text
 
-    async def generate_draft(self, raw_data: List[Dict[str, Any]], user_notes: Optional[str] = "", template_id: str = "weekly_wrap", user_signature: Optional[str] = None, branding_instruction: Optional[str] = None) -> str:
+    async def generate_draft(self, raw_data: List[Dict[str, Any]], user_notes: Optional[str] = "", template_id: str = "weekly_wrap", user_signature: Optional[str] = None, branding_instruction: Optional[str] = None, industry_context: Optional[str] = None) -> str:
         
         # Select Template
         if template_id not in self.PROMPT_TEMPLATES:
@@ -195,6 +195,9 @@ Task: Write the Weekly Wrap Intelligence Report. Structure:
 
         final_prompt = f"""
         {base_prompt}
+
+        ### INDUSTRY CONTEXT
+        {industry_context or "Standard Financial Markets Context"}
 
         {branding_block}
 

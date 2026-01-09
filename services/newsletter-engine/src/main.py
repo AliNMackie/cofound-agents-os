@@ -52,7 +52,8 @@ async def create_draft(request: DraftRequest):
         user_notes=request.free_form_instruction,
         template_id=request.template_id,
         user_signature=request.user_signature,
-        branding_instruction=request.branding_instruction
+        branding_instruction=request.branding_instruction,
+        industry_context=request.industry_context
     )
     
     return DraftResponse(

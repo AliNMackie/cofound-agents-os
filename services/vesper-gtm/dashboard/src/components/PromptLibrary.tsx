@@ -91,7 +91,7 @@ export function PromptLibrary({ onSelectPrompt, className }: PromptLibraryProps)
                     Prompt Library
                 </CardTitle>
                 <CardDescription className="text-neutral-400 text-xs">
-                    Pre-populated analytical frameworks from Neish Capital Markets research.
+                    Pre-populated analytical frameworks from institutional research.
                 </CardDescription>
             </CardHeader>
 

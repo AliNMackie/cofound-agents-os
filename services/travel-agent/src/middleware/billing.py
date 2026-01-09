@@ -1,28 +1,30 @@
-from functools import wraps
-from flask import g, jsonify
+from fastapi import Depends, HTTPException
 from google.cloud import firestore
+from src.middleware.auth import get_current_user
 
-def require_subscription(f):
+def require_subscription(user_id: str = Depends(get_current_user)) -> str:
     """
-    Decorator to ensure the user has an active subscription.
-    
-    This decorator must be used *after* @require_auth, as it relies on
-    g.user_id being set.
+    Dependency to ensure the user has an active subscription.
+    Returns the user_id if valid, otherwise raises 402 or 500.
     """
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not hasattr(g, 'user_id'):
-            return jsonify({'error': 'Authentication required before subscription check'}), 500
-
+    try:
         db = firestore.Client()
-        doc_ref = db.collection('users').document(g.user_id)
+        doc_ref = db.collection('users').document(user_id)
         doc = doc_ref.get()
 
         if doc.exists:
             user_data = doc.to_dict()
             if user_data.get('subscription_status') == 'active':
-                return f(*args, **kwargs)
-
-        return jsonify({'error': 'An active subscription is required'}), 402
-    
-    return decorated_function
+                return user_id
+        
+        # If we get here, no active subscription
+        raise HTTPException(
+            status_code=402, 
+            detail="An active subscription is required"
+        )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Log unexpected errors?
+        raise HTTPException(status_code=500, detail=f"Subscription check failed: {str(e)}")

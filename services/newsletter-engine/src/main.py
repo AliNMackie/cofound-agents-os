@@ -70,6 +70,9 @@ async def analyze_brand_voice(file: UploadFile = File(...)):
         analysis = await style_analyzer.analyze_voice(text_content)
         return analysis
     except Exception as e:
+        import traceback
+        print(f"ERROR in /brand-voice/analyze: {str(e)}")
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 class SaveVoiceRequest(BaseModel):

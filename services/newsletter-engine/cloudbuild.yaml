@@ -1,0 +1,29 @@
+steps:
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Build Newsletter Engine'
+    args: ['build', '-t', 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/newsletter-engine:$SHORT_SHA', '.']
+
+  # Push the container image to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Push Newsletter Engine'
+    args: ['push', 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/newsletter-engine:$SHORT_SHA']
+
+  # Deploy container image to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'Deploy Newsletter Engine'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'newsletter-engine'
+      - '--image'
+      - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/newsletter-engine:$SHORT_SHA'
+      - '--region'
+      - 'europe-west2'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+
+images:
+  - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/newsletter-engine:$SHORT_SHA'

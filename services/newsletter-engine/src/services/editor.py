@@ -143,7 +143,7 @@ Task: Write the Weekly Wrap Intelligence Report. Structure:
             print("Warning: GOOGLE_API_KEY not set")
         else:
             genai.configure(api_key=api_key)
-            self.model = genai.GenerativeModel('gemini-3-pro-preview')
+            self.model = genai.GenerativeModel('gemini-3-flash-preview')
 
     def _format_auction_data(self, auction_list: List[Dict[str, Any]]) -> str:
         """

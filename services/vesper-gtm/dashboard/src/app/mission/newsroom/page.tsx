@@ -107,7 +107,7 @@ export default function NewsroomPage() {
         setGeneratedDraft("");
 
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_NEWSLETTER_API_URL || "https://newsletter-engine-1005792944830.europe-west2.run.app";
+            const apiUrl = process.env.NEXT_PUBLIC_NEWSLETTER_API_URL || "https://newsletter-engine-193875309190.europe-west2.run.app";
             const response = await fetch(`${apiUrl}/draft`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -185,7 +185,7 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
 
     const fetchSavedVoice = async () => {
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_NEWSLETTER_API_URL || "http://localhost:8089";
+            const apiUrl = process.env.NEXT_PUBLIC_NEWSLETTER_API_URL || "https://newsletter-engine-193875309190.europe-west2.run.app";
             // Hardcoded user_id for demo/prototype; in prod use auth context
             const response = await fetch(`${apiUrl}/brand-voice/user_123`);
             if (response.ok) {
@@ -234,7 +234,7 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
                     : null,
             };
 
-            const apiUrl = process.env.NEXT_PUBLIC_NEWSLETTER_API_URL || "http://localhost:8089";
+            const apiUrl = process.env.NEXT_PUBLIC_NEWSLETTER_API_URL || "https://newsletter-engine-193875309190.europe-west2.run.app";
             const endpoint = `${apiUrl}/draft`;
 
             const response = await fetch(endpoint, {
@@ -269,7 +269,7 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
             const formData = new FormData();
             formData.append("file", file);
 
-            const apiUrl = process.env.NEXT_PUBLIC_SENTINEL_API_URL || "https://sentinel-growth-1005792944830.europe-west2.run.app";
+            const apiUrl = process.env.NEXT_PUBLIC_SENTINEL_API_URL || "https://sentinel-growth-193875309190.europe-west2.run.app";
             const response = await fetch(`${apiUrl}/api/ingest-intelligence`, {
                 method: "POST",
                 body: formData,
@@ -298,7 +298,7 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
             const formData = new FormData();
             formData.append("file", file);
 
-            const apiUrl = process.env.NEXT_PUBLIC_NEWSLETTER_API_URL || "http://localhost:8089";
+            const apiUrl = process.env.NEXT_PUBLIC_NEWSLETTER_API_URL || "https://newsletter-engine-193875309190.europe-west2.run.app";
             const response = await fetch(`${apiUrl}/brand-voice/analyze`, {
                 method: "POST",
                 body: formData,
@@ -317,7 +317,7 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
     const saveVoiceProfile = async () => {
         if (!voiceAnalysis) return;
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_NEWSLETTER_API_URL || "http://localhost:8089";
+            const apiUrl = process.env.NEXT_PUBLIC_NEWSLETTER_API_URL || "https://newsletter-engine-193875309190.europe-west2.run.app";
             await fetch(`${apiUrl}/brand-voice/save`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },

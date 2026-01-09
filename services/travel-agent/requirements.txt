@@ -2,7 +2,9 @@ google-cloud-aiplatform
 google-auth-oauthlib
 google-cloud-secret-manager
 google-cloud-firestore
-flask
+fastapi
+uvicorn
+python-multipart
 pydantic
 presidio-analyzer
 presidio-anonymizer
@@ -16,5 +18,4 @@ azure-identity
 msal
 firebase-admin
 pyjwt
-flask-cors
 stripe

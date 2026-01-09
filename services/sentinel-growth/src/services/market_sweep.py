@@ -27,30 +27,46 @@ class MarketSweepService:
 
         # High-Priority Entities and Keywords from IC ORIGIN roadmap
         # Fetch dynamic sources from Firestore
-        sources_ref = self.db.collection("settings").document("global").collection("data_sources")
-        docs = sources_ref.where("active", "==", True).stream()
-        
-        dynamic_sources = []
-        for doc in docs:
-            data = doc.to_dict()
-            if data.get("type") == "RSS":
-                dynamic_sources.append(data.get("url"))
+        # DEFAULT CONFIGURATION (Self-Healing Fallback)
+        DEFAULT_CONFIG = {
+            "data_sources": [
+                {"name": "Google News (Bankruptcy)", "url": "https://news.google.com/rss/search?q=bankruptcy+UK&hl=en-GB&gl=GB&ceid=GB:en", "type": "RSS", "active": True},
+                {"name": "Google News (Insolvency)", "url": "https://news.google.com/rss/search?q=insolvency+UK&hl=en-GB&gl=GB&ceid=GB:en", "type": "RSS", "active": True}
+            ],
+            "industry_context": {
+                 "pvt_credit": "Focus on EBITDA add-backs, covenant breaches, and 2026 cliff.",
+                 "real_estate": "Focus on occupancy rates, cap rate expansion, and refinancing."
+            }
+        }
 
-        # Fallback to defaults if no dynamic sources found (during migration)
-        if not dynamic_sources:
-            PRIORITY_KEYWORDS = [
-                "Failed Auction", "Passed In", "Postponed", "Process Restarted", 
-                "Debt Restructuring", "Sale Put on Hold"
-            ]
-            ADVISORS = [
-                "Rothschild", "KPMG", "Deloitte", "Houlihan Lokey", "Grant Thornton"
-            ]
-            queries = [f'"{kw}" deal' for kw in PRIORITY_KEYWORDS] + \
-                      [f'"{adv}" auction process' for adv in ADVISORS]
+        # 1. Fetch Dynamic Settings with Self-Healing
+        active_sources = []
+        try:
+            doc_ref = self.db.collection("user_settings").document("default_tenant")
+            doc = doc_ref.get()
             
-            # Convert queries to RSS URLs
-            for query in queries:
-                 dynamic_sources.append(f"https://news.google.com/rss/search?q={query.replace(' ', '+')}&hl=en-GB&gl=GB&ceid=GB:en")
+            if not doc.exists:
+                logger.warning("Default tenant settings not found. Self-healing...")
+                doc_ref.set(DEFAULT_CONFIG)
+                settings = DEFAULT_CONFIG
+            else:
+                settings = doc.to_dict()
+                
+            # Extract active RSS sources
+            for source in settings.get("data_sources", []):
+                if source.get("active") and source.get("type") == "RSS":
+                    active_sources.append(source.get("url"))
+                    
+        except Exception as e:
+            logger.error("Failed to fetch dynamic settings", error=str(e))
+            # Fallback to defaults in memory if DB fails
+            for source in DEFAULT_CONFIG["data_sources"]:
+                active_sources.append(source["url"])
+
+        total_scanned = 0
+        new_deals = 0
+
+        for rss_url in active_sources:
 
         total_scanned = 0
         new_deals = 0

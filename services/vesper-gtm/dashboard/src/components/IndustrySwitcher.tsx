@@ -1,15 +1,10 @@
 "use client"
 
 import * as React from "react"
-import { Button } from "@/components/ui/button"
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu" // Assuming we have this, or I'll stub a simple select if not
+// Imports removed
 import { ChevronDown, Building2 } from "lucide-react"
 import { IndustryContext } from "@/types/settings"
+import { useSaaSContext } from "@/context/SaaSContext"
 
 const MOCK_INDUSTRIES: IndustryContext[] = [
     {
@@ -27,7 +22,7 @@ const MOCK_INDUSTRIES: IndustryContext[] = [
 ]
 
 export function IndustrySwitcher() {
-    const [currentIndustry, setCurrentIndustry] = React.useState(MOCK_INDUSTRIES[0])
+    const { currentIndustry, setCurrentIndustry, availableIndustries } = useSaaSContext()
 
     return (
         <div className="flex items-center gap-2 border-l border-neutral-800 ml-4 pl-4">
@@ -37,11 +32,11 @@ export function IndustrySwitcher() {
                 className="bg-transparent text-sm font-medium outline-none cursor-pointer hover:text-white transition-colors"
                 value={currentIndustry.id}
                 onChange={(e) => {
-                    const ind = MOCK_INDUSTRIES.find(i => i.id === e.target.value)
+                    const ind = availableIndustries.find(i => i.id === e.target.value)
                     if (ind) setCurrentIndustry(ind)
                 }}
             >
-                {MOCK_INDUSTRIES.map(ind => (
+                {availableIndustries.map(ind => (
                     <option key={ind.id} value={ind.id} className="bg-black text-white">
                         {ind.name}
                     </option>

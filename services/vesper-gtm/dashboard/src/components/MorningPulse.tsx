@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/utils/formatDate";
 import { SourceAttribution } from "@/components/SourceAttribution";
+import { useSaaSContext } from "@/context/SaaSContext";
 
 // Signal Categories
 type SignalCategory = "REFINANCING" | "FOMC_PIVOT" | "DISTRESSED_ASSET";
@@ -108,6 +109,7 @@ interface MorningPulseProps {
 }
 
 export function MorningPulse({ className }: MorningPulseProps) {
+    const { currentIndustry } = useSaaSContext();
     const [signals, setSignals] = useState<IntelligenceSignal[]>([]);
     const [loading, setLoading] = useState(true);
     const [generating, setGenerating] = useState<string | null>(null);
@@ -132,7 +134,8 @@ export function MorningPulse({ className }: MorningPulseProps) {
                 raw_data: [signal],
                 template_id: "morning_pulse",
                 free_form_instruction: `Focus on: ${signal.headline}. Analyse through Neish Capital lens with emphasis on 2026/27 maturity wall implications.`,
-                user_sector: selectedSector
+                user_sector: selectedSector,
+                industry_context: currentIndustry.macroContext
             };
 
             const apiUrl = process.env.NEXT_PUBLIC_NEWSLETTER_API_URL || "https://newsletter-engine-193875309190.europe-west2.run.app";

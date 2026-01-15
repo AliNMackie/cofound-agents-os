@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
     GOOGLE_API_KEY: str = ""
     GCS_BUCKET_NAME: str = "sentinel-growth-artifacts"
+    FIRESTORE_DB_NAME: str = "(default)"
     
     model_config = SettingsConfigDict(env_file=".env")
 

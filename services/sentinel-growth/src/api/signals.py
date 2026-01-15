@@ -22,7 +22,8 @@ class SignalResponse(BaseModel):
 
 # DB Helper
 def get_db():
-    return firestore.Client()
+    from src.core.config import settings
+    return firestore.Client(database=settings.FIRESTORE_DB_NAME)
 
 @router.get("/signals", response_model=List[SignalResponse])
 async def get_signals(industry_id: Optional[str] = Query(None)):

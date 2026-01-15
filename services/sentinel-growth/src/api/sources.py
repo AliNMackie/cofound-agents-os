@@ -30,7 +30,8 @@ class DataSourceResponse(DataSourcePayload):
 
 # DB Helper
 def get_db():
-    return firestore.Client()
+    from src.core.config import settings
+    return firestore.Client(database=settings.FIRESTORE_DB_NAME)
 
 @router.get("/sources", response_model=List[DataSourceResponse])
 async def get_sources():

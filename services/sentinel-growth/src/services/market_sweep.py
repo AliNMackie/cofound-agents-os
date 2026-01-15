@@ -11,7 +11,8 @@ class MarketSweepService:
     def __init__(self):
         try:
             # Assumes default credentials (from Cloud Run SA)
-            self.db = firestore.Client()
+            from src.core.config import settings
+            self.db = firestore.Client(database=settings.FIRESTORE_DB_NAME)
             self.collection = self.db.collection("auctions")
         except Exception as e:
             logger.error("Failed to initialize Firestore", error=str(e))

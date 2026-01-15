@@ -3,7 +3,7 @@
 import { AuctionData, AuctionIngestRequest, IntelligenceSignal } from '@/types/sentinel';
 import { DataSource, IndustryContext } from '@/types/settings';
 
-const SENTINEL_API_URL = process.env.NEXT_PUBLIC_SENTINEL_API_URL || 'https://sentinel-growth-hc7um252na-nw.a.run.app';
+const SENTINEL_API_URL = process.env.NEXT_PUBLIC_SENTINEL_API_URL || 'https://sentinel-growth-1005792944830.europe-west2.run.app';
 
 export async function ingestAuction(request: AuctionIngestRequest): Promise<AuctionData> {
     const response = await fetch(`${SENTINEL_API_URL}/ingest/auction`, {

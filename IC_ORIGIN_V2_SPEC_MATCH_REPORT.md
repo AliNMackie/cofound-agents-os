@@ -22,10 +22,12 @@ The following components have been audited and verified as **Active & Intelligen
 **Critical Update:** Configuration has been aligned to the validated project URL: `https://sentinel-growth-hc7um252na-nw.a.run.app`.
 
 **Pending Action:** 
-The active deployment is currently **Stale** (Version 1.0.1). This indicates that the **Cloud Build Trigger** may still be pointing to the old project or hasn't fired for the new project.
-- **Code:** ✅ Pushed & Fixed (v1.1.0).
-- **Build:** ⏳ Pending Trigger.
-- **Frontend Config:** ✅ Updated to `hc7um252na-nw`.
+The active deployment is currently **Updating** (Version 1.0.1 -> 1.1.1).
+- **Code:** ✅ Pushed (v1.1.1).
+- **Frontend Config:** ✅ Correct (`hc7um252na-nw`).
+- **Status:** ⏳ Waiting for Cloud Build to complete.
+
+Once the new revision lands (approx 5 mins), the `/signals` endpoint will activate.
 
 Once the Cloud Build triggers on the new project, the system will fully activate.
 

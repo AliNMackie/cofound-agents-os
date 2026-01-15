@@ -2,19 +2,10 @@
 import os
 import structlog
 from typing import Optional
-from pydantic import BaseModel
 import httpx
+from src.schemas.auctions import CompanyProfile
 
 logger = structlog.get_logger()
-
-class CompanyProfile(BaseModel):
-    """Enriched company data from Companies House"""
-    registration_number: Optional[str] = None
-    incorporation_date: Optional[str] = None
-    sic_codes: Optional[list[str]] = None
-    registered_address: Optional[str] = None
-    company_status: Optional[str] = None
-    company_type: Optional[str] = None
 
 class CompanyEnrichmentService:
     """

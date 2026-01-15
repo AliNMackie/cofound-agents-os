@@ -12,6 +12,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { cn } from "@/lib/utils";
 import { SourceAttribution } from "@/components/SourceAttribution";
 import { PromptLibrary } from "@/components/PromptLibrary";
+import { getSignals } from "@/lib/api/sentinel";
+import { IntelligenceSignal } from "@/types/sentinel";
 
 // Newsletter Templates with Macro-Micro Fusion categories
 const TEMPLATES = [
@@ -162,16 +164,37 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
         setFetchingLots(true);
         setFetchError(null);
 
-        // STUB: Mocking Sentinel Feed due to API 404
         try {
-            await new Promise(resolve => setTimeout(resolve, 800)); // Simulate latency
-            console.log("[Sentinel] Live Feed Connected (Simulated)");
-            setLots(FALLBACK_LOTS);
-            setUsingFallback(false); // Show as LIVE
-        } catch (err) {
-            console.error("Mock fetch failed");
+            // Live Feed Connection
+            const signals = await getSignals();
+
+            // Map Signal -> Table Row Format
+            // This allows the table to display both manual 'AuctionData' and automated 'Signals'
+            const activeData = signals.map(s => ({
+                company_name: s.headline, // Use headline as main descriptor
+                company_description: s.analysis,
+                source: s.source || 'Sentinel Sweep',
+                process_status: 'Live Signal',
+                // EBITDA/Advisor might be extracted from analysis string in future, 
+                // for now we leave them blank or parse if possible.
+                ebitda: null,
+                advisor: null
+            }));
+
+            if (activeData.length > 0) {
+                setLots(activeData);
+                setUsingFallback(false);
+            } else {
+                console.log("No live signals found, using fallback for demo.");
+                setLots(FALLBACK_LOTS);
+                setUsingFallback(true);
+            }
+
+        } catch (err: any) {
+            console.error("Live fetch failed:", err);
             setLots(FALLBACK_LOTS);
             setUsingFallback(true);
+            setFetchError(err.message);
         } finally {
             setFetchingLots(false);
         }

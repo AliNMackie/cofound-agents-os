@@ -29,66 +29,55 @@ async function wipeLeads() {
 }
 
 const DUMMY_LEADS: Lead[] = [
-  // 2 'High Intent' leads (Status: 'new', ICP Score: 3, Intent: 3)
+  // 3 'High Intent' leads (Status: 'review' - Ready for Action)
   {
     id: 'lead-high-1',
     platform: 'linkedin',
     profileData: {
-      name: 'Alice Johnson',
-      bio: 'VP of Engineering at TechCorp. Scaling teams.',
-      role: 'VP Engineering',
+      name: 'Michael Chen',
+      bio: 'CTO at FinScale. Scaling our engineering team.',
+      role: 'Chief Technology Officer',
     },
-    status: 'new',
-    scores: { icp_fit: 3, intent: 3 },
+    status: 'review',
+    scores: { icp_fit: 95, intent: 88 },
     history: [],
   },
   {
     id: 'lead-high-2',
     platform: 'reddit',
     profileData: {
-      name: 'u/dev_guru_99',
-      bio: 'Looking for enterprise automation tools.',
-      role: 'Software Architect',
+      name: 'u/infra_architect',
+      bio: 'Looking for enterprise orchestration tools for Kubernetes.',
+      role: 'Senior DevOps Engineer',
     },
-    status: 'new',
-    scores: { icp_fit: 3, intent: 3 },
+    status: 'review',
+    scores: { icp_fit: 92, intent: 85 },
     history: [],
   },
-  // 3 'Low Intent' leads (Status: 'new', ICP Score: 1, Intent: 1)
   {
-    id: 'lead-low-1',
+    id: 'lead-high-3',
     platform: 'linkedin',
     profileData: {
-      name: 'Bob Smith',
-      bio: 'Student at University. Learning coding.',
-      role: 'Student',
+      name: 'Sarah Miller',
+      bio: 'VP Engineering at DataFlow. Hiring backend devs.',
+      role: 'VP Engineering',
     },
-    status: 'new',
-    scores: { icp_fit: 1, intent: 1 },
+    status: 'review',
+    scores: { icp_fit: 89, intent: 91 },
     history: [],
   },
+
+  // 2 'Queued' leads (Already processed)
   {
-    id: 'lead-low-2',
-    platform: 'reddit',
-    profileData: {
-      name: 'u/random_poster',
-      bio: 'Just hanging out.',
-      role: 'Unknown',
-    },
-    status: 'new',
-    scores: { icp_fit: 1, intent: 1 },
-    history: [],
-  },
-  {
-    id: 'lead-low-3',
+    id: 'lead-queued-1',
     platform: 'linkedin',
     profileData: {
-      name: 'Charlie Brown',
-      bio: 'Marketing intern.',
-      role: 'Intern',
+      name: 'David Wilson',
+      bio: 'Head of Product. New startup mode.',
+      role: 'Head of Product',
     },
-    status: 'new',
-    scores: { icp_fit: 1, intent: 1 },
+    status: 'queued',
+    scores: { icp_fit: 85, intent: 70 },
     history: [],
   },
 ];
@@ -102,7 +91,7 @@ async function seedDB() {
 
     DUMMY_LEADS.forEach((lead) => {
       const docRef = db.collection(LEADS_COLLECTION).doc(lead.id);
-      
+
       // Initialize history with a creation event
       const leadWithHistory: Lead = {
         ...lead,

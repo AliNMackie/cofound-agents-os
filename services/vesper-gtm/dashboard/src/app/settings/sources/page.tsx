@@ -13,52 +13,75 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Trash2, Globe, Rss, Database, RefreshCw } from "lucide-react"
+import { Plus, Trash2, Globe, Rss, Database, Loader2, AlertCircle } from "lucide-react"
 import { DataSource } from "@/types/settings"
-
-// Mock initial data
-const INITIAL_SOURCES: DataSource[] = [
-    {
-        id: "1",
-        name: "The Gazette (Insolvency)",
-        url: "https://www.thegazette.co.uk/insolvency/notice/feed",
-        type: "RSS",
-        active: true,
-        lastChecked: new Date()
-    },
-    {
-        id: "2",
-        name: "Companies House API",
-        url: "https://api.company-information.service.gov.uk",
-        type: "API",
-        active: true,
-        lastChecked: new Date()
-    }
-]
+import { getSources, addSource, deleteSource } from "@/lib/api/sentinel"
 
 export default function SourceManagerPage() {
-    const [sources, setSources] = React.useState<DataSource[]>(INITIAL_SOURCES)
+    const [sources, setSources] = React.useState<DataSource[]>([])
+    const [loading, setLoading] = React.useState(true)
+    const [error, setError] = React.useState<string | null>(null)
     const [newSource, setNewSource] = React.useState({ name: "", url: "", type: "RSS" as const })
+    const [submitting, setSubmitting] = React.useState(false)
 
-    const handleAddSource = () => {
-        if (!newSource.name || !newSource.url) return
-        const source: DataSource = {
-            id: Math.random().toString(36).substring(7),
-            name: newSource.name,
-            url: newSource.url,
-            type: newSource.type,
-            active: true,
-            lastChecked: new Date()
+    React.useEffect(() => {
+        loadSources()
+    }, [])
+
+    const loadSources = async () => {
+        try {
+            setLoading(true)
+            const data = await getSources()
+            // Ensure IDs exist for keys, fallback to URL
+            const validData = data.map(s => ({ ...s, id: s.id || s.url }))
+            setSources(validData)
+        } catch (err) {
+            setError("Failed to load sources")
+            console.error(err)
+        } finally {
+            setLoading(false)
         }
-        setSources([...sources, source])
-        setNewSource({ name: "", url: "", type: "RSS" })
     }
 
-    const handleDelete = (id: string) => {
-        setSources(sources.filter(s => s.id !== id))
+    const handleAddSource = async () => {
+        if (!newSource.name || !newSource.url) return
+
+        try {
+            setSubmitting(true)
+            setError(null)
+            const added = await addSource({
+                name: newSource.name,
+                url: newSource.url,
+                type: newSource.type,
+                active: true
+            })
+            // Add to list with fallback ID
+            setSources([...sources, { ...added, id: added.id || added.url }])
+            setNewSource({ name: "", url: "", type: "RSS" })
+        } catch (err: any) {
+            setError(err.message || "Failed to add source")
+        } finally {
+            setSubmitting(false)
+        }
+    }
+
+    const handleDelete = async (source: DataSource) => {
+        if (!confirm("Are you sure you want to delete this source?")) return
+
+        try {
+            // Optimistic update
+            const previousSources = sources
+            setSources(sources.filter(s => s.url !== source.url))
+
+            await deleteSource(source.url)
+        } catch (err: any) {
+            setError(err.message || "Failed to delete source")
+            loadSources() // Revert/Reload calls
+        }
     }
 
     const toggleActive = (id: string) => {
+        // Not implemented in API yet, just UI toggle for now or disable
         setSources(sources.map(s => s.id === id ? { ...s, active: !s.active } : s))
     }
 
@@ -71,12 +94,27 @@ export default function SourceManagerPage() {
         }
     }
 
+    if (loading) {
+        return (
+            <div className="container mx-auto py-10 flex justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+        )
+    }
+
     return (
         <div className="container mx-auto py-10 space-y-8">
             <div className="flex flex-col gap-2">
                 <h1 className="text-3xl font-bold tracking-tight">Data Sources</h1>
                 <p className="text-muted-foreground">Manage the intelligence feeds that power the Sentinel Engine.</p>
             </div>
+
+            {error && (
+                <div className="bg-red-50 text-red-600 p-4 rounded-md flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4" />
+                    {error}
+                </div>
+            )}
 
             <Card>
                 <CardHeader>
@@ -113,8 +151,9 @@ export default function SourceManagerPage() {
                                 <option value="Scrape">Web Scraper</option>
                             </select>
                         </div>
-                        <Button onClick={handleAddSource} className="gap-2">
-                            <Plus className="h-4 w-4" /> Add
+                        <Button onClick={handleAddSource} className="gap-2" disabled={submitting}>
+                            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                            Add
                         </Button>
                     </div>
                 </CardContent>
@@ -137,26 +176,34 @@ export default function SourceManagerPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {sources.map((source) => (
-                                <TableRow key={source.id} className={!source.active ? "opacity-50" : ""}>
-                                    <TableCell>{getIcon(source.type)}</TableCell>
-                                    <TableCell className="font-medium">{source.name}</TableCell>
-                                    <TableCell className="text-muted-foreground font-mono text-xs truncate max-w-[300px]">{source.url}</TableCell>
-                                    <TableCell>
-                                        <Badge variant={source.active ? "default" : "secondary"} className="cursor-pointer" onClick={() => toggleActive(source.id)}>
-                                            {source.active ? "Active" : "Paused"}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-brand-text-secondary text-xs">
-                                        {source.lastChecked?.toLocaleTimeString()}
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <Button variant="ghost" size="icon" onClick={() => handleDelete(source.id)}>
-                                            <Trash2 className="h-4 w-4 text-red-500" />
-                                        </Button>
+                            {sources.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={6} className="text-center text-muted-foreground h-24">
+                                        No sources configured. Add one above.
                                     </TableCell>
                                 </TableRow>
-                            ))}
+                            ) : (
+                                sources.map((source) => (
+                                    <TableRow key={source.id || source.url} className={!source.active ? "opacity-50" : ""}>
+                                        <TableCell>{getIcon(source.type)}</TableCell>
+                                        <TableCell className="font-medium">{source.name}</TableCell>
+                                        <TableCell className="text-muted-foreground font-mono text-xs truncate max-w-[300px]">{source.url}</TableCell>
+                                        <TableCell>
+                                            <Badge variant={source.active ? "default" : "secondary"} className="cursor-pointer" onClick={() => toggleActive(source.id!)}>
+                                                {source.active ? "Active" : "Paused"}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-brand-text-secondary text-xs">
+                                            {source.lastChecked ? new Date(source.lastChecked).toLocaleTimeString() : '-'}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <Button variant="ghost" size="icon" onClick={() => handleDelete(source)}>
+                                                <Trash2 className="h-4 w-4 text-red-500" />
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
                         </TableBody>
                     </Table>
                 </CardContent>

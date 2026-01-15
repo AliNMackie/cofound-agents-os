@@ -19,71 +19,11 @@ import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/utils/formatDate";
 import { SourceAttribution } from "@/components/SourceAttribution";
 import { useSaaSContext } from "@/context/SaaSContext";
-
-// Signal Categories
-type SignalCategory = "REFINANCING" | "FOMC_PIVOT" | "DISTRESSED_ASSET";
-
-interface IntelligenceSignal {
-    id: string;
-    category: SignalCategory;
-    headline: string;
-    conviction: number; // 0-100
-    timestamp: string;
-    analysis: string;
-    source?: string;
-}
-
-// Mock data based on January 2026 Private Credit Landscape
-const MOCK_SIGNALS: IntelligenceSignal[] = [
-    {
-        id: "sig-001",
-        category: "REFINANCING",
-        headline: "Aviva Investors pulls £2.1bn CMBS refinancing amid BoE rate concerns",
-        conviction: 92,
-        timestamp: "2026-01-07T08:30:00Z",
-        analysis: "Zombie asset profile detected. Portfolio held since 2019. BoE 4% floor constraint preventing refinancing. Maturity wall exposure: Q2 2027.",
-        source: "Reuters / FT"
-    },
-    {
-        id: "sig-002",
-        category: "DISTRESSED_ASSET",
-        headline: "Willerby Group auction process stalled — PE sponsor at 6-year hold",
-        conviction: 87,
-        timestamp: "2026-01-07T07:15:00Z",
-        analysis: "Private equity hold exceeds 5 years. EBITDA compression noted. Process restarted twice. Grant Thornton advising.",
-        source: "Sky News / Debtwire"
-    },
-    {
-        id: "sig-003",
-        category: "FOMC_PIVOT",
-        headline: "Fed signals 3.5% terminal rate — GBP/USD refinancing arbitrage opens",
-        conviction: 78,
-        timestamp: "2026-01-07T06:00:00Z",
-        analysis: "Monetary divergence alert. Fed 3.5% vs BoE 4% floor creates refinancing velocity differential. UK mid-market impacted.",
-        source: "Bloomberg"
-    },
-    {
-        id: "sig-004",
-        category: "DISTRESSED_ASSET",
-        headline: "Mamas & Papas enters pre-pack discussions — third process in 5 years",
-        conviction: 84,
-        timestamp: "2026-01-06T16:45:00Z",
-        analysis: "Chronic underperformance. Consumer discretionary headwinds. Rothschild mandated for accelerated sale.",
-        source: "Retail Gazette"
-    },
-    {
-        id: "sig-005",
-        category: "REFINANCING",
-        headline: "SSS Super Alloys postpones £45m refinancing — covenant breach risk",
-        conviction: 81,
-        timestamp: "2026-01-06T14:20:00Z",
-        analysis: "Manufacturing sector stress. Energy cost pass-through failure. KPMG Restructuring engaged.",
-        source: "Insider Media"
-    }
-];
+import { getSignals, triggerSweep } from "@/lib/api/sentinel";
+import { IntelligenceSignal, SignalCategory } from "@/types/sentinel";
 
 // Category styling
-const CATEGORY_CONFIG: Record<SignalCategory, { label: string; color: string; bgColor: string; icon: React.ElementType }> = {
+const CATEGORY_CONFIG: Record<string, { label: string; color: string; bgColor: string; icon: React.ElementType }> = {
     REFINANCING: {
         label: "Refinancing",
         color: "text-blue-600 dark:text-blue-400",
@@ -101,6 +41,13 @@ const CATEGORY_CONFIG: Record<SignalCategory, { label: string; color: string; bg
         color: "text-red-600 dark:text-red-400",
         bgColor: "bg-red-100 dark:bg-red-900/30",
         icon: TrendingDown
+    },
+    // Fallback
+    DEFAULT: {
+        label: "Intelligence",
+        color: "text-neutral-600 dark:text-neutral-400",
+        bgColor: "bg-neutral-100 dark:bg-neutral-900/30",
+        icon: FileText
     }
 };
 
@@ -117,14 +64,30 @@ export function MorningPulse({ className }: MorningPulseProps) {
     const [selectedSector, setSelectedSector] = useState<string | null>(null);
 
     useEffect(() => {
-        // Simulate API fetch
+        let mounted = true;
         const fetchSignals = async () => {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            setSignals(MOCK_SIGNALS);
-            setLoading(false);
+            setLoading(true);
+            try {
+                // Fetch signals relevant to the current industry context
+                const data = await getSignals(currentIndustry.id);
+                if (mounted) {
+                    setSignals(data);
+                }
+            } catch (error) {
+                console.error("Failed to load signals", error);
+            } finally {
+                if (mounted) setLoading(false);
+            }
         };
-        fetchSignals();
-    }, []);
+
+        if (currentIndustry?.id) {
+            fetchSignals();
+        } else {
+            setLoading(false);
+        }
+
+        return () => { mounted = false; };
+    }, [currentIndustry?.id]);
 
     const handleGenerateMemo = async (signal: IntelligenceSignal) => {
         setGenerating(signal.id);
@@ -175,20 +138,47 @@ export function MorningPulse({ className }: MorningPulseProps) {
 
     return (
         <Card className={cn("overflow-hidden", className)}>
-            <CardHeader className="border-b border-brand-border dark:border-neutral-800 bg-gradient-to-r from-black to-neutral-900 text-white">
+            <CardHeader className="border-b border-brand-border dark:border-neutral-800 bg-gradient-to-r from-black to-neutral-900 text-white relative">
                 <div className="flex items-center justify-between">
                     <div>
                         <CardTitle className="text-lg font-bold tracking-tight flex items-center gap-2">
                             <Clock className="h-5 w-5" />
-                            The Morning Pulse
+                            {currentIndustry.name} Pulse
                         </CardTitle>
                         <CardDescription className="text-neutral-400 text-xs uppercase tracking-widest mt-1">
                             IC ORIGIN: Proprietary Capital Structure Intelligence
                         </CardDescription>
                     </div>
-                    <div className="text-right">
-                        <p className="text-xs text-neutral-400">Last Updated</p>
-                        <p className="text-sm font-mono">{formatDate(new Date())}</p>
+
+                    <div className="flex items-center gap-4">
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 text-[10px] uppercase tracking-wider bg-black/20 hover:bg-black/40 border-neutral-700 hover:text-white transition-all"
+                            onClick={async (e) => {
+                                e.stopPropagation();
+                                if (generating) return;
+                                setGenerating("sweep");
+                                try {
+                                    await triggerSweep();
+                                    setTimeout(() => {
+                                        setGenerating(null);
+                                        // TODO: Trigger actual re-fetch
+                                        alert("Sweep started. Signals will update shortly.");
+                                    }, 2000);
+                                } catch (err) {
+                                    console.error(err);
+                                    setGenerating(null);
+                                }
+                            }}
+                        >
+                            {generating === "sweep" ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : <RefreshCw className="h-3 w-3 mr-2" />}
+                            Run Sweep
+                        </Button>
+                        <div className="text-right">
+                            <p className="text-xs text-neutral-400">Last Updated</p>
+                            <p className="text-sm font-mono">{formatDate(new Date())}</p>
+                        </div>
                     </div>
                 </div>
             </CardHeader>
@@ -199,149 +189,157 @@ export function MorningPulse({ className }: MorningPulseProps) {
                     {/* Timeline line */}
                     <div className="absolute left-8 top-0 bottom-0 w-px bg-gradient-to-b from-brand-border via-brand-border to-transparent dark:from-neutral-700" />
 
-                    <AnimatePresence>
-                        {signals.map((signal, index) => {
-                            const config = CATEGORY_CONFIG[signal.category];
-                            const Icon = config.icon;
-                            const isExpanded = expandedId === signal.id;
+                    {signals.length === 0 ? (
+                        <div className="p-8 text-center text-muted-foreground text-sm">
+                            <AlertTriangle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                            <p>No intelligence signals gathered yet.</p>
+                            <p className="text-xs mt-1 opacity-70">Check your data sources or wait for the next market sweep.</p>
+                        </div>
+                    ) : (
+                        <AnimatePresence>
+                            {signals.map((signal, index) => {
+                                const config = CATEGORY_CONFIG[signal.category] || CATEGORY_CONFIG.DEFAULT;
+                                const Icon = config.icon;
+                                const isExpanded = expandedId === signal.id;
 
-                            return (
-                                <motion.div
-                                    key={signal.id}
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: index * 0.1 }}
-                                    className="relative"
-                                >
-                                    <div
-                                        className={cn(
-                                            "flex gap-4 p-4 cursor-pointer hover:bg-brand-background dark:hover:bg-neutral-900/50 transition-colors border-b border-brand-border dark:border-neutral-800 last:border-0",
-                                            isExpanded && "bg-brand-background dark:bg-neutral-900/50"
-                                        )}
-                                        onClick={() => setExpandedId(isExpanded ? null : signal.id)}
+                                return (
+                                    <motion.div
+                                        key={signal.id}
+                                        initial={{ opacity: 0, x: -20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: index * 0.1 }}
+                                        className="relative"
                                     >
-                                        {/* Timeline node */}
-                                        <div className={cn(
-                                            "relative z-10 flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center",
-                                            config.bgColor
-                                        )}>
-                                            <Icon className={cn("h-4 w-4", config.color)} />
-                                        </div>
-
-                                        {/* Content */}
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-start justify-between gap-2 mb-1">
-                                                <div className="flex items-center gap-2 flex-wrap">
-                                                    <Badge className={cn("text-[9px] uppercase tracking-wider", config.bgColor, config.color, "border-0")}>
-                                                        {config.label}
-                                                    </Badge>
-                                                    <span className="text-[10px] text-brand-text-secondary dark:text-neutral-500">
-                                                        {new Date(signal.timestamp).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
-                                                    </span>
-                                                </div>
-                                                <div className={cn("text-xs font-mono font-bold", getConvictionColor(signal.conviction))}>
-                                                    {signal.conviction}%
-                                                </div>
+                                        <div
+                                            className={cn(
+                                                "flex gap-4 p-4 cursor-pointer hover:bg-brand-background dark:hover:bg-neutral-900/50 transition-colors border-b border-brand-border dark:border-neutral-800 last:border-0",
+                                                isExpanded && "bg-brand-background dark:bg-neutral-900/50"
+                                            )}
+                                            onClick={() => setExpandedId(isExpanded ? null : signal.id)}
+                                        >
+                                            {/* Timeline node */}
+                                            <div className={cn(
+                                                "relative z-10 flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center",
+                                                config.bgColor
+                                            )}>
+                                                <Icon className={cn("h-4 w-4", config.color)} />
                                             </div>
 
-                                            <h3 className="text-sm font-bold text-brand-text-primary dark:text-white leading-snug mb-1">
-                                                {signal.headline}
-                                            </h3>
+                                            {/* Content */}
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-start justify-between gap-2 mb-1">
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <Badge className={cn("text-[9px] uppercase tracking-wider", config.bgColor, config.color, "border-0")}>
+                                                            {config.label}
+                                                        </Badge>
+                                                        <span className="text-[10px] text-brand-text-secondary dark:text-neutral-500">
+                                                            {new Date(signal.timestamp).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+                                                        </span>
+                                                    </div>
+                                                    <div className={cn("text-xs font-mono font-bold", getConvictionColor(signal.conviction))}>
+                                                        {signal.conviction}%
+                                                    </div>
+                                                </div>
 
-                                            <p className="text-xs text-brand-text-secondary dark:text-neutral-400 line-clamp-2">
-                                                {signal.analysis}
-                                            </p>
+                                                <h3 className="text-sm font-bold text-brand-text-primary dark:text-white leading-snug mb-1">
+                                                    {signal.headline}
+                                                </h3>
 
-                                            {/* Expanded content */}
-                                            <AnimatePresence>
-                                                {isExpanded && (
-                                                    <motion.div
-                                                        initial={{ opacity: 0, height: 0 }}
-                                                        animate={{ opacity: 1, height: "auto" }}
-                                                        exit={{ opacity: 0, height: 0 }}
-                                                        className="mt-4 pt-4 border-t border-brand-border dark:border-neutral-800"
-                                                    >
-                                                        <div className="grid grid-cols-2 gap-4 mb-4">
-                                                            <div>
-                                                                <p className="text-[10px] uppercase tracking-widest text-brand-text-secondary mb-1">Source</p>
-                                                                <SourceAttribution
-                                                                    sourceName={signal.source || "Sentinel Live Feed"}
-                                                                    category="ADVISOR"
-                                                                />
-                                                            </div>
-                                                            <div>
-                                                                <p className="text-[10px] uppercase tracking-widest text-brand-text-secondary mb-1">Conviction Score</p>
-                                                                <p className={cn("text-xs font-bold font-mono", getConvictionColor(signal.conviction))}>
-                                                                    {signal.conviction}% — {signal.conviction >= 85 ? "HIGH" : signal.conviction >= 70 ? "MEDIUM" : "LOW"}
-                                                                </p>
-                                                            </div>
-                                                        </div>
+                                                <p className="text-xs text-brand-text-secondary dark:text-neutral-400 line-clamp-2">
+                                                    {signal.analysis}
+                                                </p>
 
-                                                        <div className="mb-4">
-                                                            <p className="text-[10px] uppercase tracking-widest text-brand-text-secondary mb-1">Full Analysis</p>
-                                                            <p className="text-xs text-brand-text-primary dark:text-neutral-300 leading-relaxed">
-                                                                {signal.analysis}
-                                                            </p>
-                                                        </div>
-
-                                                        <div className="mb-4">
-                                                            <label htmlFor="sector-select" className="text-[10px] uppercase tracking-widest text-brand-text-secondary mb-1 block">
-                                                                Extraction Sector
-                                                            </label>
-                                                            <div className="relative">
-                                                                <select
-                                                                    id="sector-select"
-                                                                    className="w-full bg-brand-background dark:bg-neutral-800 border border-brand-border dark:border-neutral-700 text-xs text-brand-text-primary dark:text-neutral-300 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-accent appearance-none cursor-pointer"
-                                                                    value={selectedSector || ""}
-                                                                    onChange={(e) => setSelectedSector(e.target.value || null)}
-                                                                >
-                                                                    <option value="">Real Estate (Default)</option>
-                                                                    <option value="marine_logistics">Marine / Logistics</option>
-                                                                    <option value="tech_ma">Tech / M&A</option>
-                                                                </select>
-                                                                <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-brand-text-secondary">
-                                                                    <ChevronRight className="h-3 w-3 rotate-90" />
+                                                {/* Expanded content */}
+                                                <AnimatePresence>
+                                                    {isExpanded && (
+                                                        <motion.div
+                                                            initial={{ opacity: 0, height: 0 }}
+                                                            animate={{ opacity: 1, height: "auto" }}
+                                                            exit={{ opacity: 0, height: 0 }}
+                                                            className="mt-4 pt-4 border-t border-brand-border dark:border-neutral-800"
+                                                        >
+                                                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                                                <div>
+                                                                    <p className="text-[10px] uppercase tracking-widest text-brand-text-secondary mb-1">Source</p>
+                                                                    <SourceAttribution
+                                                                        sourceName={signal.source || "Sentinel Live Feed"}
+                                                                        category="ADVISOR"
+                                                                    />
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-[10px] uppercase tracking-widest text-brand-text-secondary mb-1">Conviction Score</p>
+                                                                    <p className={cn("text-xs font-bold font-mono", getConvictionColor(signal.conviction))}>
+                                                                        {signal.conviction}% — {signal.conviction >= 85 ? "HIGH" : signal.conviction >= 70 ? "MEDIUM" : "LOW"}
+                                                                    </p>
                                                                 </div>
                                                             </div>
-                                                        </div>
 
-                                                        <Button
-                                                            size="sm"
-                                                            className="w-full uppercase text-[10px] tracking-widest"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleGenerateMemo(signal);
-                                                            }}
-                                                            disabled={generating === signal.id}
-                                                        >
-                                                            {generating === signal.id ? (
-                                                                <>
-                                                                    <Loader2 className="h-3 w-3 animate-spin mr-2" />
-                                                                    Generating Memo...
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <FileText className="h-3 w-3 mr-2" />
-                                                                    Generate Client Memo
-                                                                </>
-                                                            )}
-                                                        </Button>
-                                                    </motion.div>
+                                                            <div className="mb-4">
+                                                                <p className="text-[10px] uppercase tracking-widest text-brand-text-secondary mb-1">Full Analysis</p>
+                                                                <p className="text-xs text-brand-text-primary dark:text-neutral-300 leading-relaxed">
+                                                                    {signal.analysis}
+                                                                </p>
+                                                            </div>
+
+                                                            <div className="mb-4">
+                                                                <label htmlFor="sector-select" className="text-[10px] uppercase tracking-widest text-brand-text-secondary mb-1 block">
+                                                                    Extraction Sector
+                                                                </label>
+                                                                <div className="relative">
+                                                                    <select
+                                                                        id="sector-select"
+                                                                        className="w-full bg-brand-background dark:bg-neutral-800 border border-brand-border dark:border-neutral-700 text-xs text-brand-text-primary dark:text-neutral-300 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-accent appearance-none cursor-pointer"
+                                                                        value={selectedSector || ""}
+                                                                        onChange={(e) => setSelectedSector(e.target.value || null)}
+                                                                    >
+                                                                        <option value="">Real Estate (Default)</option>
+                                                                        <option value="marine_logistics">Marine / Logistics</option>
+                                                                        <option value="tech_ma">Tech / M&A</option>
+                                                                    </select>
+                                                                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-brand-text-secondary">
+                                                                        <ChevronRight className="h-3 w-3 rotate-90" />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <Button
+                                                                size="sm"
+                                                                className="w-full uppercase text-[10px] tracking-widest"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleGenerateMemo(signal);
+                                                                }}
+                                                                disabled={generating === signal.id}
+                                                            >
+                                                                {generating === signal.id ? (
+                                                                    <>
+                                                                        <Loader2 className="h-3 w-3 animate-spin mr-2" />
+                                                                        Generating Memo...
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <FileText className="h-3 w-3 mr-2" />
+                                                                        Generate Client Memo
+                                                                    </>
+                                                                )}
+                                                            </Button>
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
+
+                                                {!isExpanded && (
+                                                    <div className="flex items-center gap-1 mt-2 text-[10px] text-brand-text-secondary">
+                                                        <span>Click to expand</span>
+                                                        <ChevronRight className="h-3 w-3" />
+                                                    </div>
                                                 )}
-                                            </AnimatePresence>
-
-                                            {!isExpanded && (
-                                                <div className="flex items-center gap-1 mt-2 text-[10px] text-brand-text-secondary">
-                                                    <span>Click to expand</span>
-                                                    <ChevronRight className="h-3 w-3" />
-                                                </div>
-                                            )}
+                                            </div>
                                         </div>
-                                    </div>
-                                </motion.div>
-                            );
-                        })}
-                    </AnimatePresence>
+                                    </motion.div>
+                                );
+                            })}
+                        </AnimatePresence>
+                    )}
                 </div>
 
                 {/* Footer */}
@@ -356,6 +354,6 @@ export function MorningPulse({ className }: MorningPulseProps) {
                     </div>
                 </div>
             </CardContent>
-        </Card>
+        </Card >
     );
 }

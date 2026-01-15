@@ -23,3 +23,15 @@ export interface AuctionIngestRequest {
     source_text: string;
     source_origin?: string;
 }
+
+export type SignalCategory = "REFINANCING" | "FOMC_PIVOT" | "DISTRESSED_ASSET";
+
+export interface IntelligenceSignal {
+    id: string;
+    category: SignalCategory;
+    headline: string;
+    conviction: number; // 0-100
+    timestamp: string;
+    analysis: string;
+    source?: string;
+}

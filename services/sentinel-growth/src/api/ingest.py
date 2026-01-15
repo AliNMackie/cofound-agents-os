@@ -34,19 +34,46 @@ async def extract_auction_data(request: AuctionIngestRequest):
         log.error("Extraction failed", error=str(e), traceback=error_msg)
         raise HTTPException(status_code=500, detail=f"Extraction failed: {str(e)}")
 
+import io
+from pypdf import PdfReader
+
 @router.post("/api/ingest-intelligence")
 async def ingest_intelligence_pdf(file: UploadFile = File(...)):
     """
     Multimodal PDF ingestion for deal intelligence using Gemini 1.5 Pro.
+    Now with Active Optic Nerve: Extracts real text from PDF files.
     """
     log = logger.bind(filename=file.filename)
     try:
         content = await file.read()
-        # In a real multimodal flow, we'd pass the bytes to Gemini
-        # For now, we'll simulate the multimodal extraction result
-        # based on the text extraction logic already built.
-        preview_text = f"Content from PDF: {file.filename}"
-        auction_data = await auction_ingestor.ingest_auction_text(preview_text, origin="pdf_multimodal_upload")
+        
+        # 1. Active Optic Nerve: Extract Text from PDF Bytes
+        pdf_file = io.BytesIO(content)
+        reader = PdfReader(pdf_file)
+        
+        full_text = []
+        for i, page in enumerate(reader.pages):
+           try:
+               text = page.extract_text()
+               if text:
+                   full_text.append(f"--- Page {i+1} ---\n{text}")
+           except Exception as e:
+               log.warning("Failed to extract page text", page=i, error=str(e))
+               
+        extracted_text = "\n".join(full_text)
+        
+        # Fallback if PDF is image-only (Scanned)
+        if not extracted_text.strip():
+             log.warning("PDF appears to be empty or scanned images only", pages=len(reader.pages))
+             extracted_text = f"[WARNING: PDF Scanned/Empty] Filename: {file.filename}"
+
+        log.info("PDF Text Extracted", pages=len(reader.pages), chars=len(extracted_text))
+
+        # 2. Pass REAL text to the AI Engine
+        auction_data = await auction_ingestor.ingest_auction_text(
+            extracted_text, 
+            origin=f"pdf_upload:{file.filename}"
+        )
         
         return auction_data
 

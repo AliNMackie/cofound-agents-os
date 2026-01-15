@@ -1,6 +1,7 @@
 import structlog
 import feedparser
 import datetime
+import urllib.parse
 from google.cloud import firestore
 from src.services.ingest import auction_ingestor
 
@@ -25,8 +26,6 @@ class MarketSweepService:
             logger.error("Database not initialized, skipping sweep.")
             return {"status": "error", "detail": "Database unavailable"}
 
-        # High-Priority Entities and Keywords from IC ORIGIN roadmap
-        # Fetch dynamic sources from Firestore
         # DEFAULT CONFIGURATION (Self-Healing Fallback)
         DEFAULT_CONFIG = {
             "data_sources": [
@@ -63,19 +62,14 @@ class MarketSweepService:
             for source in DEFAULT_CONFIG["data_sources"]:
                 active_sources.append(source["url"])
 
-        total_scanned = 0
-        new_deals = 0
+        # 2. RUN WATCHLIST SCAN (New Step)
+        watchlist_deals = await self.run_watchlist_scan()
 
+        total_scanned = 0
+        new_deals = watchlist_deals # Start count with watchlist hits
+
+        # 3. Running General RSS Scan
         for rss_url in active_sources:
-
-        total_scanned = 0
-        new_deals = 0
-
-        for rss_url in dynamic_sources:
-            # RSS URL is now direct from DB or constructed above
-            query_label = rss_url  # checking simplistic logging
-
-            
             logger.info("Fetching RSS feed", url=rss_url)
             feed = feedparser.parse(rss_url)
             
@@ -97,34 +91,15 @@ class MarketSweepService:
                     auction_data = auction_ingestor.ingest_auction_text(full_text, origin="market_sweep_rss")
                     
                     # 2. Validation
-                    # If company name is generic or empty, skip
                     if not auction_data.company_name or len(auction_data.company_name) < 3:
                         continue
                         
-                    # 3. Duplicate Check
-                    # Create a composite key or query
-                    # We'll query for same company name within last 30 days
-                    
-                    query_ref = self.collection.where("company_name", "==", auction_data.company_name).limit(1)
-                    existing = list(query_ref.stream())
-                    
-                    if existing:
-                        logger.info("Duplicate deal found, skipping", company=auction_data.company_name)
-                        continue
-                        
-                    # 4. Save to Firestore
-                    doc_data = auction_data.model_dump()
-                    doc_data["source_link"] = link
-                    doc_data["published_at"] = published
-                    doc_data["ingested_at"] = datetime.datetime.now(datetime.timezone.utc)
-                    doc_data["query_source"] = "dynamic_feed"
-                    
-                    self.collection.add(doc_data)
-                    new_deals += 1
-                    logger.info("New deal saved", company=auction_data.company_name)
+                    # 3. Duplicate Check & Save
+                    saved = self._save_auction_if_new(auction_data, link, published, "dynamic_feed")
+                    if saved:
+                        new_deals += 1
                     
                 except Exception as e:
-                    # Log but continue sweeping
                     logger.warning("Failed to process entry", title=title, error=str(e))
                     continue
 
@@ -133,5 +108,92 @@ class MarketSweepService:
             "scanned": total_scanned, 
             "new_deals": new_deals
         }
+
+    async def run_watchlist_scan(self):
+        """
+        Scans news for companies in the watchlist (e.g. Broken/Paused deals).
+        """
+        logger.info("Starting Watchlist Scan...")
+        count = 0
+        
+        try:
+            # Fetch monitoring targets
+            docs = self.db.collection("watchlists/neish_capital/targets").where("monitoring_active", "==", True).stream()
+            
+            for doc in docs:
+                target = doc.to_dict()
+                company_name = target.get("company_name")
+                if not company_name:
+                    continue
+                    
+                # Targeted Query
+                # e.g. "Company Name" AND (acquisition OR restructuring OR ...)
+                query = f'"{company_name}" AND (acquisition OR restructuring OR "strategic review" OR PE OR refinancing)'
+                encoded_query = urllib.parse.quote(query)
+                rss_url = f"https://news.google.com/rss/search?q={encoded_query}&hl=en-GB&gl=GB&ceid=GB:en"
+                
+                logger.info(f"Scanning watchlist target: {company_name}")
+                
+                feed = feedparser.parse(rss_url)
+                entries = feed.entries[:5] # Check top 5 news items
+                
+                for entry in entries:
+                    title = entry.get('title', '')
+                    summary = entry.get('summary', '')
+                    link = entry.get('link', '')
+                    published = entry.get('published', '')
+                    
+                    full_text = f"{title}\n\n{summary}"
+                    
+                    try:
+                        auction_data = auction_ingestor.ingest_auction_text(full_text, origin="watchlist_sweep")
+                        
+                        # Enforce the company name matches the target (Ingest might hallucinate)
+                        # We force the name to match the target we are searching for to ensure linkage
+                        auction_data.company_name = company_name 
+                        auction_data.company_description = f"[WATCHLIST ALERT] {auction_data.company_description or ''}"
+                        
+                        saved = self._save_auction_if_new(
+                            auction_data, 
+                            link, 
+                            published, 
+                            source_type="watchlist_hit", 
+                            extra_data={"is_watchlist_hit": True, "watchlist_id": doc.id}
+                        )
+                        
+                        if saved:
+                             count += 1
+                             logger.info("Watchlist Hit Found!", company=company_name)
+
+                    except Exception as e:
+                        logger.error(f"Error processing watchlist item {company_name}", error=str(e))
+                        
+        except Exception as e:
+            logger.error("Failed to run watchlist scan", error=str(e))
+            
+        return count
+
+    def _save_auction_if_new(self, auction_data, link, published, source_type, extra_data=None):
+        """Helper to check dupe and save"""
+        query_ref = self.collection.where("company_name", "==", auction_data.company_name).limit(1)
+        existing = list(query_ref.stream())
+        
+        if existing:
+            # Check if existing is recent? For now just skip
+            logger.info("Duplicate deal found, skipping", company=auction_data.company_name)
+            return False
+            
+        doc_data = auction_data.model_dump()
+        doc_data["source_link"] = link
+        doc_data["published_at"] = published
+        doc_data["ingested_at"] = datetime.datetime.now(datetime.timezone.utc)
+        doc_data["query_source"] = source_type
+        
+        if extra_data:
+            doc_data.update(extra_data)
+        
+        self.collection.add(doc_data)
+        logger.info("New deal saved", company=auction_data.company_name)
+        return True
 
 sweep_service = MarketSweepService()

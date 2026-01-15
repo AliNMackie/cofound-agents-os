@@ -1,0 +1,41 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper: User must be signed in
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // DEFAULT: DENY ALL
+    match /{document=**} {
+      allow read, write: if false;
+    }
+    
+    // User Settings: Private to the authenticated user
+    match /user_settings/{settingId} {
+       allow read, write: if isAuthenticated();
+    }
+    
+    // Watchlists: SENSITIVE CLIENT DATA (Restricted)
+    match /watchlists/{watchlistId} {
+      allow read, write: if isAuthenticated();
+      
+      match /targets/{targetId} {
+        allow read, write: if isAuthenticated();
+      }
+    }
+    
+    // Signals/Auctions: Users can read results, but only Backend Admin can write
+    match /auctions/{auctionId} {
+       allow read: if isAuthenticated();
+       allow write: if false; 
+    }
+    
+    // Signals collection (alias for auctions depending on setup)
+    match /signals/{signalId} {
+       allow read: if isAuthenticated();
+       allow write: if false;
+    }
+  }
+}

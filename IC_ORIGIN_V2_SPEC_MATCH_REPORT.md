@@ -19,17 +19,15 @@ The following components have been audited and verified as **Active & Intelligen
 | **Companies House Integration** | ✅ **ACTIVE** | Real-time lookup of registration numbers and SIC codes confirmed during enrichment. |
 
 ## 2. Deployment Status (Migration to `cofound-agents-os-788e`)
-**Critical Update:** Configuration has been aligned to the validated project URL: `https://sentinel-growth-hc7um252na-nw.a.run.app`.
+**Critical Update:** Configuration has been aligned to the validated project URL: `https://sentinel-growth-1005792944830.europe-west2.run.app`.
 
-**Pending Action:** 
-The active deployment is currently **Updating** (Version 1.0.1 -> 1.1.1).
-- **Code:** ✅ Pushed (v1.1.1).
-- **Frontend Config:** ✅ Correct (`hc7um252na-nw`).
-- **Status:** ⏳ Waiting for Cloud Build to complete.
+| Component | Status | Verified URL |
+| :--- | :--- | :--- |
+| **Sentinel Growth** | **ACTIVE** (V1.1.2) | `https://sentinel-growth-1005792944830.europe-west2.run.app` |
+| **Frontend Config** | ✅ Correct (`100579...`) | - |
+| **Database** | ✅ Configured (`icorigin`) | - |
 
-Once the new revision lands (approx 5 mins), the `/signals` endpoint will activate.
-
-Once the Cloud Build triggers on the new project, the system will fully activate.
+Once the "Vesper GTM" build completes, the Dashboard will connect to this URL.
 
 ## 3. Decommissioned / Future Scope
 The following components have been **Decommissioned** per user request (focusing purely on Market Intelligence):

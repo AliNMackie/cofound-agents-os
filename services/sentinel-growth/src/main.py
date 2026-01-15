@@ -73,4 +73,4 @@ async def favicon():
 
 @app.get("/version")
 def version_check():
-    return {"version": "1.1.2-db-fix"}
+    return {"version": "1.1.3-async-fix"}

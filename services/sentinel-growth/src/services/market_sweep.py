@@ -89,7 +89,7 @@ class MarketSweepService:
                 
                 try:
                     # 1. Ingest/Extract
-                    auction_data = auction_ingestor.ingest_auction_text(full_text, origin="market_sweep_rss")
+                    auction_data = await auction_ingestor.ingest_auction_text(full_text, origin="market_sweep_rss")
                     
                     # 2. Validation
                     if not auction_data.company_name or len(auction_data.company_name) < 3:
@@ -147,7 +147,7 @@ class MarketSweepService:
                     full_text = f"{title}\n\n{summary}"
                     
                     try:
-                        auction_data = auction_ingestor.ingest_auction_text(full_text, origin="watchlist_sweep")
+                        auction_data = await auction_ingestor.ingest_auction_text(full_text, origin="watchlist_sweep")
                         
                         # Enforce the company name matches the target (Ingest might hallucinate)
                         # We force the name to match the target we are searching for to ensure linkage

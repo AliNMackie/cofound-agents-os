@@ -1,5 +1,18 @@
 {
     "sectors": {
+        "distressed_corporate": {
+            "id": "sec_distressed_001",
+            "label": "Distressed Corporate / Special Situations",
+            "standard_sources": [],
+            "extraction_schema": [
+                "company_name",
+                "company_description",
+                "ebitda",
+                "ownership",
+                "advisor",
+                "process_status"
+            ]
+        },
         "real_estate": {
             "id": "sec_re_001",
             "label": "Real Estate (Josh)",
@@ -20,6 +33,7 @@
                 }
             ],
             "extraction_schema": [
+                "company_name",
                 "property_address",
                 "guide_price",
                 "yield_percent",

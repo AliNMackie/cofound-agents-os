@@ -34,7 +34,7 @@ class SectorLogicController:
         Retrieve context for a specific sector. 
         Defaults to 'real_estate' if sector is invalid or None (Legacy Fallback).
         """
-        DEFAULT_SECTOR = "real_estate"
+        DEFAULT_SECTOR = "distressed_corporate"
         
         if not user_sector:
             logger.warning(f"No sector provided. Defaulting to {DEFAULT_SECTOR}.")

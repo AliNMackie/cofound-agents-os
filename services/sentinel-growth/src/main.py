@@ -73,4 +73,4 @@ async def favicon():
 
 @app.get("/version")
 def version_check():
-    return {"version": "1.0.1-fix-secrets"}
+    return {"version": "1.1.0-market-intel"}

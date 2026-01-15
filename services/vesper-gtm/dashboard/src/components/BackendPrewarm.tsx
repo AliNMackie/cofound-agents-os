@@ -11,7 +11,7 @@ export function BackendPrewarm() {
     useEffect(() => {
         const prewarm = async () => {
             try {
-                const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://sentinel-growth-1005792944830.europe-west2.run.app";
+                const apiUrl = process.env.NEXT_PUBLIC_SENTINEL_API_URL || "https://sentinel-growth-hc7um252na-nw.a.run.app";
                 console.log("[Prewarm] Pinging Sentinel backend:", apiUrl);
 
                 const response = await fetch(`${apiUrl}/health`, {

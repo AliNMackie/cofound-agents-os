@@ -58,7 +58,7 @@ const MOCK_SOURCES: IntelligenceSource[] = [
     { id: "s-015", name: "Synova Capital", category: "INSTITUTION", status: "CONNECTED", lastScanned: new Date(Date.now() - 10 * 60000), totalDeals: 8, description: "Lower mid-market investments", website: "synovacapital.com" },
     { id: "s-016", name: "Inflexion", category: "INSTITUTION", status: "CONNECTED", lastScanned: new Date(Date.now() - 4 * 60000), totalDeals: 15, description: "Private equity & growth capital", website: "inflexion.com" },
     { id: "s-017", name: "Livingbridge", category: "INSTITUTION", status: "CONNECTED", lastScanned: new Date(Date.now() - 20 * 60000), totalDeals: 11, description: "UK Mid Market buyouts", website: "livingbridge.com" },
-    { id: "s-018", name: "August Equity", category: "INSTITUTION", status: "OFFLINE", lastScanned: new Date(Date.now() - 120 * 60000), totalDeals: 7, description: "Healthcare & business services", website: "augustequity.co.uk" },
+    { id: "s-018", name: "August Equity", category: "INSTITUTION", status: "OFFLINE", lastScanned: new Date(Date.now() - 120 * 60000), totalDeals: 7, description: "Healthcare & business services", website: "www.augustequity.com" },
 
     // Regulator Nodes
     { id: "s-019", name: "The Gazette", category: "REGULATOR", status: "CONNECTED", lastScanned: new Date(Date.now() - 2 * 60000), totalDeals: 312, description: "Official insolvency notices", website: "thegazette.co.uk" },

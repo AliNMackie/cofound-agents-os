@@ -42,7 +42,11 @@ app = FastAPI(title=settings.APP_NAME, lifespan=lifespan)
 # Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:3000",
+        "https://icorigin.netlify.app",
+        "https://vesper-gtm-1005792944830.europe-west2.run.app"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

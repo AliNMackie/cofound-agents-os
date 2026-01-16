@@ -40,10 +40,20 @@ class AuctionIngestor:
         """
 
         try:
-            response = self.model.generate_content(
-                prompt,
-                generation_config=genai.types.GenerationConfig(
-                    response_mime_type="application/json"
+            import asyncio
+            from functools import partial
+            
+            loop = asyncio.get_running_loop()
+            
+            # Run blocking generation in thread pool
+            response = await loop.run_in_executor(
+                None, 
+                partial(
+                    self.model.generate_content,
+                    prompt,
+                    generation_config=genai.types.GenerationConfig(
+                        response_mime_type="application/json"
+                    )
                 )
             )
             

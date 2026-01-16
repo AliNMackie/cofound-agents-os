@@ -1,4 +1,5 @@
 import structlog
+import asyncio
 import feedparser
 import datetime
 import urllib.parse
@@ -72,7 +73,8 @@ class MarketSweepService:
         # 3. Running General RSS Scan
         for rss_url in active_sources:
             logger.info("Fetching RSS feed", url=rss_url)
-            feed = feedparser.parse(rss_url)
+            loop = asyncio.get_running_loop()
+            feed = await loop.run_in_executor(None, feedparser.parse, rss_url)
             
             # Limit to top 10 per query to avoid spam/cost
             entries = feed.entries[:10]
@@ -135,7 +137,8 @@ class MarketSweepService:
                 
                 logger.info(f"Scanning watchlist target: {company_name}")
                 
-                feed = feedparser.parse(rss_url)
+                loop = asyncio.get_running_loop()
+                feed = await loop.run_in_executor(None, feedparser.parse, rss_url)
                 entries = feed.entries[:5] # Check top 5 news items
                 
                 for entry in entries:

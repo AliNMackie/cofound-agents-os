@@ -1,9 +1,11 @@
 import json
 import structlog
 import google.generativeai as genai
+from typing import List
+from google.cloud import firestore
 from fastapi import APIRouter, HTTPException, File, UploadFile
 from src.schemas.requests import AuctionIngestRequest
-from src.schemas.auctions import AuctionDataEnriched
+from src.schemas.auctions import AuctionDataEnriched, AuctionData
 from src.core.config import settings
 from src.services.ingest import auction_ingestor
 
@@ -33,6 +35,59 @@ async def extract_auction_data(request: AuctionIngestRequest):
         error_msg = traceback.format_exc()
         log.error("Extraction failed", error=str(e), traceback=error_msg)
         raise HTTPException(status_code=500, detail=f"Extraction failed: {str(e)}")
+
+@router.post("/ingest/historical-batch")
+async def ingest_historical_batch(deals: List[AuctionData]):
+    """
+    Bulk import structured historical deals directly to Firestore.
+    Bypasses AI extraction for speed and reliability.
+    """
+    db = firestore.Client(database=settings.FIRESTORE_DB_NAME)
+    batch = db.batch()
+    count = 0
+    total_imported = 0
+
+    log = logger.bind(operation="historical_batch_import")
+    log.info("Received batch import request", count=len(deals))
+
+    try:
+        for deal in deals:
+            # Create a new document reference
+            doc_ref = db.collection('auctions').document()
+            
+            # Convert Pydantic model to dict, excluding None
+            deal_dict = deal.model_dump(exclude_none=True)
+            
+            # Add metadata if not present (the script sends sanitized data)
+            # Ensure critical fields
+            if "source" not in deal_dict:
+                deal_dict["source"] = "historical_import"
+            
+            from datetime import datetime
+            deal_dict["ingested_at"] = datetime.utcnow().isoformat()
+            deal_dict["category"] = "DISTRESSED_CORPORATE" # Force category
+
+            batch.set(doc_ref, deal_dict)
+            count += 1
+            total_imported += 1
+
+            # Commit batch every 400 items
+            if count >= 400:
+                batch.commit()
+                batch = db.batch()
+                count = 0
+        
+        # Commit remaining
+        if count > 0:
+            batch.commit()
+            
+        log.info("Batch import completed", total=total_imported)
+        return {"status": "success", "imported": total_imported}
+
+    except Exception as e:
+        import traceback
+        log.error("Batch import failed", error=str(e), traceback=traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Batch import failed: {str(e)}")
 
 import io
 from pypdf import PdfReader

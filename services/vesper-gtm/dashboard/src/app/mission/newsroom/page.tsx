@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
-import { Loader2, FilePenLine, CheckSquare, Square, Stamp, RefreshCw, AlertCircle, BookOpen, Sparkles, Fingerprint, Upload, Save, CheckCircle2, LayoutGrid, List as ListIcon, Printer } from "lucide-react";
+import { Loader2, FilePenLine, CheckSquare, Square, Stamp, RefreshCw, AlertCircle, BookOpen, Sparkles, Fingerprint, Upload, Save, CheckCircle2, LayoutGrid, List as ListIcon, Printer, ChevronLeft, ChevronRight } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
 import { formatPriceCompact } from "@/lib/utils/formatPrice";
 import { Badge } from "@/components/ui/badge";
@@ -100,9 +100,23 @@ export default function NewsroomPage() {
     // View State
     const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
     const [dataSource, setDataSource] = useState<"live" | "historical">("live");
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 24;
 
-    // View State
-    // (Already defined above)
+    // Filter Lots Memoized
+    const filteredLots = useMemo(() => {
+        return lots.filter(lot => dataSource === "live" ? (!lot.source || lot.source !== "historical_import") : (lot.source === "historical_import"));
+    }, [lots, dataSource]);
+
+    // Reset pagination when filter changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [dataSource, viewMode]);
+
+    const totalPages = Math.ceil(filteredLots.length / ITEMS_PER_PAGE);
+    const visibleLots = viewMode === "grid"
+        ? filteredLots.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+        : filteredLots;
 
     // Handler for selecting a prompt from the library
     const handleSelectPrompt = (prompt: string) => {
@@ -684,10 +698,9 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
 
                     {/* Content Area */}
                     {viewMode === "grid" ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in duration-500">
-                            {lots
-                                .filter(lot => dataSource === "live" ? (!lot.source || lot.source !== "historical_import") : (lot.source === "historical_import"))
-                                .map((lot, idx) => (
+                        <div className="space-y-6 animate-in fade-in duration-500">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {visibleLots.map((lot, idx) => (
                                     <Card key={idx} className={cn(
                                         "overflow-hidden cursor-pointer hover:border-black transition-colors group h-full flex flex-col justify-between",
                                         selectedLotIds.includes(lot.company_name || lot.lot_number) ? "border-black ring-1 ring-black dark:border-white dark:ring-white" : ""
@@ -728,6 +741,39 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
                                         </div>
                                     </Card>
                                 ))}
+                            </div>
+
+                            {/* Pagination Controls */}
+                            {totalPages > 1 && (
+                                <div className="flex items-center justify-between border-t border-brand-border pt-4">
+                                    <p className="text-[10px] uppercase tracking-widest text-brand-text-secondary">
+                                        Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, filteredLots.length)} of {filteredLots.length}
+                                    </p>
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                            disabled={currentPage === 1}
+                                            className="h-8 w-8 p-0"
+                                        >
+                                            <ChevronLeft size={14} />
+                                        </Button>
+                                        <span className="text-xs font-mono w-12 text-center">
+                                            {currentPage} / {totalPages}
+                                        </span>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                            disabled={currentPage === totalPages}
+                                            className="h-8 w-8 p-0"
+                                        >
+                                            <ChevronRight size={14} />
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     ) : (
                         /* Live Data Table List Mode */
@@ -785,7 +831,7 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
                                 ) : (
                                     <DataTable
                                         columns={columns}
-                                        data={lots.filter(lot => dataSource === "live" ? (!lot.source || lot.source !== "historical_import") : (lot.source === "historical_import"))}
+                                        data={filteredLots}
                                         searchKey="company_name"
                                     />
                                 )}

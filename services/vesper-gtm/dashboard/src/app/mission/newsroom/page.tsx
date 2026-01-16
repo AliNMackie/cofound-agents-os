@@ -299,7 +299,7 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
             const formData = new FormData();
             formData.append("file", file);
 
-            const apiUrl = process.env.NEXT_PUBLIC_SENTINEL_API_URL || "https://sentinel-growth-193875309190.europe-west2.run.app";
+            const apiUrl = process.env.NEXT_PUBLIC_SENTINEL_API_URL || "https://sentinel-growth-1005792944830.europe-west2.run.app";
             const response = await fetch(`${apiUrl}/api/ingest-intelligence`, {
                 method: "POST",
                 body: formData,

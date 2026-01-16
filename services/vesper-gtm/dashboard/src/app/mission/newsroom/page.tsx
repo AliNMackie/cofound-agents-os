@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
-import { Loader2, FilePenLine, CheckSquare, Square, Stamp, RefreshCw, AlertCircle, BookOpen, Sparkles, Fingerprint, Upload, Save, CheckCircle2 } from "lucide-react";
+import { Loader2, FilePenLine, CheckSquare, Square, Stamp, RefreshCw, AlertCircle, BookOpen, Sparkles, Fingerprint, Upload, Save, CheckCircle2, LayoutGrid, List as ListIcon } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
 import { formatPriceCompact } from "@/lib/utils/formatPrice";
 import { Badge } from "@/components/ui/badge";
@@ -96,6 +96,13 @@ export default function NewsroomPage() {
     const [analyzingVoice, setAnalyzingVoice] = useState(false);
     const [applyBrandVoice, setApplyBrandVoice] = useState(true);
     const [voiceSaved, setVoiceSaved] = useState(false);
+
+    // View State
+    const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+    const [dataSource, setDataSource] = useState<"live" | "historical">("live");
+
+    // View State
+    // (Already defined above)
 
     // Handler for selecting a prompt from the library
     const handleSelectPrompt = (prompt: string) => {
@@ -628,68 +635,155 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
                         </Card>
                     )}
 
-                    {/* Live Data Table */}
-                    {/* Live Data Table */}
-                    <Card className="overflow-hidden">
-                        <div className="p-4 border-b border-brand-border dark:border-neutral-800 flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <h2 className="text-xs font-bold uppercase tracking-widest">Sentinel Live Feed</h2>
-                                {usingFallback && (
-                                    <Badge variant="secondary" className="text-[9px] uppercase">
-                                        Cached Data
-                                    </Badge>
-                                )}
-                            </div>
-                            <div className="flex items-center gap-3">
-                                {fetchError ? (
-                                    <>
-                                        <div className="flex items-center gap-2 text-amber-600">
-                                            <AlertCircle className="h-3 w-3" />
-                                            <span className="text-[10px] font-bold uppercase">Reconnecting</span>
+                    {/* Data Control Bar */}
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2 bg-neutral-100 p-1 rounded-lg dark:bg-neutral-900">
+                            <button
+                                onClick={() => setDataSource("live")}
+                                className={cn("px-4 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all",
+                                    dataSource === "live" ? "bg-white text-black shadow-sm dark:bg-neutral-800 dark:text-white" : "text-neutral-500 hover:text-black")}
+                            >
+                                Live Signals
+                            </button>
+                            <button
+                                onClick={() => setDataSource("historical")}
+                                className={cn("px-4 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all",
+                                    dataSource === "historical" ? "bg-white text-black shadow-sm dark:bg-neutral-800 dark:text-white" : "text-neutral-500 hover:text-black")}
+                            >
+                                Historical Archive
+                            </button>
+                        </div>
+
+                        <div className="flex gap-2">
+                            <Button
+                                variant={viewMode === "grid" ? "secondary" : "ghost"}
+                                size="sm"
+                                className="gap-2"
+                                onClick={() => setViewMode("grid")}
+                            >
+                                <LayoutGrid size={14} /> Grid
+                            </Button>
+                            <Button
+                                variant={viewMode === "list" ? "secondary" : "ghost"}
+                                size="sm"
+                                className="gap-2 mx-1"
+                                onClick={() => setViewMode("list")}
+                            >
+                                <ListIcon size={14} /> List
+                            </Button>
+                        </div>
+                    </div>
+
+                    {/* Content Area */}
+                    {viewMode === "grid" ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in duration-500">
+                            {lots
+                                .filter(lot => dataSource === "live" ? (!lot.source || lot.source !== "historical_import") : (lot.source === "historical_import"))
+                                .map((lot, idx) => (
+                                    <Card key={idx} className={cn(
+                                        "overflow-hidden cursor-pointer hover:border-black transition-colors group h-full flex flex-col justify-between",
+                                        selectedLotIds.includes(lot.company_name || lot.lot_number) ? "border-black ring-1 ring-black dark:border-white dark:ring-white" : ""
+                                    )}
+                                        onClick={() => toggleLot(lot.company_name || lot.lot_number)}
+                                    >
+                                        <div className="h-2 bg-neutral-100 dark:bg-neutral-900 group-hover:bg-brand-accent transition-colors"></div>
+                                        <CardContent className="p-6 space-y-4 flex-grow">
+                                            <div className="flex justify-between items-start gap-4">
+                                                <div>
+                                                    <h3 className="font-bold text-lg leading-tight line-clamp-2" title={lot.company_name}>{lot.company_name || "Unknown Company"}</h3>
+                                                    <p className="text-xs text-neutral-500 mt-1 uppercase tracking-wider line-clamp-2">{lot.company_description || "M&A Target"}</p>
+                                                </div>
+                                                <Badge variant={lot.process_status?.toLowerCase().includes("failed") ? "destructive" : "secondary"} className="text-[10px] uppercase shrink-0">
+                                                    {lot.process_status || "Active"}
+                                                </Badge>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4 text-sm pt-2">
+                                                <div className="bg-neutral-50 dark:bg-neutral-900 p-2 rounded">
+                                                    <p className="text-[9px] uppercase font-bold text-neutral-400">EBITDA</p>
+                                                    <p className="font-mono">{formatPriceCompact(lot.ebitda) || "N/A"}</p>
+                                                </div>
+                                                <div className="bg-neutral-50 dark:bg-neutral-900 p-2 rounded">
+                                                    <p className="text-[9px] uppercase font-bold text-neutral-400">Advisor</p>
+                                                    <p className="font-medium truncate">{lot.advisor || "Unknown"}</p>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+
+                                        <div className="px-6 py-4 border-t bg-neutral-50/50 dark:bg-neutral-900/50 flex justify-between items-center text-xs">
+                                            <SourceAttribution sourceName={lot.source || "Sentinel"} />
+                                            {selectedLotIds.includes(lot.company_name || lot.lot_number) && (
+                                                <div className="flex items-center gap-1 text-[10px] font-bold uppercase text-green-600">
+                                                    <CheckSquare size={12} /> Selected
+                                                </div>
+                                            )}
                                         </div>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={fetchLots}
-                                            className="text-[10px] uppercase tracking-widest"
-                                        >
-                                            <RefreshCw className={cn("h-3 w-3 mr-1", fetchingLots && "animate-spin")} />
-                                            Retry
-                                        </Button>
-                                    </>
+                                    </Card>
+                                ))}
+                        </div>
+                    ) : (
+                        /* Live Data Table List Mode */
+                        <Card className="overflow-hidden">
+                            <div className="p-4 border-b border-brand-border dark:border-neutral-800 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <h2 className="text-xs font-bold uppercase tracking-widest">Sentinel Live Feed</h2>
+                                    {usingFallback && (
+                                        <Badge variant="secondary" className="text-[9px] uppercase">
+                                            Cached Data
+                                        </Badge>
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    {fetchError ? (
+                                        <>
+                                            <div className="flex items-center gap-2 text-amber-600">
+                                                <AlertCircle className="h-3 w-3" />
+                                                <span className="text-[10px] font-bold uppercase">Reconnecting</span>
+                                            </div>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={fetchLots}
+                                                className="text-[10px] uppercase tracking-widest"
+                                            >
+                                                <RefreshCw className={cn("h-3 w-3 mr-1", fetchingLots && "animate-spin")} />
+                                                Retry
+                                            </Button>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className="relative flex h-2 w-2">
+                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                                            </span>
+                                            <span className="text-[10px] font-bold text-brand-text-secondary uppercase">Connected</span>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Error Banner */}
+                            {fetchError && (
+                                <div className="px-4 py-2 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800 flex items-center justify-between">
+                                    <p className="text-[10px] text-amber-700 dark:text-amber-400">
+                                        <strong>Connection Issue:</strong> {fetchError}. Displaying cached intelligence.
+                                    </p>
+                                </div>
+                            )}
+
+                            <div className="p-4">
+                                {fetchingLots ? (
+                                    <div className="py-12 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></div>
                                 ) : (
-                                    <>
-                                        <span className="relative flex h-2 w-2">
-                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                                        </span>
-                                        <span className="text-[10px] font-bold text-brand-text-secondary uppercase">Connected</span>
-                                    </>
+                                    <DataTable
+                                        columns={columns}
+                                        data={lots.filter(lot => dataSource === "live" ? (!lot.source || lot.source !== "historical_import") : (lot.source === "historical_import"))}
+                                        searchKey="company_name"
+                                    />
                                 )}
                             </div>
-                        </div>
-
-                        {/* Error Banner */}
-                        {fetchError && (
-                            <div className="px-4 py-2 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800 flex items-center justify-between">
-                                <p className="text-[10px] text-amber-700 dark:text-amber-400">
-                                    <strong>Connection Issue:</strong> {fetchError}. Displaying cached intelligence.
-                                </p>
-                            </div>
-                        )}
-
-                        <div className="p-4">
-                            {fetchingLots ? (
-                                <div className="py-12 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></div>
-                            ) : (
-                                <DataTable
-                                    columns={columns}
-                                    data={lots}
-                                    searchKey="company_name"
-                                />
-                            )}
-                        </div>
-                    </Card>
+                        </Card>
+                    )}
 
                     {/* Editor Panel */}
                     <Card className="p-8">

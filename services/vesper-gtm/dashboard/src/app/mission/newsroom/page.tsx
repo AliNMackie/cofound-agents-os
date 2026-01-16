@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
-import { Loader2, FilePenLine, CheckSquare, Square, Stamp, RefreshCw, AlertCircle, BookOpen, Sparkles, Fingerprint, Upload, Save, CheckCircle2, LayoutGrid, List as ListIcon } from "lucide-react";
+import { Loader2, FilePenLine, CheckSquare, Square, Stamp, RefreshCw, AlertCircle, BookOpen, Sparkles, Fingerprint, Upload, Save, CheckCircle2, LayoutGrid, List as ListIcon, Printer } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
 import { formatPriceCompact } from "@/lib/utils/formatPrice";
 import { Badge } from "@/components/ui/badge";
@@ -431,7 +431,7 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
     return (
         <div className="max-w-7xl mx-auto space-y-8">
             {/* Header */}
-            <header className="flex justify-between items-end">
+            <header className="flex justify-between items-end print:hidden">
                 <div>
                     <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-brand-text-secondary mb-2">Deal Intelligence</p>
                     <h1 className="text-4xl font-bold tracking-tighter text-black dark:text-white">Newsroom</h1>
@@ -457,7 +457,7 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
             </header>
 
             {/* Tab Navigation */}
-            <div className="flex items-center gap-2 border-b border-brand-border dark:border-neutral-800 pb-4">
+            <div className="flex items-center gap-2 border-b border-brand-border dark:border-neutral-800 pb-4 print:hidden">
                 <button
                     onClick={() => setActiveTab("newsletter")}
                     className={cn(
@@ -636,7 +636,7 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
                     )}
 
                     {/* Data Control Bar */}
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center justify-between mb-4 print:hidden">
                         <div className="flex items-center gap-2 bg-neutral-100 p-1 rounded-lg dark:bg-neutral-900">
                             <button
                                 onClick={() => setDataSource("live")}
@@ -670,6 +670,14 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
                                 onClick={() => setViewMode("list")}
                             >
                                 <ListIcon size={14} /> List
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-2 ml-2"
+                                onClick={() => window.print()}
+                            >
+                                <Printer size={14} /> Export PDF
                             </Button>
                         </div>
                     </div>

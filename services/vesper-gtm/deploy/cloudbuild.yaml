@@ -20,7 +20,7 @@ steps:
       - '--build-arg'
       - 'NEXT_PUBLIC_FIREBASE_APP_ID=1:99727052460:web:2bde35c737279a3a4d1909'
       - '--build-arg'
-      - 'NEXT_PUBLIC_SENTINEL_API_URL=https://sentinel-growth-1005792944830.europe-west2.run.app'
+      - 'NEXT_PUBLIC_SENTINEL_API_URL=https://sentinel-growth-hc7um252na-nw.a.run.app'
       - '.'
 
   # 2. Push the container image to Artifact Registry

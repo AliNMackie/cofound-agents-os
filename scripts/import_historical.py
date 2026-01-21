@@ -1,8 +1,8 @@
 import pandas as pd
 import requests
 import logging
-import json
 import time
+from datetime import datetime
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -10,6 +10,41 @@ logger = logging.getLogger(__name__)
 
 # Use the batch endpoint
 API_URL = "https://sentinel-growth-hc7um252na-nw.a.run.app/ingest/historical-batch"
+
+# Advisor URL mappings for clickable sources
+ADVISOR_URLS = {
+    "kpmg": "https://kpmg.com",
+    "deloitte": "https://www2.deloitte.com",
+    "pwc": "https://pwc.com",
+    "ey": "https://ey.com",
+    "rothschild": "https://rothschildandco.com",
+    "lazard": "https://lazard.com",
+    "houlihan lokey": "https://hl.com",
+    "grant thornton": "https://grantthornton.co.uk",
+    "fti": "https://fticonsulting.com",
+    "alvarez": "https://alvarezandmarsal.com",
+    "interpath": "https://interpath.com",
+    "teneo": "https://teneo.com",
+    "greenhill": "https://greenhill.com",
+    "morgan stanley": "https://morganstanley.com",
+    "goldman sachs": "https://goldmansachs.com",
+    "jp morgan": "https://jpmorgan.com",
+    "barclays": "https://barclays.com",
+    "hsbc": "https://hsbc.com",
+    "jefferies": "https://jefferies.com",
+    "numis": "https://numis.com",
+    "peel hunt": "https://peelhunt.com",
+}
+
+def get_advisor_url(advisor_text: str) -> str:
+    """Match advisor name to URL, returning first match or None."""
+    if not advisor_text or advisor_text.lower() == "nan":
+        return None
+    advisor_lower = advisor_text.lower()
+    for name, url in ADVISOR_URLS.items():
+        if name in advisor_lower:
+            return url
+    return None
 
 def import_excel_data(file_path):
     logger.info(f"Reading file: {file_path}")
@@ -24,7 +59,7 @@ def import_excel_data(file_path):
     df.columns = df.columns.str.strip()
     
     # Filter for UK deals
-    uk_codes = ['GB', 'UK', 'United Kingdom', 'Great Britain']
+    uk_codes = ['GB', 'UK', 'UNITED KINGDOM', 'GREAT BRITAIN']
     mask = df['HQ'].fillna('').astype(str).str.upper().isin(uk_codes)
     uk_deals = df[mask]
     
@@ -38,27 +73,59 @@ def import_excel_data(file_path):
             if not company_name or company_name.lower() == 'nan':
                 continue
             
-            # Construct AuctionData object
+            # Parse deal date for proper sorting
+            deal_date = row.get('Date (estimated)')
+            deal_date_iso = None
+            if pd.notna(deal_date):
+                if isinstance(deal_date, datetime):
+                    deal_date_iso = deal_date.isoformat()
+                else:
+                    try:
+                        deal_date_iso = pd.to_datetime(deal_date).isoformat()
+                    except:
+                        deal_date_iso = str(deal_date)
+            
+            # Get advisor URL if available
+            advisor_text = str(row.get('Advisors', ''))
+            advisor_url = get_advisor_url(advisor_text)
+            
+            # Construct rich deal object with ALL available fields
             deal_obj = {
                 "company_name": company_name,
-                "process_status": str(row.get('Deal Status', 'Failed')),
-                "ebitda": str(row.get('EBITDA', 'N/A')),
-                "advisor": str(row.get('Advisors', 'N/A')),
-                "company_description": str(row.get('Industry', 'N/A')), # Mapping Industry to desc
-                # Extra fields allowed by extra="allow"
+                "process_status": str(row.get('Deal Status', 'Unknown')),
+                "deal_date": deal_date_iso,  # Proper ISO timestamp for sorting
+                "deal_date_text": str(row.get('Date (estimated)', 'N/A')),
+                "hq_country": str(row.get('HQ', 'UK')),
+                "sector": str(row.get('Sector', '')),
+                "company_description": str(row.get('Sector', 'UK Deal')),  # Fallback to sector
+                "sellers": str(row.get('Sellers', '')),
+                "bidders": str(row.get('Suitors/Bidders', '')),
+                "advisor": advisor_text,
+                "advisor_url": advisor_url,  # Clickable source URL
+                "revenue_eur_m": row.get('Revenue (EUR m)') if pd.notna(row.get('Revenue (EUR m)')) else None,
+                "ebitda": str(row.get('EBITDA (EUR m)', '')) if pd.notna(row.get('EBITDA (EUR m)')) else None,
+                "ev": row.get('EV') if pd.notna(row.get('EV')) else None,
+                "ev_ebitda_multiple": row.get('EV/EBITDA Multiple') if pd.notna(row.get('EV/EBITDA Multiple')) else None,
+                "ev_revenue_multiple": row.get('EV/Revenue Multiple') if pd.notna(row.get('EV/Revenue Multiple')) else None,
                 "source": "historical_import",
-                "deal_date_text": str(row.get('Date (estimated)', 'N/A'))
+                "ingested_at": datetime.utcnow().isoformat(),  # For fallback sorting
             }
             
-            # Clean up 'nan' strings
-            cleaned_obj = {k: v for k, v in deal_obj.items() if v and v.lower() != 'nan'}
+            # Clean up None and 'nan' strings
+            cleaned_obj = {}
+            for k, v in deal_obj.items():
+                if v is None:
+                    continue
+                if isinstance(v, str) and v.lower() in ('nan', 'none', ''):
+                    continue
+                cleaned_obj[k] = v
             
             batch_payload.append(cleaned_obj)
             
         except Exception as e:
             logger.warning(f"Skipping row {index}: {e}")
 
-    # Send in chunks of 200 (Firestore batch limit is 500, keeping it safe)
+    # Send in chunks of 200
     chunk_size = 200
     total_sent = 0
     
@@ -77,7 +144,6 @@ def import_excel_data(file_path):
         except Exception as e:
             logger.error(f"Request failed: {e}")
             
-        # Small delay to be nice
         time.sleep(1)
 
     logger.info(f"Successfully sent {total_sent} deals.")

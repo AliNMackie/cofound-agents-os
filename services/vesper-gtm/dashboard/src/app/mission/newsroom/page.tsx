@@ -196,10 +196,9 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
                 company_description: s.analysis,
                 source: s.source || 'Sentinel Sweep',
                 process_status: 'Live Signal',
-                // EBITDA/Advisor might be extracted from analysis string in future, 
-                // for now we leave them blank or parse if possible.
-                ebitda: null,
-                advisor: null
+                ebitda: s.ebitda || null,
+                advisor: s.advisor || null,
+                advisor_url: s.advisor_url || null
             }));
 
             if (activeData.length > 0) {
@@ -226,6 +225,8 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
         // Fetch saved voice profile on load
         fetchSavedVoice();
     }, []);
+
+
 
     const fetchSavedVoice = async () => {
         try {
@@ -726,7 +727,13 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
                                                 </div>
                                                 <div className="bg-neutral-50 dark:bg-neutral-900 p-2 rounded">
                                                     <p className="text-[9px] uppercase font-bold text-neutral-400">Advisor</p>
-                                                    <p className="font-medium truncate">{lot.advisor || "Unknown"}</p>
+                                                    {lot.advisor_url ? (
+                                                        <a href={lot.advisor_url} target="_blank" rel="noopener noreferrer" className="font-medium truncate text-blue-600 hover:underline dark:text-blue-400 block" onClick={(e) => e.stopPropagation()}>
+                                                            {lot.advisor || "Unknown"}
+                                                        </a>
+                                                    ) : (
+                                                        <p className="font-medium truncate">{lot.advisor || "Unknown"}</p>
+                                                    )}
                                                 </div>
                                             </div>
                                         </CardContent>

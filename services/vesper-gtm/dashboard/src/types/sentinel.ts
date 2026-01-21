@@ -34,4 +34,10 @@ export interface IntelligenceSignal {
     timestamp: string;
     analysis: string;
     source?: string;
+    ebitda?: string | null;
+    revenue?: number | null;
+    ev?: number | null;
+    advisor?: string | null;
+    advisor_url?: string | null;
+    deal_date?: string | null;
 }

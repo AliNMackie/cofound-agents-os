@@ -11,6 +11,7 @@ logger = structlog.get_logger()
 AUCTIONS_COL = "auctions"
 
 # Models (Frontend IntelligenceSignal aligned)
+# Models (Frontend IntelligenceSignal aligned)
 class SignalResponse(BaseModel):
     id: str
     category: str = "DISTRESSED_ASSET" # Default category
@@ -19,6 +20,13 @@ class SignalResponse(BaseModel):
     timestamp: str
     analysis: str
     source: Optional[str] = None
+    # Rich fields for Deal Card
+    ebitda: Optional[str] = None
+    revenue: Optional[float] = None
+    ev: Optional[float] = None
+    advisor: Optional[str] = None
+    advisor_url: Optional[str] = None
+    deal_date: Optional[str] = None
 
 # DB Helper
 def get_db():
@@ -35,14 +43,9 @@ async def get_signals(industry_id: Optional[str] = Query(None)):
         db = get_db()
         col_ref = db.collection(AUCTIONS_COL)
         
-        # Order by newest first
-        # Note: Requires composite index if we add where clauses.
-        # For now, just getting latest 20 items.
-        query = col_ref.order_by("ingested_at", direction=firestore.Query.DESCENDING).limit(20)
-        
-        # NOTE: Not filtering by industry yet as 'auctions' schema seen so far 
-        # doesn't explicitly guarantee an 'industry_id' field. 
-        # We will return all and let frontend filtering evolve or add it later.
+        # Order by newest first (ingestion time)
+        # Increased limit to 500 to capture historical dataset
+        query = col_ref.order_by("ingested_at", direction=firestore.Query.DESCENDING).limit(500)
         
         docs = query.stream()
         
@@ -57,7 +60,7 @@ async def get_signals(industry_id: Optional[str] = Query(None)):
             company = data.get("company_name", "Unknown Asset")
             status = data.get("process_status")
             headline = f"{company}"
-            if status:
+            if status and status.lower() != "unknown":
                  headline += f" - {status}"
             
             # Analysis: Description or raw text snippet
@@ -94,9 +97,20 @@ async def get_signals(industry_id: Optional[str] = Query(None)):
                 conviction=82, # Mock conviction for now until AI scoring is added
                 timestamp=ts,
                 analysis=analysis or "No deep analysis available.",
-                source=src
+                source=src,
+                # Map Rich Fields
+                ebitda=data.get("ebitda"),
+                revenue=data.get("revenue_eur_m"),
+                ev=data.get("ev"),
+                advisor=data.get("advisor"),
+                advisor_url=data.get("advisor_url"),
+                deal_date=data.get("deal_date")
             )
             results.append(signal)
+            
+        # In-memory Sort: specific 'deal_date' takes precedence over 'timestamp' (ingested_at)
+        # This fixes the issue where historical imports (alphabetical in Excel) showed up alphabetically
+        results.sort(key=lambda x: x.deal_date or x.timestamp, reverse=True)
             
         return results
         

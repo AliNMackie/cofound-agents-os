@@ -84,8 +84,8 @@ async def get_signals(industry_id: Optional[str] = Query(None)):
             elif "rate" in desc_lower or "fomc" in desc_lower or "boe" in desc_lower:
                 cat = "FOMC_PIVOT"
 
-            # Source
-            src = data.get("query_source") or "Sentinel Sweep"
+            # Source - check both 'source' (historical imports) and 'query_source' (live sweeps)
+            src = data.get("source") or data.get("query_source") or "Sentinel Sweep"
 
             signal = SignalResponse(
                 id=doc_id,

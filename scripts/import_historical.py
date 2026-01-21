@@ -9,7 +9,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Use the batch endpoint
-API_URL = "https://sentinel-growth-1005792944830.europe-west2.run.app/ingest/historical-batch"
+API_URL = "https://sentinel-growth-hc7um252na-nw.a.run.app/ingest/historical-batch"
 
 def import_excel_data(file_path):
     logger.info(f"Reading file: {file_path}")

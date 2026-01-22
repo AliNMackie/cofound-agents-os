@@ -75,9 +75,10 @@ class StorageService:
                 payload=string_to_sign.encode()
             )
             
-            signature = base64.b64encode(response.signed_blob).decode()
+            # Signature must be hex-encoded for V4
+            signature = response.signed_blob.hex()
             
-            url = f"https://storage.googleapis.com{canonical_uri}?{canonical_query_string}&X-Goog-Signature={quote(signature)}"
+            url = f"https://storage.googleapis.com{canonical_uri}?{canonical_query_string}&X-Goog-Signature={signature}"
             
             logger.info("Generated signed URL", filename=filename)
             return url

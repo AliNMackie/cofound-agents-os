@@ -101,6 +101,7 @@ export default function NewsroomPage() {
     const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
     const [dataSource, setDataSource] = useState<"live" | "historical">("live");
     const [currentPage, setCurrentPage] = useState(1);
+    const [generatingPdf, setGeneratingPdf] = useState(false);
     const ITEMS_PER_PAGE = 24;
 
     // Filter Lots Memoized
@@ -301,6 +302,69 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
             setGeneratedDraft("Error generating draft. Please check console.");
         } finally {
             setLoading(false);
+        }
+    };
+
+    // PDF Export Handler
+    const handleExportPdf = async () => {
+        const selectedData = selectedLotIds.length > 0
+            ? lots.filter((lot) => selectedLotIds.includes(lot.company_name || lot.lot_number))
+            : visibleLots; // Default to visible lots if none selected
+
+        if (selectedData.length === 0) {
+            alert("No data available to export.");
+            return;
+        }
+
+        setGeneratingPdf(true);
+        try {
+            // Construct the proposal request
+            // We map the deal data to the expected format
+            const projectScope = selectedData.map(d => `${d.company_name} (${d.ebitda || "No EBITDA"})`);
+
+            // For now, we use the first company's profile as the domain profile or default to finance
+            const domainProfile = "finance";
+
+            const payload = {
+                client_id: "IC_ORIGIN_EXPORT", // Generic ID for exports
+                domain_profile: domainProfile,
+                project_scope: projectScope,
+                financial_data: {
+                    "deals": JSON.stringify(selectedData) // Pass all data
+                },
+                template_version: "v1",
+                output_format: "pdf"
+            };
+
+            const apiUrl = process.env.NEXT_PUBLIC_SENTINEL_API_URL || "https://sentinel-growth-hc7um252na-nw.a.run.app";
+
+            // Note: We are using the sentinel-growth API directly which hosts the pdf_factory
+            // The routes.py in sentinel-growth has /generate/proposal
+            const response = await fetch(`${apiUrl}/generate/proposal`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.detail || "PDF generation failed");
+            }
+
+            const data = await response.json();
+
+            if (data.url) {
+                // Open the signed URL in a new tab
+                window.open(data.url, "_blank");
+            } else {
+                alert("PDF generated but no download URL returned.");
+            }
+
+        } catch (error: any) {
+            console.error("PDF Export failed:", error);
+            alert("Export Failed: " + error.message);
+        } finally {
+            setGeneratingPdf(false);
         }
     };
 
@@ -690,9 +754,11 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
                                 variant="outline"
                                 size="sm"
                                 className="gap-2 ml-2"
-                                onClick={() => window.print()}
+                                onClick={handleExportPdf}
+                                disabled={generatingPdf}
                             >
-                                <Printer size={14} /> Export PDF
+                                {generatingPdf ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Printer size={14} />}
+                                {generatingPdf ? "Exporting..." : "Export PDF"}
                             </Button>
                         </div>
                     </div>

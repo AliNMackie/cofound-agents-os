@@ -60,12 +60,13 @@ RUN adduser --system --uid 1001 nextjs
 COPY --from=builder --chown=nextjs:nodejs /app/out ./out
 
 # Install serve to run the static site
-RUN npm install -g serve
+# Install serve locally
+RUN npm install serve
 
 USER nextjs
 
 # Serve the static export on the port provided by Cloud Run
 EXPOSE $PORT
 
-# Serve the static export
-CMD ["serve", "-s", "out", "-l", "$PORT"]
+# Serve using npx from local install, disable clipboard/updates
+CMD ["npx", "serve", "-s", "out", "-l", "tcp://0.0.0.0:8080", "--no-clipboard", "--no-port-switching"]

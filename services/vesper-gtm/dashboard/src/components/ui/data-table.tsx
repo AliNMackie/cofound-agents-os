@@ -97,7 +97,7 @@ export function DataTable<TData>({
                             {columns.map((col, i) => (
                                 <TableHead key={i}>{col.header}</TableHead>
                             ))}
-                            <TableHead className="w-12"></TableHead>
+
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -109,11 +109,7 @@ export function DataTable<TData>({
                                             {col.cell ? col.cell(row) : String(row[col.accessorKey] || "N/A")}
                                         </TableCell>
                                     ))}
-                                    <TableCell>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                                            <MoreHorizontal className="h-4 w-4 text-brand-text-secondary" />
-                                        </Button>
-                                    </TableCell>
+
                                 </TableRow>
                             ))
                         ) : (

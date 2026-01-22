@@ -28,13 +28,18 @@ async def generate_proposal(request: ProposalRequest):
 
     try:
         # 1. Generate Content
-        prompt = f"Create a proposal for {request.client_id} with scope: {', '.join(request.project_scope)}. Financials: {request.financial_data}"
+        # Inject date into prompt so AI uses it
+        import datetime
+        today_str = datetime.datetime.now().strftime("%d %B %Y")
+        
+        prompt = f"Create a proposal for {request.client_id} with scope: {', '.join(request.project_scope)}. Financials: {request.financial_data}. Today's date is {today_str}."
         log.info("Generating content...")
         section_content = content_generator.generate_section(prompt, request.domain_profile)
         
         # Prepare data for template
         template_data = section_content.model_dump()
         template_data["client_id"] = request.client_id
+        template_data["current_date"] = today_str
         
         # 2. Render Document
         filename = f"proposal_{request.client_id}_{request_id}"
@@ -72,6 +77,8 @@ async def generate_proposal(request: ProposalRequest):
     except Exception as e:
         log.error("Request failed", error=str(e))
         raise HTTPException(status_code=500, detail=str(e))
+
+
 
 @router.get("/auctions")
 async def get_auctions():

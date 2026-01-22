@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
-import { Loader2, FilePenLine, CheckSquare, Square, Stamp, RefreshCw, AlertCircle, BookOpen, Sparkles, Fingerprint, Upload, Save, CheckCircle2, LayoutGrid, List as ListIcon, Printer, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, FilePenLine, CheckSquare, Square, Stamp, RefreshCw, AlertCircle, BookOpen, Sparkles, Fingerprint, Upload, Save, CheckCircle2, LayoutGrid, List as ListIcon, Printer, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
 import { formatPriceCompact } from "@/lib/utils/formatPrice";
 import { Badge } from "@/components/ui/badge";
@@ -504,6 +504,26 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
                     </button>
                 );
             }
+        },
+        {
+            header: "Link",
+            accessorKey: "advisor_url" as const,
+            cell: (row: any) => (
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-brand-text-secondary hover:text-black"
+                    title={row.advisor_url ? "Open Source URL" : "Search in Google"}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        // Use advisor_url if available, otherwise search for Company + Source
+                        const url = row.advisor_url || `https://www.google.com/search?q=${encodeURIComponent(`${row.company_name} ${row.source || ""} deal process`)}`;
+                        window.open(url, "_blank");
+                    }}
+                >
+                    <ExternalLink size={14} />
+                </Button>
+            )
         }
     ];
 

@@ -55,18 +55,44 @@ class StorageService:
                 headers = {"Metadata-Flavor": "Google"}
                 service_account_email = requests.get(metadata_url, headers=headers).text
             
-            # Build the canonical request for signing
-            expiration = datetime.datetime.now() + datetime.timedelta(minutes=15)
-            expiration_timestamp = int(expiration.timestamp())
+            # Times
+            now = datetime.datetime.utcnow()
+            expiration_minutes = 15
+            
+            # V4 Signing Elements
+            request_timestamp = now.strftime('%Y%m%dT%H%M%SZ')
+            datestamp = now.strftime('%Y%m%d')
+            credential_scope = f"{datestamp}/auto/storage/goog4_request"
+            credential_value = f"{service_account_email}/{credential_scope}"
             
             canonical_uri = f"/{self.bucket_name}/{filename}"
-            canonical_query_string = f"X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential={quote(service_account_email)}/{expiration.strftime('%Y%m%d')}/auto/storage/goog4_request&X-Goog-Date={expiration.strftime('%Y%m%dT%H%M%SZ')}&X-Goog-Expires=900&X-Goog-SignedHeaders=host"
             
+            # Canonical Query String - MUST be sorted by key
+            # X-Goog-Date must be the REQUEST timestamp, not expiration
+            query_params = {
+                "X-Goog-Algorithm": "GOOG4-RSA-SHA256",
+                "X-Goog-Credential": credential_value,
+                "X-Goog-Date": request_timestamp,
+                "X-Goog-Expires": str(expiration_minutes * 60),
+                "X-Goog-SignedHeaders": "host"
+            }
+            
+            # Sort and encode params
+            # quote(v, safe='') is critical for the Credential which contains slashes
+            sorted_query = sorted(query_params.items())
+            canonical_query_string = "&".join(
+                f"{k}={quote(v, safe='')}" for k, v in sorted_query
+            )
+            
+            # Canonical Request
             canonical_request = f"GET\n{canonical_uri}\n{canonical_query_string}\nhost:storage.googleapis.com\n\nhost\nUNSIGNED-PAYLOAD"
             
-            string_to_sign = f"GOOG4-RSA-SHA256\n{expiration.strftime('%Y%m%dT%H%M%SZ')}\n{expiration.strftime('%Y%m%d')}/auto/storage/goog4_request\n{hashlib.sha256(canonical_request.encode()).hexdigest()}"
+            # String to Sign
+            algorithm = "GOOG4-RSA-SHA256"
+            hashed_canonical_request = hashlib.sha256(canonical_request.encode()).hexdigest()
+            string_to_sign = f"{algorithm}\n{request_timestamp}\n{credential_scope}\n{hashed_canonical_request}"
             
-            # Use IAM API to sign
+            # Sign with IAM
             iam_client = iam_credentials_v1.IAMCredentialsClient(credentials=credentials)
             service_account_path = f"projects/-/serviceAccounts/{service_account_email}"
             
@@ -75,9 +101,9 @@ class StorageService:
                 payload=string_to_sign.encode()
             )
             
-            # Signature must be hex-encoded for V4
             signature = response.signed_blob.hex()
             
+            # Construct final URL
             url = f"https://storage.googleapis.com{canonical_uri}?{canonical_query_string}&X-Goog-Signature={signature}"
             
             logger.info("Generated signed URL", filename=filename)

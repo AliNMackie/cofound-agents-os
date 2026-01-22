@@ -45,7 +45,7 @@ ENV NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=$NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
 ENV NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=$NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
 ENV NEXT_PUBLIC_FIREBASE_APP_ID=$NEXT_PUBLIC_FIREBASE_APP_ID
 
-RUN npm run build
+RUN npm run build && npm run export
 
 # Production image, copy static files and run with simple http server
 FROM base AS runner
@@ -64,9 +64,8 @@ RUN npm install -g serve
 
 USER nextjs
 
-EXPOSE 3000
-
-ENV PORT 3000
+# Serve the static export on the port provided by Cloud Run
+EXPOSE $PORT
 
 # Serve the static export
-CMD ["serve", "-s", "out", "-l", "3000"]
+CMD ["serve", "-s", "out", "-l", "$PORT"]

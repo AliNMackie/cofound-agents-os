@@ -173,7 +173,7 @@ steps:
       - 'managed'
       - '--allow-unauthenticated'
       - '--set-secrets'
-      - 'GOOGLE_API_KEY=google-api-key:latest'
+      - 'GOOGLE_API_KEY=google-api-key:latest,COMPANIES_HOUSE_API_KEY=COMPANIES_HOUSE_API_KEY:latest,SLACK_WEBHOOK_URL=SLACK_WEBHOOK_URL:latest'
       - '--set-env-vars'
       - 'GEMINI_MODEL=gemini-3-flash-preview,FIRESTORE_DB_NAME=icorigin'
     waitFor:

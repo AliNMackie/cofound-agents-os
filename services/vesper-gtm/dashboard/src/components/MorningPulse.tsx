@@ -55,6 +55,9 @@ interface MorningPulseProps {
     className?: string;
 }
 
+import { getAuth } from "firebase/auth";
+import { getBrandVoice, generateMemoDraft } from "@/lib/api/newsletter";
+
 export function MorningPulse({ className }: MorningPulseProps) {
     const { currentIndustry } = useSaaSContext();
     const [signals, setSignals] = useState<IntelligenceSignal[]>([]);
@@ -62,6 +65,9 @@ export function MorningPulse({ className }: MorningPulseProps) {
     const [generating, setGenerating] = useState<string | null>(null);
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [selectedSector, setSelectedSector] = useState<string | null>(null);
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
+    const [sweepProgress, setSweepProgress] = useState(0);
+    const [sweepStatus, setSweepStatus] = useState("");
 
     useEffect(() => {
         let mounted = true;
@@ -87,33 +93,39 @@ export function MorningPulse({ className }: MorningPulseProps) {
         }
 
         return () => { mounted = false; };
-    }, [currentIndustry?.id]);
+    }, [currentIndustry?.id, refreshTrigger]);
 
     const handleGenerateMemo = async (signal: IntelligenceSignal) => {
         setGenerating(signal.id);
+        const auth = getAuth();
+        const user = auth.currentUser;
+
         try {
+            // 1. Fetch Brand Voice (if user is logged in)
+            let brandInstruction = null;
+            if (user) {
+                const voiceProfile = await getBrandVoice(user.uid);
+                if (voiceProfile?.system_instruction) {
+                    brandInstruction = voiceProfile.system_instruction;
+                }
+            }
+
+            // 2. Generate Draft with Voice
             const payload = {
                 type: "morning_pulse",
                 raw_data: [signal],
                 template_id: "morning_pulse",
                 free_form_instruction: `Focus on: ${signal.headline}. Analyse through Neish Capital lens with emphasis on 2026/27 maturity wall implications.`,
                 user_sector: selectedSector,
-                industry_context: currentIndustry.macroContext
+                industry_context: currentIndustry.macroContext,
+                branding_instruction: brandInstruction
             };
 
-            const apiUrl = process.env.NEXT_PUBLIC_NEWSLETTER_API_URL || "https://newsletter-engine-193875309190.europe-west2.run.app";
-            const response = await fetch(`${apiUrl}/draft`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
+            await generateMemoDraft(payload);
+            alert("Memo generated successfully using your Brand Identity. Check the Newsroom.");
 
-            if (response.ok) {
-                alert("Memo generated successfully. Check the Newsroom for the draft.");
-            } else {
-                throw new Error("Generation failed");
-            }
         } catch (error) {
+            console.error(error);
             alert("Failed to generate memo. Please try again.");
         } finally {
             setGenerating(null);
@@ -159,16 +171,49 @@ export function MorningPulse({ className }: MorningPulseProps) {
                                 e.stopPropagation();
                                 if (generating) return;
                                 setGenerating("sweep");
+                                setSweepProgress(5);
+                                setSweepStatus("Initializing sweep...");
+
+                                // Simulate progress for UX
+                                const progressTimer = setInterval(() => {
+                                    setSweepProgress(prev => {
+                                        if (prev >= 90) return prev;
+                                        if (prev > 70) return prev + 1;
+                                        if (prev > 40) return prev + 2;
+                                        return prev + 5;
+                                    });
+                                }, 1000);
+
+                                const statusTimer = setInterval(() => {
+                                    setSweepStatus(current => {
+                                        if (current.includes("Initializing")) return "Fetching RSS feeds...";
+                                        if (current.includes("Fetching")) return "Connecting to Google News...";
+                                        if (current.includes("Connecting")) return "Parsing deal intelligence...";
+                                        if (current.includes("Parsing")) return "Updating proprietary database...";
+                                        return current;
+                                    });
+                                }, 6000);
+
                                 try {
-                                    await triggerSweep();
+                                    const result = await triggerSweep();
+                                    clearInterval(progressTimer);
+                                    clearInterval(statusTimer);
+                                    setSweepProgress(100);
+                                    setSweepStatus("Intelligence synchronization complete.");
+
+                                    // Brief pause to show 100%
                                     setTimeout(() => {
+                                        setRefreshTrigger(prev => prev + 1);
                                         setGenerating(null);
-                                        // TODO: Trigger actual re-fetch
-                                        alert("Sweep started. Signals will update shortly.");
-                                    }, 2000);
+                                        setSweepProgress(0);
+                                        setSweepStatus("");
+                                    }, 1000);
                                 } catch (err) {
-                                    console.error(err);
+                                    clearInterval(progressTimer);
+                                    clearInterval(statusTimer);
+                                    console.error("Sweep failed:", err);
                                     setGenerating(null);
+                                    alert("Sweep failed. Please try again or check logs.");
                                 }
                             }}
                         >
@@ -182,6 +227,36 @@ export function MorningPulse({ className }: MorningPulseProps) {
                     </div>
                 </div>
             </CardHeader>
+
+            {/* Sweep Progress Overlay */}
+            <AnimatePresence>
+                {generating === "sweep" && (
+                    <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="bg-black/95 text-white p-4 border-b border-brand-border overflow-hidden"
+                    >
+                        <div className="max-w-md mx-auto space-y-3">
+                            <div className="flex justify-between items-end">
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">{sweepStatus}</span>
+                                <span className="text-xs font-mono">{sweepProgress}%</span>
+                            </div>
+                            <div className="w-full bg-neutral-800 rounded-full h-1 overflow-hidden">
+                                <motion.div
+                                    className="bg-white h-full"
+                                    initial={{ width: "0%" }}
+                                    animate={{ width: `${sweepProgress}%` }}
+                                    transition={{ duration: 0.5 }}
+                                />
+                            </div>
+                            <p className="text-[9px] text-neutral-500 text-center uppercase tracking-tighter">
+                                Proprietary IC Origin Sweep | Last Refreshed {formatDate(new Date())}
+                            </p>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             <CardContent className="p-0">
                 {/* Vertical Timeline */}
@@ -264,6 +339,7 @@ export function MorningPulse({ className }: MorningPulseProps) {
                                                                     <SourceAttribution
                                                                         sourceName={signal.source || "Sentinel Live Feed"}
                                                                         category="ADVISOR"
+                                                                        url={signal.source_link || signal.advisor_url || undefined}
                                                                     />
                                                                 </div>
                                                                 <div>

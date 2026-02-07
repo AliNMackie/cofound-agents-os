@@ -14,6 +14,7 @@ interface SourceAttributionProps {
     sourceName: string;
     category?: SourceCategory;
     className?: string;
+    url?: string;
 }
 
 const CATEGORY_ICONS: Record<SourceCategory, React.ElementType> = {
@@ -30,22 +31,33 @@ const CATEGORY_COLORS: Record<SourceCategory, string> = {
     REGULATOR: "text-green-600 bg-green-50 dark:bg-green-900/20",
 };
 
-export function SourceAttribution({ sourceName, category = "AUCTION", className }: SourceAttributionProps) {
+export function SourceAttribution({ sourceName, category = "AUCTION", className, url }: SourceAttributionProps) {
     const Icon = CATEGORY_ICONS[category];
     const colorClass = CATEGORY_COLORS[category];
 
-    return (
+    const Content = (
         <div
             className={cn(
-                "inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-medium",
+                "inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-medium transition-opacity hover:opacity-80",
                 colorClass,
                 className
             )}
         >
             <Icon className="h-3 w-3" />
             <span className="truncate max-w-[120px]">Found via: {sourceName}</span>
+            {url && <ExternalLink className="h-2.5 w-2.5 ml-0.5 opacity-50" />}
         </div>
     );
+
+    if (url) {
+        return (
+            <a href={url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+                {Content}
+            </a>
+        );
+    }
+
+    return Content;
 }
 
 // Pre-defined source mappings for common sources

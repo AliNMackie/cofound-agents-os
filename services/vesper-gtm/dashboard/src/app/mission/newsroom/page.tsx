@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
-import { Loader2, FilePenLine, CheckSquare, Square, Stamp, RefreshCw, AlertCircle, BookOpen, Sparkles, Fingerprint, Upload, Save, CheckCircle2, LayoutGrid, List as ListIcon, Printer, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
+import { Loader2, FilePenLine, CheckSquare, Square, Stamp, RefreshCw, AlertCircle, BookOpen, Sparkles, Fingerprint, Upload, Save, CheckCircle2, LayoutGrid, List as ListIcon, Printer, ChevronLeft, ChevronRight, ExternalLink, Zap } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
 import { formatPriceCompact } from "@/lib/utils/formatPrice";
 import { Badge } from "@/components/ui/badge";
@@ -12,8 +12,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { cn } from "@/lib/utils";
 import { SourceAttribution } from "@/components/SourceAttribution";
 import { PromptLibrary } from "@/components/PromptLibrary";
-import { getSignals } from "@/lib/api/sentinel";
+import { getSignals, generateDossier } from "@/lib/api/sentinel";
 import { IntelligenceSignal } from "@/types/sentinel";
+import { VirtualizedFeed } from "@/components/VirtualizedFeed";
+import { NotebookSidebar } from "@/components/NotebookSidebar";
+import { CommandBar } from "@/components/CommandBar";
+import { useWindowSize } from "../../../hooks/useWindowSize";
 
 // Newsletter Templates with Macro-Micro Fusion categories
 const TEMPLATES = [
@@ -96,18 +100,132 @@ export default function NewsroomPage() {
     const [analyzingVoice, setAnalyzingVoice] = useState(false);
     const [applyBrandVoice, setApplyBrandVoice] = useState(true);
     const [voiceSaved, setVoiceSaved] = useState(false);
+    const [showGrowthPulse, setShowGrowthPulse] = useState(true);
 
     // View State
-    const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+    const [viewMode, setViewMode] = useState<"grid" | "list">("list");
     const [dataSource, setDataSource] = useState<"live" | "historical">("live");
     const [currentPage, setCurrentPage] = useState(1);
     const [generatingPdf, setGeneratingPdf] = useState(false);
+    const [generatingDossier, setGeneratingDossier] = useState(false);
+    const [notebookContent, setNotebookContent] = useState(NOTEBOOK_CONTEXT);
+    const [isNotebookOpen, setIsNotebookOpen] = useState(false);
+    const [isCommandBarOpen, setIsCommandBarOpen] = useState(false);
+    const [commandBarQuery, setCommandBarQuery] = useState("");
+    const [globalSearchResults, setGlobalSearchResults] = useState<any[]>([]);
+    const [isSearchingGlobal, setIsSearchingGlobal] = useState(false);
     const ITEMS_PER_PAGE = 24;
+
+    useEffect(() => {
+        const handleCmdK = (e: KeyboardEvent) => {
+            if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                setIsCommandBarOpen(prev => !prev);
+            }
+        };
+        window.addEventListener('keydown', handleCmdK);
+        return () => window.removeEventListener('keydown', handleCmdK);
+    }, []);
+
+    useEffect(() => {
+        if (!commandBarQuery || commandBarQuery.length < 3) {
+            setGlobalSearchResults([]);
+            return;
+        }
+
+        const timer = setTimeout(async () => {
+            setIsSearchingGlobal(true);
+            try {
+                const results = await getSignals(undefined, 365, commandBarQuery);
+                const formatted = results.map(s => ({
+                    id: s.id,
+                    company_name: s.headline,
+                    analysis: s.analysis,
+                    source: s.source || 'Sentinel Search',
+                    signal_type: s.signal_type || "RESCUE",
+                    process_status: 'Historical Match'
+                }));
+                setGlobalSearchResults(formatted);
+            } catch (err) {
+                console.error("Global search failed:", err);
+            } finally {
+                setIsSearchingGlobal(false);
+            }
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, [commandBarQuery]);
+
+    const handleAddToNotebook = (signal: any) => {
+        const timestamp = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        const entry = `\n\n### [${signal.signal_type || 'SIGNAL'}] ${signal.company_name || 'Target'} — ${timestamp}\n- **Analysis:** ${signal.analysis || signal.company_description}\n- **Status:** ${signal.process_status || 'Active'}\n- **Source:** ${signal.source || 'Sentinel'}`;
+
+        setNotebookContent(prev => prev + entry);
+        setIsNotebookOpen(true);
+    };
+
+    const handleGenerateDossier = async (signalId: string) => {
+        try {
+            setGeneratingDossier(true);
+            const blob = await generateDossier(signalId);
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Intelligence_Dossier_${signalId}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } catch (error) {
+            console.error("Dossier generation failed:", error);
+            alert("Failed to generate intelligence dossier. Please try again.");
+        } finally {
+            setGeneratingDossier(false);
+        }
+    };
+
+    const { height: windowHeight } = useWindowSize();
 
     // Filter Lots Memoized
     const filteredLots = useMemo(() => {
-        return lots.filter(lot => dataSource === "live" ? (!lot.source || lot.source !== "historical_import") : (lot.source === "historical_import"));
+        const now = new Date();
+        const twentyEightDaysAgo = new Date();
+        twentyEightDaysAgo.setDate(now.getDate() - 28);
+
+        return lots.filter(lot => {
+            const isHistorical = lot.source === "historical_import";
+            const lotDate = lot.timestamp ? new Date(lot.timestamp) : new Date(0);
+
+            if (dataSource === "live") {
+                // Must not be historical and must be within 28 days
+                return !isHistorical && lotDate >= twentyEightDaysAgo;
+            } else {
+                // Must be historical
+                return isHistorical;
+            }
+        });
     }, [lots, dataSource]);
+
+    const growthLots = useMemo(() => filteredLots.filter(l => l.signal_type === "GROWTH"), [filteredLots]);
+    const rescueLots = useMemo(() => filteredLots.filter(l => l.signal_type !== "GROWTH"), [filteredLots]);
+
+    const filteredCommandResults = useMemo(() => {
+        if (!commandBarQuery) return [];
+
+        // Local results
+        const combined = [...rescueLots, ...growthLots];
+        const localMatches = combined.filter(item =>
+            item.company_name?.toLowerCase().includes(commandBarQuery.toLowerCase()) ||
+            item.analysis?.toLowerCase().includes(commandBarQuery.toLowerCase()) ||
+            item.signal_type?.toLowerCase().includes(commandBarQuery.toLowerCase())
+        );
+
+        // Deduplicate Global results vs Local results
+        const existingIds = new Set(localMatches.map(m => m.id));
+        const uniqueGlobal = globalSearchResults.filter(g => !existingIds.has(g.id));
+
+        return [...localMatches, ...uniqueGlobal].slice(0, 15);
+    }, [commandBarQuery, rescueLots, growthLots, globalSearchResults]);
 
     // Reset pagination when filter changes
     useEffect(() => {
@@ -193,13 +311,19 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
             // Map Signal -> Table Row Format
             // This allows the table to display both manual 'AuctionData' and automated 'Signals'
             const activeData = signals.map(s => ({
+                id: s.id,
                 company_name: s.headline, // Use headline as main descriptor
                 company_description: s.analysis,
                 source: s.source || 'Sentinel Sweep',
                 process_status: 'Live Signal',
                 ebitda: s.ebitda || null,
                 advisor: s.advisor || null,
-                advisor_url: s.advisor_url || null
+                advisor_url: s.advisor_url || null,
+                timestamp: s.timestamp,
+                source_link: s.source_link,
+                signal_type: s.signal_type || (s.headline.toLowerCase().includes("acquisition") ? "GROWTH" : "RESCUE"),
+                source_family: s.source_family || "RSS_NEWS",
+                conviction_score: s.conviction
             }));
 
             if (activeData.length > 0) {
@@ -528,496 +652,455 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
     ];
 
     return (
-        <div className="max-w-7xl mx-auto space-y-8">
-            {/* Header */}
-            <header className="flex justify-between items-end print:hidden">
-                <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-brand-text-secondary mb-2">Deal Intelligence</p>
-                    <h1 className="text-4xl font-bold tracking-tighter text-black dark:text-white">Newsroom</h1>
-                    <p className="mt-2 text-brand-text-secondary text-sm max-w-xl dark:text-neutral-400">
-                        Convert raw Sentinel signals and PDF intelligence into high-conviction deal memos.
-                    </p>
-                </div>
-                <div className="flex gap-4">
-                    <input
-                        type="file"
-                        id="pdf-upload"
-                        className="hidden"
-                        accept=".pdf"
-                        onChange={handleFileUpload}
-                    />
-                    <label
-                        htmlFor="pdf-upload"
-                        className="btn-secondary flex items-center gap-2 cursor-pointer text-[10px] font-bold uppercase tracking-widest px-6 py-3 dark:bg-neutral-900"
+        <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 text-black dark:text-white pb-20 overflow-x-hidden relative">
+            <NotebookSidebar
+                isOpen={isNotebookOpen}
+                onToggle={() => setIsNotebookOpen(!isNotebookOpen)}
+                content={notebookContent}
+                onChange={setNotebookContent}
+                onSave={() => alert("Notebook Saved to IC Origin Cloud")}
+                onClear={() => setNotebookContent("")}
+            />
+            <CommandBar
+                isOpen={isCommandBarOpen}
+                onClose={() => setIsCommandBarOpen(false)}
+                onSearch={setCommandBarQuery}
+                results={filteredCommandResults}
+                isLoading={isSearchingGlobal}
+                onSelect={(item) => {
+                    handleAddToNotebook(item);
+                    setIsCommandBarOpen(false);
+                }}
+            />
+            <div className="max-w-7xl mx-auto space-y-8 py-8">
+                {/* Header */}
+                <header className="flex justify-between items-end print:hidden">
+                    <div>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-brand-text-secondary mb-2">Deal Intelligence</p>
+                        <h1 className="text-4xl font-bold tracking-tighter text-black dark:text-white">Newsroom</h1>
+                        <p className="mt-2 text-brand-text-secondary text-sm max-w-xl dark:text-neutral-400">
+                            Convert raw Sentinel signals and PDF intelligence into high-conviction deal memos.
+                        </p>
+                    </div>
+                    <div className="flex gap-4">
+                        <input
+                            type="file"
+                            id="pdf-upload"
+                            className="hidden"
+                            accept=".pdf"
+                            onChange={handleFileUpload}
+                        />
+                        <label
+                            htmlFor="pdf-upload"
+                            className="btn-secondary flex items-center gap-2 cursor-pointer text-[10px] font-bold uppercase tracking-widest px-6 py-3 dark:bg-neutral-900"
+                        >
+                            {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Stamp size={14} /> Upload Deal PDF</>}
+                        </label>
+                    </div>
+                </header>
+
+                {/* Tab Navigation */}
+                <div className="flex items-center gap-2 border-b border-brand-border dark:border-neutral-800 pb-4 print:hidden">
+                    <button
+                        onClick={() => setActiveTab("newsletter")}
+                        className={cn(
+                            "flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-lg transition-all",
+                            activeTab === "newsletter"
+                                ? "bg-black text-white dark:bg-white dark:text-black"
+                                : "text-brand-text-secondary hover:bg-brand-background dark:hover:bg-neutral-900"
+                        )}
                     >
-                        {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Stamp size={14} /> Upload Deal PDF</>}
-                    </label>
-                </div>
-            </header>
-
-            {/* Tab Navigation */}
-            <div className="flex items-center gap-2 border-b border-brand-border dark:border-neutral-800 pb-4 print:hidden">
-                <button
-                    onClick={() => setActiveTab("newsletter")}
-                    className={cn(
-                        "flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-lg transition-all",
-                        activeTab === "newsletter"
-                            ? "bg-black text-white dark:bg-white dark:text-black"
-                            : "text-brand-text-secondary hover:bg-brand-background dark:hover:bg-neutral-900"
-                    )}
-                >
-                    <FilePenLine size={14} />
-                    Newsletter Engine
-                </button>
-                <button
-                    onClick={() => setActiveTab("prompts")}
-                    className={cn(
-                        "flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-lg transition-all",
-                        activeTab === "prompts"
-                            ? "bg-black text-white dark:bg-white dark:text-black"
-                            : "text-brand-text-secondary hover:bg-brand-background dark:hover:bg-neutral-900"
-                    )}
-                >
-                    <BookOpen size={14} />
-                    Prompt Library
-                </button>
-
-                <button
-                    onClick={() => setActiveTab("brand_voice")}
-                    className={cn(
-                        "flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-lg transition-all",
-                        activeTab === "brand_voice"
-                            ? "bg-black text-white dark:bg-white dark:text-black"
-                            : "text-brand-text-secondary hover:bg-brand-background dark:hover:bg-neutral-900"
-                    )}
-                >
-                    <Fingerprint size={14} />
-                    Brand Identity
-                </button>
-
-                {/* Draft from Notebook Button - visible when API offline */}
-                {(fetchError || usingFallback) && (
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleDraftFromNotebook}
-                        disabled={loading}
-                        className="ml-auto text-[10px] uppercase tracking-widest border-amber-500 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+                        <FilePenLine size={14} />
+                        Newsletter Engine
+                    </button>
+                    <button
+                        onClick={() => setActiveTab("prompts")}
+                        className={cn(
+                            "flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-lg transition-all",
+                            activeTab === "prompts"
+                                ? "bg-black text-white dark:bg-white dark:text-black"
+                                : "text-brand-text-secondary hover:bg-brand-background dark:hover:bg-neutral-900"
+                        )}
                     >
-                        <Sparkles size={14} className="mr-1" />
-                        Draft from Notebook Context
-                    </Button>
+                        <BookOpen size={14} />
+                        Prompt Library
+                    </button>
+
+                    <button
+                        onClick={() => setActiveTab("brand_voice")}
+                        className={cn(
+                            "flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-lg transition-all",
+                            activeTab === "brand_voice"
+                                ? "bg-black text-white dark:bg-white dark:text-black"
+                                : "text-brand-text-secondary hover:bg-brand-background dark:hover:bg-neutral-900"
+                        )}
+                    >
+                        <Fingerprint size={14} />
+                        Brand Identity
+                    </button>
+
+                    {/* Draft from Notebook Button - visible when API offline */}
+                    {(fetchError || usingFallback) && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleDraftFromNotebook}
+                            disabled={loading}
+                            className="ml-auto text-[10px] uppercase tracking-widest border-amber-500 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+                        >
+                            <Sparkles size={14} className="mr-1" />
+                            Draft from Notebook Context
+                        </Button>
+                    )}
+                </div>
+
+                {/* Prompt Library Tab */}
+                {activeTab === "prompts" && (
+                    <PromptLibrary onSelectPrompt={handleSelectPrompt} />
                 )}
-            </div>
 
-            {/* Prompt Library Tab */}
-            {activeTab === "prompts" && (
-                <PromptLibrary onSelectPrompt={handleSelectPrompt} />
-            )}
-
-            {/* Brand Voice Tab */}
-            {activeTab === "brand_voice" && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in duration-500">
-                    <Card className="p-8 h-fit">
-                        <CardHeader className="px-0 pt-0">
-                            <CardTitle className="uppercase tracking-widest text-sm">Upload Sample Data</CardTitle>
-                            <CardDescription>Upload a past newsletter, blog post, or brand guidelines PDF to extract your unique Voice DNA.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="px-0">
-                            <div className="border-2 border-dashed border-brand-border rounded-lg p-12 text-center hover:bg-brand-background transition-colors dark:border-neutral-800 dark:hover:bg-neutral-900">
-                                <input
-                                    type="file"
-                                    id="voice-upload"
-                                    className="hidden"
-                                    accept=".pdf,.txt,.md"
-                                    onChange={handleVoiceUpload}
-                                />
-                                <label htmlFor="voice-upload" className="cursor-pointer flex flex-col items-center gap-4">
-                                    <div className="w-16 h-16 bg-black text-white rounded-full flex items-center justify-center dark:bg-white dark:text-black">
-                                        {analyzingVoice ? <Loader2 className="animate-spin" /> : <Upload />}
-                                    </div>
-                                    <span className="text-xs font-bold uppercase tracking-widest text-brand-text-secondary">
-                                        {analyzingVoice ? "Analyzing Voice DNA..." : "Click to Upload PDF / Text"}
-                                    </span>
-                                </label>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className={cn("p-8 transition-opacity duration-500", !voiceAnalysis && "opacity-50 pointer-events-none")}>
-                        <CardHeader className="px-0 pt-0 flex flex-row items-start justify-between">
-                            <div>
-                                <CardTitle className="uppercase tracking-widest text-sm flex items-center gap-2">
-                                    <Fingerprint size={16} />
-                                    Detected Voice Profile
-                                </CardTitle>
-                                <CardDescription>Gemini 3 Pro Analysis</CardDescription>
-                            </div>
-                            {voiceAnalysis && (
-                                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-900">
-                                    Analysis Complete
-                                </Badge>
-                            )}
-                        </CardHeader>
-                        <CardContent className="px-0 space-y-6">
-                            <div>
-                                <label className="text-[10px] font-bold uppercase tracking-widest text-brand-text-secondary mb-2 block">Tonal Summary</label>
-                                <div className="bg-brand-background p-4 rounded-lg text-sm italic dark:bg-neutral-900">
-                                    "{voiceAnalysis?.analysis_summary || "Upload a sample to see analysis..."}"
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="text-[10px] font-bold uppercase tracking-widest text-brand-text-secondary mb-2 block">System Instruction Block</label>
-                                <div className="bg-neutral-100 p-4 rounded-lg text-xs font-mono h-40 overflow-y-auto dark:bg-neutral-950 text-neutral-600 dark:text-neutral-400">
-                                    {voiceAnalysis?.system_instruction || "No instruction generated yet..."}
-                                </div>
-                            </div>
-
-                            <div className="flex items-center justify-between pt-4 border-t border-brand-border dark:border-neutral-800">
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        onClick={() => setApplyBrandVoice(!applyBrandVoice)}
-                                        className={cn("w-10 h-6 rounded-full relative transition-colors", applyBrandVoice ? "bg-black dark:bg-white" : "bg-gray-200 dark:bg-neutral-800")}
-                                    >
-                                        <div className={cn("absolute top-1 left-1 w-4 h-4 bg-white dark:bg-black rounded-full transition-all", applyBrandVoice ? "translate-x-4" : "")} />
-                                    </button>
-                                    <span className="text-[10px] font-bold uppercase tracking-widest">Apply to Future Drafts</span>
-                                </div>
-                                <Button
-                                    onClick={saveVoiceProfile}
-                                    disabled={!voiceAnalysis}
-                                    className={cn("text-xs uppercase tracking-widest", voiceSaved && "bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700")}
-                                >
-                                    {voiceSaved ? <><CheckCircle2 className="mr-2 h-4 w-4" /> Saved</> : <><Save className="mr-2 h-4 w-4" /> Save Profile</>}
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-            )}
-
-            {/* Newsletter Tab */}
-            {activeTab === "newsletter" && (
-                <>
-
-                    {/* HitL Review Panel */}
-                    {pendingReviewData && (
-                        <Card className="border-2 border-black dark:border-white animate-in slide-in-from-top duration-500 overflow-hidden">
-                            <CardHeader className="flex flex-row items-center justify-between border-b bg-brand-background dark:bg-neutral-900">
-                                <div>
-                                    <CardTitle className="text-sm uppercase tracking-widest">Review Extracted Intelligence</CardTitle>
-                                    <CardDescription>Human-in-the-Loop verification required for PDF ingestion.</CardDescription>
-                                </div>
-                                <div className="flex gap-3">
-                                    <Button variant="outline" size="sm" onClick={() => setPendingReviewData(null)}>Discard</Button>
-                                    <Button variant="default" size="sm" onClick={approveHitlData}>Approve & Save</Button>
-                                </div>
+                {/* Brand Voice Tab */}
+                {activeTab === "brand_voice" && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in duration-500">
+                        <Card className="p-8 h-fit">
+                            <CardHeader className="px-0 pt-0">
+                                <CardTitle className="uppercase tracking-widest text-sm">Upload Sample Data</CardTitle>
+                                <CardDescription>Upload a past newsletter, blog post, or brand guidelines PDF to extract your unique Voice DNA.</CardDescription>
                             </CardHeader>
-                            <CardContent className="p-0">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow className="bg-white dark:bg-black">
-                                            <TableHead>Field</TableHead>
-                                            <TableHead>Extracted Value</TableHead>
-                                            <TableHead>Confidence</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        <TableRow><TableCell className="font-bold">Company Name</TableCell><TableCell>{pendingReviewData.company_name}</TableCell><TableCell className="text-green-600 font-bold">HIGH</TableCell></TableRow>
-                                        <TableRow><TableCell className="font-bold">EBITDA</TableCell><TableCell>{pendingReviewData.ebitda}</TableCell><TableCell className="text-green-600 font-bold">HIGH</TableCell></TableRow>
-                                        <TableRow><TableCell className="font-bold">Advisor</TableCell><TableCell>{pendingReviewData.advisor}</TableCell><TableCell className="text-yellow-600 font-bold">MEDIUM</TableCell></TableRow>
-                                        <TableRow><TableCell className="font-bold">Status</TableCell><TableCell>{pendingReviewData.process_status}</TableCell><TableCell className="text-green-600 font-bold">HIGH</TableCell></TableRow>
-                                    </TableBody>
-                                </Table>
+                            <CardContent className="px-0">
+                                <div className="border-2 border-dashed border-brand-border rounded-lg p-12 text-center hover:bg-brand-background transition-colors dark:border-neutral-800 dark:hover:bg-neutral-900">
+                                    <input
+                                        type="file"
+                                        id="voice-upload"
+                                        className="hidden"
+                                        accept=".pdf,.txt,.md"
+                                        onChange={handleVoiceUpload}
+                                    />
+                                    <label htmlFor="voice-upload" className="cursor-pointer flex flex-col items-center gap-4">
+                                        <div className="w-16 h-16 bg-black text-white rounded-full flex items-center justify-center dark:bg-white dark:text-black">
+                                            {analyzingVoice ? <Loader2 className="animate-spin" /> : <Upload />}
+                                        </div>
+                                        <span className="text-xs font-bold uppercase tracking-widest text-brand-text-secondary">
+                                            {analyzingVoice ? "Analyzing Voice DNA..." : "Click to Upload PDF / Text"}
+                                        </span>
+                                    </label>
+                                </div>
                             </CardContent>
                         </Card>
-                    )}
 
-                    {/* Data Control Bar */}
-                    <div className="flex items-center justify-between mb-4 print:hidden">
-                        <div className="flex items-center gap-2 bg-neutral-100 p-1 rounded-lg dark:bg-neutral-900">
-                            <button
-                                onClick={() => setDataSource("live")}
-                                className={cn("px-4 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all",
-                                    dataSource === "live" ? "bg-white text-black shadow-sm dark:bg-neutral-800 dark:text-white" : "text-neutral-500 hover:text-black")}
-                            >
-                                Live Signals
-                            </button>
-                            <button
-                                onClick={() => setDataSource("historical")}
-                                className={cn("px-4 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all",
-                                    dataSource === "historical" ? "bg-white text-black shadow-sm dark:bg-neutral-800 dark:text-white" : "text-neutral-500 hover:text-black")}
-                            >
-                                Historical Archive
-                            </button>
-                        </div>
+                        <Card className={cn("p-8 transition-opacity duration-500", !voiceAnalysis && "opacity-50 pointer-events-none")}>
+                            <CardHeader className="px-0 pt-0 flex flex-row items-start justify-between">
+                                <div>
+                                    <CardTitle className="uppercase tracking-widest text-sm flex items-center gap-2">
+                                        <Fingerprint size={16} />
+                                        Detected Voice Profile
+                                    </CardTitle>
+                                    <CardDescription>Gemini 3 Pro Analysis</CardDescription>
+                                </div>
+                                {voiceAnalysis && (
+                                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-900">
+                                        Analysis Complete
+                                    </Badge>
+                                )}
+                            </CardHeader>
+                            <CardContent className="px-0 space-y-6">
+                                <div>
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-brand-text-secondary mb-2 block">Tonal Summary</label>
+                                    <div className="bg-brand-background p-4 rounded-lg text-sm italic dark:bg-neutral-900">
+                                        "{voiceAnalysis?.analysis_summary || "Upload a sample to see analysis..."}"
+                                    </div>
+                                </div>
 
-                        <div className="flex gap-2">
-                            <Button
-                                variant={viewMode === "grid" ? "secondary" : "ghost"}
-                                size="sm"
-                                className="gap-2"
-                                onClick={() => setViewMode("grid")}
-                            >
-                                <LayoutGrid size={14} /> Grid
-                            </Button>
-                            <Button
-                                variant={viewMode === "list" ? "secondary" : "ghost"}
-                                size="sm"
-                                className="gap-2 mx-1"
-                                onClick={() => setViewMode("list")}
-                            >
-                                <ListIcon size={14} /> List
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                className="gap-2 ml-2"
-                                onClick={handleExportPdf}
-                                disabled={generatingPdf}
-                            >
-                                {generatingPdf ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Printer size={14} />}
-                                {generatingPdf ? "Exporting..." : "Export PDF"}
-                            </Button>
-                        </div>
-                    </div>
+                                <div>
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-brand-text-secondary mb-2 block">System Instruction Block</label>
+                                    <div className="bg-neutral-100 p-4 rounded-lg text-xs font-mono h-40 overflow-y-auto dark:bg-neutral-950 text-neutral-600 dark:text-neutral-400">
+                                        {voiceAnalysis?.system_instruction || "No instruction generated yet..."}
+                                    </div>
+                                </div>
 
-                    {/* Content Area */}
-                    {viewMode === "grid" ? (
-                        <div className="space-y-6 animate-in fade-in duration-500">
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {visibleLots.map((lot, idx) => (
-                                    <Card key={idx} className={cn(
-                                        "overflow-hidden cursor-pointer hover:border-black transition-colors group h-full flex flex-col justify-between",
-                                        selectedLotIds.includes(lot.company_name || lot.lot_number) ? "border-black ring-1 ring-black dark:border-white dark:ring-white" : ""
-                                    )}
-                                        onClick={() => toggleLot(lot.company_name || lot.lot_number)}
+                                <div className="flex items-center justify-between pt-4 border-t border-brand-border dark:border-neutral-800">
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => setApplyBrandVoice(!applyBrandVoice)}
+                                            className={cn("w-10 h-6 rounded-full relative transition-colors", applyBrandVoice ? "bg-black dark:bg-white" : "bg-gray-200 dark:bg-neutral-800")}
+                                        >
+                                            <div className={cn("absolute top-1 left-1 w-4 h-4 bg-white dark:bg-black rounded-full transition-all", applyBrandVoice ? "translate-x-4" : "")} />
+                                        </button>
+                                        <span className="text-[10px] font-bold uppercase tracking-widest">Apply to Future Drafts</span>
+                                    </div>
+                                    <Button
+                                        onClick={saveVoiceProfile}
+                                        disabled={!voiceAnalysis}
+                                        className={cn("text-xs uppercase tracking-widest", voiceSaved && "bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700")}
                                     >
-                                        <div className="h-2 bg-neutral-100 dark:bg-neutral-900 group-hover:bg-brand-accent transition-colors"></div>
-                                        <CardContent className="p-6 space-y-4 flex-grow">
-                                            <div className="flex justify-between items-start gap-4">
-                                                <div>
-                                                    <h3 className="font-bold text-lg leading-tight line-clamp-2" title={lot.company_name}>{lot.company_name || "Unknown Company"}</h3>
-                                                    <p className="text-xs text-neutral-500 mt-1 uppercase tracking-wider line-clamp-2">{lot.company_description || "M&A Target"}</p>
-                                                </div>
-                                                <Badge variant={lot.process_status?.toLowerCase().includes("failed") ? "destructive" : "secondary"} className="text-[10px] uppercase shrink-0">
-                                                    {lot.process_status || "Active"}
-                                                </Badge>
-                                            </div>
+                                        {voiceSaved ? <><CheckCircle2 className="mr-2 h-4 w-4" /> Saved</> : <><Save className="mr-2 h-4 w-4" /> Save Profile</>}
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                )}
 
-                                            <div className="grid grid-cols-2 gap-4 text-sm pt-2">
-                                                <div className="bg-neutral-50 dark:bg-neutral-900 p-2 rounded">
-                                                    <p className="text-[9px] uppercase font-bold text-neutral-400">EBITDA</p>
-                                                    <p className="font-mono">{formatPriceCompact(lot.ebitda) || "N/A"}</p>
-                                                </div>
-                                                <div className="bg-neutral-50 dark:bg-neutral-900 p-2 rounded">
-                                                    <p className="text-[9px] uppercase font-bold text-neutral-400">Advisor</p>
-                                                    {lot.advisor_url ? (
-                                                        <a href={lot.advisor_url} target="_blank" rel="noopener noreferrer" className="font-medium truncate text-blue-600 hover:underline dark:text-blue-400 block" onClick={(e) => e.stopPropagation()}>
-                                                            {lot.advisor || "Unknown"}
-                                                        </a>
-                                                    ) : (
-                                                        <p className="font-medium truncate">{lot.advisor || "Unknown"}</p>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </CardContent>
+                {/* Newsletter Tab */}
+                {activeTab === "newsletter" && (
+                    <>
 
-                                        <div className="px-6 py-4 border-t bg-neutral-50/50 dark:bg-neutral-900/50 flex justify-between items-center text-xs">
-                                            <SourceAttribution sourceName={lot.source || "Sentinel"} />
-                                            {selectedLotIds.includes(lot.company_name || lot.lot_number) && (
-                                                <div className="flex items-center gap-1 text-[10px] font-bold uppercase text-green-600">
-                                                    <CheckSquare size={12} /> Selected
-                                                </div>
-                                            )}
-                                        </div>
-                                    </Card>
-                                ))}
+                        {/* HitL Review Panel */}
+                        {pendingReviewData && (
+                            <Card className="border-2 border-black dark:border-white animate-in slide-in-from-top duration-500 overflow-hidden">
+                                <CardHeader className="flex flex-row items-center justify-between border-b bg-brand-background dark:bg-neutral-900">
+                                    <div>
+                                        <CardTitle className="text-sm uppercase tracking-widest">Review Extracted Intelligence</CardTitle>
+                                        <CardDescription>Human-in-the-Loop verification required for PDF ingestion.</CardDescription>
+                                    </div>
+                                    <div className="flex gap-3">
+                                        <Button variant="outline" size="sm" onClick={() => setPendingReviewData(null)}>Discard</Button>
+                                        <Button variant="default" size="sm" onClick={approveHitlData}>Approve & Save</Button>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="p-0">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow className="bg-white dark:bg-black">
+                                                <TableHead>Field</TableHead>
+                                                <TableHead>Extracted Value</TableHead>
+                                                <TableHead>Confidence</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            <TableRow><TableCell className="font-bold">Company Name</TableCell><TableCell>{pendingReviewData.company_name}</TableCell><TableCell className="text-green-600 font-bold">HIGH</TableCell></TableRow>
+                                            <TableRow><TableCell className="font-bold">EBITDA</TableCell><TableCell>{pendingReviewData.ebitda}</TableCell><TableCell className="text-green-600 font-bold">HIGH</TableCell></TableRow>
+                                            <TableRow><TableCell className="font-bold">Advisor</TableCell><TableCell>{pendingReviewData.advisor}</TableCell><TableCell className="text-yellow-600 font-bold">MEDIUM</TableCell></TableRow>
+                                            <TableRow><TableCell className="font-bold">Status</TableCell><TableCell>{pendingReviewData.process_status}</TableCell><TableCell className="text-green-600 font-bold">HIGH</TableCell></TableRow>
+                                        </TableBody>
+                                    </Table>
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {/* Data Control Bar */}
+                        <div className="flex items-center justify-between mb-4 print:hidden">
+                            <div className="flex items-center gap-2 bg-neutral-100 p-1 rounded-lg dark:bg-neutral-900">
+                                <button
+                                    onClick={() => setDataSource("live")}
+                                    className={cn("px-4 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all",
+                                        dataSource === "live" ? "bg-white text-black shadow-sm dark:bg-neutral-800 dark:text-white" : "text-neutral-500 hover:text-black")}
+                                >
+                                    Live Signals
+                                </button>
+                                <button
+                                    onClick={() => setDataSource("historical")}
+                                    className={cn("px-4 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all",
+                                        dataSource === "historical" ? "bg-white text-black shadow-sm dark:bg-neutral-800 dark:text-white" : "text-neutral-500 hover:text-black")}
+                                >
+                                    Historical Archive
+                                </button>
                             </div>
 
-                            {/* Pagination Controls */}
-                            {totalPages > 1 && (
-                                <div className="flex items-center justify-between border-t border-brand-border pt-4">
-                                    <p className="text-[10px] uppercase tracking-widest text-brand-text-secondary">
-                                        Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, filteredLots.length)} of {filteredLots.length}
-                                    </p>
-                                    <div className="flex items-center gap-2">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                            disabled={currentPage === 1}
-                                            className="h-8 w-8 p-0"
+                            <div className="flex gap-2">
+                                <Button
+                                    variant={showGrowthPulse ? "default" : "outline"}
+                                    size="sm"
+                                    className="gap-2"
+                                    onClick={() => setShowGrowthPulse(!showGrowthPulse)}
+                                >
+                                    <Zap size={14} className={cn(showGrowthPulse ? "fill-current" : "")} />
+                                    {showGrowthPulse ? "Growth: ON" : "Growth: OFF"}
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-2"
+                                    onClick={() => handleGenerateDossier(selectedLotIds[0])}
+                                    disabled={generatingDossier || selectedLotIds.length !== 1}
+                                >
+                                    {generatingDossier ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <BookOpen size={14} />}
+                                    {generatingDossier ? "Dossier..." : "Intelligence Dossier"}
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-2"
+                                    onClick={handleExportPdf}
+                                    disabled={generatingPdf}
+                                >
+                                    {generatingPdf ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Printer size={14} />}
+                                    {generatingPdf ? "Exporting..." : "Export PDF"}
+                                </Button>
+                                <Button
+                                    onClick={handleGenerate}
+                                    disabled={loading || selectedLotIds.length === 0}
+                                    className="gap-2 bg-black text-white px-8 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest dark:bg-white dark:text-black"
+                                >
+                                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Sparkles size={14} /> Generate Memo ({selectedLotIds.length})</>}
+                                </Button>
+                            </div>
+                        </div>
+
+                        {/* SYSTEM ALERT */}
+                        {fetchError && (
+                            <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-4 mb-8 dark:bg-red-950/20 dark:border-red-900/30 animate-in fade-in zoom-in-95 duration-200">
+                                <AlertCircle className="text-red-600 mt-1 flex-shrink-0" size={20} />
+                                <div className="flex-1">
+                                    <h4 className="text-sm font-bold text-red-800 dark:text-red-400">System Interruption Detected</h4>
+                                    <p className="text-xs text-red-700 dark:text-red-400/80 mt-1">{fetchError}</p>
+                                    <div className="mt-3 flex gap-3">
+                                        <button
+                                            onClick={() => fetchLots()}
+                                            className="text-[10px] font-bold uppercase tracking-widest bg-red-600 text-white px-3 py-1.5 rounded-md hover:bg-red-700 transition-colors"
                                         >
-                                            <ChevronLeft size={14} />
-                                        </Button>
-                                        <span className="text-xs font-mono w-12 text-center">
-                                            {currentPage} / {totalPages}
-                                        </span>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                            disabled={currentPage === totalPages}
-                                            className="h-8 w-8 p-0"
-                                        >
-                                            <ChevronRight size={14} />
-                                        </Button>
+                                            Reconnect to Sentinel
+                                        </button>
+                                        {usingFallback && (
+                                            <span className="text-[10px] font-medium text-red-600/60 items-center flex">
+                                                (Displaying cached historical data)
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* DUAL FEED GRID */}
+                        <div className={cn("grid gap-8 h-[600px] mb-12 transition-all", showGrowthPulse ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1")}>
+                            {/* RESCUE FEED */}
+                            <div className="flex flex-col border border-brand-border rounded-xl overflow-hidden bg-white dark:bg-black dark:border-neutral-800 shadow-sm">
+                                <div className="p-4 border-b border-brand-border dark:border-neutral-800 bg-red-50/30 dark:bg-red-950/10 flex justify-between items-center">
+                                    <h3 className="text-xs font-bold uppercase tracking-widest text-red-700 dark:text-red-400 flex items-center gap-2">
+                                        <AlertCircle size={14} /> Rescue Pulse
+                                    </h3>
+                                    <Badge variant="outline" className="text-[10px]">{rescueLots.length} Signals</Badge>
+                                </div>
+                                <div className="flex-1 min-h-0 bg-white dark:bg-transparent">
+                                    {fetchingLots ? (
+                                        <div className="h-full flex items-center justify-center"><Loader2 className="animate-spin" /></div>
+                                    ) : (
+                                        <VirtualizedFeed
+                                            items={rescueLots}
+                                            height={550}
+                                            width="100%"
+                                            onToggleSelect={toggleLot}
+                                            onAddToNotebook={handleAddToNotebook}
+                                            selectedIds={selectedLotIds}
+                                        />
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* GROWTH FEED */}
+                            {showGrowthPulse && (
+                                <div className="flex flex-col border border-brand-border rounded-xl overflow-hidden bg-white dark:bg-black dark:border-neutral-800 shadow-sm animate-in fade-in slide-in-from-right duration-500">
+                                    <div className="p-4 border-b border-brand-border dark:border-neutral-800 bg-green-50/30 dark:bg-green-950/10 flex justify-between items-center">
+                                        <h3 className="text-xs font-bold uppercase tracking-widest text-green-700 dark:text-green-400 flex items-center gap-2">
+                                            <Sparkles size={14} /> Growth Pulse
+                                        </h3>
+                                        <Badge variant="outline" className="text-[10px]">{growthLots.length} Signals</Badge>
+                                    </div>
+                                    <div className="flex-1 min-h-0 bg-white dark:bg-transparent">
+                                        {fetchingLots ? (
+                                            <div className="h-full flex items-center justify-center"><Loader2 className="animate-spin" /></div>
+                                        ) : (
+                                            <VirtualizedFeed
+                                                items={growthLots}
+                                                height={550}
+                                                width="100%"
+                                                onToggleSelect={toggleLot}
+                                                onAddToNotebook={handleAddToNotebook}
+                                                selectedIds={selectedLotIds}
+                                            />
+                                        )}
                                     </div>
                                 </div>
                             )}
                         </div>
-                    ) : (
-                        /* Live Data Table List Mode */
-                        <Card className="overflow-hidden">
-                            <div className="p-4 border-b border-brand-border dark:border-neutral-800 flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <h2 className="text-xs font-bold uppercase tracking-widest">Sentinel Live Feed</h2>
-                                    {usingFallback && (
-                                        <Badge variant="secondary" className="text-[9px] uppercase">
-                                            Cached Data
-                                        </Badge>
-                                    )}
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    {fetchError ? (
-                                        <>
-                                            <div className="flex items-center gap-2 text-amber-600">
-                                                <AlertCircle className="h-3 w-3" />
-                                                <span className="text-[10px] font-bold uppercase">Reconnecting</span>
-                                            </div>
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={fetchLots}
-                                                className="text-[10px] uppercase tracking-widest"
+
+                        {/* Editor Panel */}
+                        <Card className="p-8">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                                <div>
+                                    <label className="block text-xs font-bold uppercase tracking-widest mb-3">Analytical Lens</label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {TEMPLATES.map((tmpl) => (
+                                            <button
+                                                key={tmpl.id}
+                                                onClick={() => setSelectedTemplate(tmpl.id)}
+                                                className={cn(
+                                                    "text-[10px] font-bold uppercase tracking-widest py-2 rounded border transition-all",
+                                                    selectedTemplate === tmpl.id
+                                                        ? "bg-black text-white border-black"
+                                                        : "bg-white text-brand-text-secondary border-brand-border hover:border-black dark:bg-neutral-900 dark:border-neutral-700"
+                                                )}
                                             >
-                                                <RefreshCw className={cn("h-3 w-3 mr-1", fetchingLots && "animate-spin")} />
-                                                Retry
-                                            </Button>
+                                                {tmpl.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label htmlFor="tone-modifier" className="block text-xs font-bold uppercase tracking-widest mb-3">Tone Modifier</label>
+                                    <textarea
+                                        id="tone-modifier"
+                                        name="tone-modifier"
+                                        value={instructions}
+                                        onChange={(e) => setInstructions(e.target.value)}
+                                        placeholder="e.g. emphasise capital flight risk..."
+                                        className="w-full bg-brand-background border border-brand-border rounded-lg p-3 text-sm font-medium focus:ring-1 focus:ring-black focus:outline-none h-[74px] resize-none dark:bg-neutral-900 dark:border-neutral-700"
+                                        autoComplete="off"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex items-center justify-between border-t border-brand-border pt-8 dark:border-neutral-800">
+                                <div className="flex items-center gap-4">
+                                    <button
+                                        onClick={() => setIncludeSignature(!includeSignature)}
+                                        className={cn(
+                                            "w-10 h-10 flex items-center justify-center rounded-lg border transition-all",
+                                            includeSignature ? 'bg-black text-white border-black' : 'border-brand-border text-brand-text-secondary'
+                                        )}
+                                    >
+                                        <Stamp className="h-5 w-5" />
+                                    </button>
+                                    <div>
+                                        <p className="text-[10px] font-bold uppercase tracking-widest text-black dark:text-white">Append Authority</p>
+                                        <p className="text-[10px] font-medium text-brand-text-secondary uppercase">Sign as Partner</p>
+                                    </div>
+                                </div>
+
+                                <Button
+                                    onClick={handleGenerate}
+                                    disabled={loading || selectedLotIds.length === 0}
+                                    className="min-w-[200px] uppercase text-xs tracking-[0.2em]"
+                                >
+                                    {loading ? (
+                                        <>
+                                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                            Generating
                                         </>
                                     ) : (
-                                        <>
-                                            <span className="relative flex h-2 w-2">
-                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                                                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                                            </span>
-                                            <span className="text-[10px] font-bold text-brand-text-secondary uppercase">Connected</span>
-                                        </>
+                                        `Build Memo (${selectedLotIds.length})`
                                     )}
-                                </div>
-                            </div>
-
-                            {/* Error Banner */}
-                            {fetchError && (
-                                <div className="px-4 py-2 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800 flex items-center justify-between">
-                                    <p className="text-[10px] text-amber-700 dark:text-amber-400">
-                                        <strong>Connection Issue:</strong> {fetchError}. Displaying cached intelligence.
-                                    </p>
-                                </div>
-                            )}
-
-                            <div className="p-4">
-                                {fetchingLots ? (
-                                    <div className="py-12 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></div>
-                                ) : (
-                                    <DataTable
-                                        columns={columns}
-                                        data={filteredLots}
-                                        searchKey="company_name"
-                                    />
-                                )}
+                                </Button>
                             </div>
                         </Card>
-                    )}
 
-                    {/* Editor Panel */}
-                    <Card className="p-8">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                            <div>
-                                <label className="block text-xs font-bold uppercase tracking-widest mb-3">Analytical Lens</label>
-                                <div className="grid grid-cols-2 gap-2">
-                                    {TEMPLATES.map((tmpl) => (
-                                        <button
-                                            key={tmpl.id}
-                                            onClick={() => setSelectedTemplate(tmpl.id)}
-                                            className={cn(
-                                                "text-[10px] font-bold uppercase tracking-widest py-2 rounded border transition-all",
-                                                selectedTemplate === tmpl.id
-                                                    ? "bg-black text-white border-black"
-                                                    : "bg-white text-brand-text-secondary border-brand-border hover:border-black dark:bg-neutral-900 dark:border-neutral-700"
-                                            )}
-                                        >
-                                            {tmpl.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                            <div>
-                                <label htmlFor="tone-modifier" className="block text-xs font-bold uppercase tracking-widest mb-3">Tone Modifier</label>
-                                <textarea
-                                    id="tone-modifier"
-                                    name="tone-modifier"
-                                    value={instructions}
-                                    onChange={(e) => setInstructions(e.target.value)}
-                                    placeholder="e.g. emphasise capital flight risk..."
-                                    className="w-full bg-brand-background border border-brand-border rounded-lg p-3 text-sm font-medium focus:ring-1 focus:ring-black focus:outline-none h-[74px] resize-none dark:bg-neutral-900 dark:border-neutral-700"
-                                    autoComplete="off"
-                                />
-                            </div>
-                        </div>
+                        {/* Output */}
+                        {generatedDraft && (
+                            <Card className="p-12 bg-white dark:bg-black animate-in fade-in duration-700">
+                                <article className="prose prose-sm prose-neutral max-w-none prose-headings:font-bold prose-headings:tracking-tighter prose-p:text-brand-text-primary prose-strong:text-black dark:prose-invert">
+                                    <ReactMarkdown>{generatedDraft}</ReactMarkdown>
+                                </article>
+                            </Card>
+                        )}
 
-                        <div className="flex items-center justify-between border-t border-brand-border pt-8 dark:border-neutral-800">
-                            <div className="flex items-center gap-4">
-                                <button
-                                    onClick={() => setIncludeSignature(!includeSignature)}
-                                    className={cn(
-                                        "w-10 h-10 flex items-center justify-center rounded-lg border transition-all",
-                                        includeSignature ? 'bg-black text-white border-black' : 'border-brand-border text-brand-text-secondary'
-                                    )}
-                                >
-                                    <Stamp className="h-5 w-5" />
-                                </button>
-                                <div>
-                                    <p className="text-[10px] font-bold uppercase tracking-widest text-black dark:text-white">Append Authority</p>
-                                    <p className="text-[10px] font-medium text-brand-text-secondary uppercase">Sign as Partner</p>
-                                </div>
-                            </div>
-
-                            <Button
-                                onClick={handleGenerate}
-                                disabled={loading || selectedLotIds.length === 0}
-                                className="min-w-[200px] uppercase text-xs tracking-[0.2em]"
-                            >
-                                {loading ? (
-                                    <>
-                                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                        Generating
-                                    </>
-                                ) : (
-                                    `Build Memo (${selectedLotIds.length})`
-                                )}
-                            </Button>
-                        </div>
-                    </Card>
-
-                    {/* Output */}
-                    {generatedDraft && (
-                        <Card className="p-12 bg-white dark:bg-black animate-in fade-in duration-700">
-                            <article className="prose prose-sm prose-neutral max-w-none prose-headings:font-bold prose-headings:tracking-tighter prose-p:text-brand-text-primary prose-strong:text-black dark:prose-invert">
-                                <ReactMarkdown>{generatedDraft}</ReactMarkdown>
-                            </article>
-                        </Card>
-                    )}
-
-                    {/* Global FAB */}
-                    <button className="fixed bottom-8 right-8 bg-black text-white px-6 py-3 rounded-full shadow-2xl uppercase text-[10px] tracking-[0.3em] flex items-center gap-3 hover:bg-neutral-800 transition-colors dark:bg-white dark:text-black">
-                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
-                        System Active
-                    </button>
-                </>
-            )}
+                        {/* Global FAB */}
+                        <button className="fixed bottom-8 right-8 bg-black text-white px-6 py-3 rounded-full shadow-2xl uppercase text-[10px] tracking-[0.3em] flex items-center gap-3 hover:bg-neutral-800 transition-colors dark:bg-white dark:text-black">
+                            <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+                            System Active
+                        </button>
+                    </>
+                )}
+            </div>
         </div>
     );
 }

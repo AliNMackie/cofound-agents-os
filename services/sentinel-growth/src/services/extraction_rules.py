@@ -73,7 +73,12 @@ class SectorLogicController:
             f"TONE RULES:\n{tone_instruction}\n\n"
             f"EXTRACTION SCHEMA:\n"
             f"Extract the following fields into a valid JSON object:\n"
-            f"[{schema_list}]\n\n"
+            f"[{schema_list}, signal_type, conviction_score, sentiment_score, momentum_score]\n\n"
+            f"INTELLIGENCE RULES:\n"
+            f"- signal_type: 'RESCUE' if distressed/insolvent, 'GROWTH' if expansion/M&A.\n"
+            f"- conviction_score: 0-100 indicating relevance and quality of the lead.\n"
+            f"- sentiment_score: -1.0 (very negative) to 1.0 (very positive) about the company's future.\n"
+            f"- momentum_score: 0.0 to 1.0 based on how active the sector/company is.\n\n"
             f"Output strictly valid JSON only. Do not include markdown formatting or explanations."
         )
         return prompt

@@ -1,0 +1,50 @@
+steps:
+  # 1. Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Build Sentinel Growth'
+    args:
+      - 'build'
+      - '-t'
+      - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/sentinel-growth:manual-fix'
+      - '-t'
+      - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/sentinel-growth:latest'
+      - '.'
+
+  # 2. Push the container image to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Push Sentinel Growth'
+    args:
+      - 'push'
+      - '--all-tags'
+      - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/sentinel-growth'
+    waitFor:
+      - 'Build Sentinel Growth'
+
+  # 3. Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'Deploy Sentinel Growth'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'sentinel-growth'
+      - '--image'
+      - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/sentinel-growth:manual-fix'
+      - '--region'
+      - 'europe-west2'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--set-secrets'
+      - 'GOOGLE_API_KEY=google-api-key:latest,COMPANIES_HOUSE_API_KEY=COMPANIES_HOUSE_API_KEY:latest'
+      - '--set-env-vars'
+      - 'GEMINI_MODEL=gemini-3-flash-preview,FIRESTORE_DB_NAME=icorigin'
+    waitFor:
+      - 'Push Sentinel Growth'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+images:
+  - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/sentinel-growth:manual-fix'
+  - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/sentinel-growth:latest'

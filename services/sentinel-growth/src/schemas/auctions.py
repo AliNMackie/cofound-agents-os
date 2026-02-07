@@ -9,6 +9,12 @@ class AuctionData(BaseModel):
     advisor: Optional[str] = Field(None, description="Advisor managing the process (e.g. Rothschild)")
     process_status: Optional[str] = Field(None, description="Status of the auction (e.g. Postponed, H1 2024)")
 
+    # Advanced Intelligence Fields
+    signal_type: str = Field("GROWTH", description="RESCUE or GROWTH")
+    conviction_score: int = Field(0, ge=0, le=100)
+    sentiment_score: float = Field(0.0, description="-1.0 to 1.0 sentiment analysis")
+    momentum_score: float = Field(0.0, description="0.0 to 1.0 based on historical activity")
+
     class Config:
         extra = "allow"
 

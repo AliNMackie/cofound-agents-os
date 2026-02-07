@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Intelligence Dossier - {{ company_name }}</title>
+    <style>
+        :root {
+            --brand-primary: #000000;
+            --brand-secondary: #4a4a4a;
+            --accent-growth: #15803d;
+            --accent-rescue: #b91c1c;
+            --bg-page: #ffffff;
+            --text-main: #111111;
+            --text-muted: #666666;
+            --border-color: #e5e5e5;
+        }
+
+        body.DARK_INSTITUTIONAL {
+            --brand-primary: #ffffff;
+            --brand-secondary: #a3a3a3;
+            --bg-page: #000000;
+            --text-main: #f5f5f5;
+            --text-muted: #888888;
+            --border-color: #333333;
+        }
+
+        body.DARK_INSTITUTIONAL .summary-box {
+            background-color: #111111;
+        }
+
+        body.DARK_INSTITUTIONAL .financial-table th {
+            background-color: #222222;
+        }
+
+        @media print {
+            .page-break {
+                page-break-after: always;
+            }
+        }
+
+        body {
+            font-family: 'Georgia', serif;
+            color: var(--text-main);
+            background-color: var(--bg-page);
+            margin: 0;
+            line-height: 1.6;
+            font-size: 11pt;
+        }
+
+        .container {
+            width: 800px;
+            margin: 0 auto;
+            padding: 40px;
+        }
+
+        header {
+            border-bottom: 3px solid var(--brand-primary);
+            padding-bottom: 20px;
+            margin-bottom: 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .doc-title {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 900;
+            font-size: 24pt;
+            margin: 0;
+        }
+
+        .classification {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-weight: bold;
+            font-size: 8pt;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .meta-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 40px;
+            font-family: 'Helvetica', 'Arial', sans-serif;
+        }
+
+        .meta-item {
+            border-left: 2px solid var(--border-color);
+            padding-left: 15px;
+        }
+
+        .meta-label {
+            font-size: 8pt;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        .meta-value {
+            font-size: 12pt;
+            font-weight: bold;
+        }
+
+        section {
+            margin-bottom: 40px;
+        }
+
+        h2 {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            text-transform: uppercase;
+            font-size: 14pt;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 5px;
+            margin-top: 0;
+        }
+
+        .summary-box {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            font-style: italic;
+        }
+
+        .financial-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 10pt;
+        }
+
+        .financial-table th {
+            text-align: left;
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-bottom: 2px solid var(--brand-primary);
+        }
+
+        .financial-table td {
+            padding: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .timeline {
+            position: relative;
+            padding-left: 40px;
+            margin-top: 20px;
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 30px;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -31px;
+            top: 5px;
+            width: 10px;
+            height: 10px;
+            background-color: var(--brand-primary);
+            border-radius: 50%;
+        }
+
+        .timeline-date {
+            font-weight: bold;
+            font-size: 9pt;
+            color: var(--text-muted);
+        }
+
+        .footer {
+            margin-top: 60px;
+            font-size: 8pt;
+            color: var(--text-muted);
+            text-align: center;
+            border-top: 1px solid var(--border-color);
+            padding-top: 10px;
+        }
+
+        /* Signal types */
+        .signal-GROWTH {
+            color: var(--accent-growth);
+        }
+
+        .signal-RESCUE {
+            color: var(--accent-rescue);
+        }
+    </style>
+</head>
+
+<body class="{{ theme }}">
+    <div class="container">
+        <header>
+            <div>
+                <p class="classification">Classification: INTERNAL / PROPRIETARY</p>
+                <h1 class="doc-title">Intelligence Dossier</h1>
+            </div>
+            <div style="text-align: right">
+                <p class="meta-label">Generated On</p>
+                <p class="meta-value">{{ current_date }}</p>
+            </div>
+        </header>
+
+        <div class="meta-grid">
+            <div class="meta-item">
+                <p class="meta-label">Company Name</p>
+                <p class="meta-value">{{ company_name }}</p>
+            </div>
+            <div class="meta-item">
+                <p class="meta-label">Primary Signal</p>
+                <p class="meta-value signal-{{ signal_type }}">{{ signal_type }}</p>
+            </div>
+        </div>
+
+        <section>
+            <h2>Executive Strategic Summary</h2>
+            <div class="summary-box">
+                {{ executive_summary }}
+            </div>
+        </section>
+
+        <section>
+            <h2>Financial Indicators & Metrics</h2>
+            <table class="financial-table">
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>Value</th>
+                        <th>Benchmark / Context</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for metric, value in financial_indicators.items() %}
+                    <tr>
+                        <td style="font-weight: bold;">{{ metric | replace('_', ' ') | title }}</td>
+                        <td>{{ value }}</td>
+                        <td>{{ financial_benchmarks.get(metric, 'N/A') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+
+        <div class="page-break"></div>
+
+        <section style="margin-top: 40px;">
+            <h2>12-Month Momentum Timeline</h2>
+            <div class="timeline">
+                {% for event in momentum_timeline %}
+                <div class="timeline-item">
+                    <p class="timeline-date">{{ event.date }}</p>
+                    <p style="font-weight: bold; margin: 5px 0;">{{ event.headline }}</p>
+                    <p style="font-size: 10pt; color: var(--brand-secondary);">{{ event.analysis }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section>
+            <h2>Sector Context: {{ sector }}</h2>
+            <p style="font-size: 10pt;">
+                {{ sector_context }}
+            </p>
+        </section>
+
+        <div class="footer">
+            IC Origin Intelligence Systems &copy; 2026. This document is for internal use only by authorized personnel.
+            <br>
+            Reference Signal ID: {{ signal_id }} | Source: {{ source_family }}
+        </div>
+    </div>
+</body>
+
+</html>

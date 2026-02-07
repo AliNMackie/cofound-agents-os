@@ -39,7 +39,10 @@
                 "yield_percent",
                 "tenure_type",
                 "lease_expiry",
-                "insolvency_practitioner"
+                "insolvency_practitioner",
+                "occupancy_rate",
+                "debt_to_yield",
+                "lha_exposure"
             ]
         },
         "tech_ma": {
@@ -66,8 +69,9 @@
                 "funding_round",
                 "valuation_post_money",
                 "lead_investor",
-                "burn_rate_estimated",
-                "runway_months"
+                "burn_rate",
+                "runway_months",
+                "rd_to_revenue_ratio"
             ]
         },
         "marine_logistics": {
@@ -92,9 +96,11 @@
             "extraction_schema": [
                 "vessel_name",
                 "imo_number",
+                "vessel_age",
+                "imo_compliance",
+                "charter_yield",
                 "charter_rate_daily",
                 "route_origin",
-                "route_destination",
                 "cargo_type_teu"
             ]
         }

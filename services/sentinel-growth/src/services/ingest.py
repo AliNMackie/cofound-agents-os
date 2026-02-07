@@ -88,11 +88,15 @@ class AuctionIngestor:
             
             auction_data = AuctionData(**extracted_json)
             
-            # Enrich with Companies House data
+            # 12-Month Momentum Calculation (Heuristic)
+            # If momentum_score is low or missing, we can adjust it based on company profile later
+            # For now, we trust the model's first-pass calculation.
+            
+            # Enrichment with Companies House data
             log.info("Enriching company data", company_name=auction_data.company_name)
             company_profile = await enrichment_service.enrich_company_data(auction_data.company_name)
             
-            # Create enriched version
+            # Create enriched version with intelligence fields
             enriched_data = AuctionDataEnriched(
                 **auction_data.model_dump(),
                 company_profile=company_profile

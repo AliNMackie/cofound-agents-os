@@ -40,4 +40,7 @@ export interface IntelligenceSignal {
     advisor?: string | null;
     advisor_url?: string | null;
     deal_date?: string | null;
+    source_link?: string | null;
+    signal_type?: "GROWTH" | "RESCUE";
+    source_family?: "RSS_NEWS" | "GOV_REGISTRY" | "BOUTIQUE_ADVISORY";
 }

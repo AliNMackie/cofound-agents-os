@@ -132,6 +132,42 @@ class CompanyEnrichmentService:
                 company_status=data.get("company_status"),
                 company_type=data.get("type")
             )
+
+    async def fetch_company_charges(self, company_number: str) -> List[Dict[str, Any]]:
+        """Fetch company charges/mortgages from Companies House"""
+        if not self.api_key:
+            return []
+            
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{self.base_url}/company/{company_number}/charges",
+                auth=(self.api_key, ""),
+                timeout=10.0
+            )
+            
+            if response.status_code != 200:
+                logger.error("Failed to fetch charges", company_number=company_number)
+                return []
+                
+            return response.json().get("items", [])
+
+    async def fetch_company_pscs(self, company_number: str) -> List[Dict[str, Any]]:
+        """Fetch Persons with Significant Control (PSC) from Companies House"""
+        if not self.api_key:
+            return []
+            
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{self.base_url}/company/{company_number}/persons-with-significant-control",
+                auth=(self.api_key, ""),
+                timeout=10.0
+            )
+            
+            if response.status_code != 200:
+                logger.error("Failed to fetch PSCs", company_number=company_number)
+                return []
+                
+            return response.json().get("items", [])
     
     def _get_stub_data(self, company_name: str) -> CompanyProfile:
         """Returns stub data for development/testing when no API key is available"""

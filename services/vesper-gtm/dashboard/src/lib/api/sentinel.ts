@@ -3,14 +3,29 @@
 import { AuctionData, AuctionIngestRequest, IntelligenceSignal } from '@/types/sentinel';
 import { DataSource, IndustryContext } from '@/types/settings';
 
+import { getAuth } from "firebase/auth";
+
 const SENTINEL_API_URL = process.env.NEXT_PUBLIC_SENTINEL_API_URL || 'https://sentinel-growth-hc7um252na-nw.a.run.app';
 
+async function getAuthHeaders(): Promise<HeadersInit> {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+    };
+
+    if (user) {
+        const token = await user.getIdToken();
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
+}
+
 export async function ingestAuction(request: AuctionIngestRequest): Promise<AuctionData> {
+    const headers = await getAuthHeaders();
     const response = await fetch(`${SENTINEL_API_URL}/ingest/auction`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: headers,
         body: JSON.stringify(request),
     });
 
@@ -22,7 +37,10 @@ export async function ingestAuction(request: AuctionIngestRequest): Promise<Auct
 }
 
 export async function getSources(): Promise<DataSource[]> {
-    const response = await fetch(`${SENTINEL_API_URL}/sources`);
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${SENTINEL_API_URL}/sources`, {
+        headers: headers
+    });
     if (!response.ok) {
         // Return empty if 404/server error to avoid crashing UI completely? 
         // Or throw to show error state.
@@ -32,11 +50,10 @@ export async function getSources(): Promise<DataSource[]> {
 }
 
 export async function addSource(source: Omit<DataSource, 'id' | 'lastChecked'>): Promise<DataSource> {
+    const headers = await getAuthHeaders();
     const response = await fetch(`${SENTINEL_API_URL}/sources`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: headers,
         body: JSON.stringify(source),
     });
 
@@ -49,8 +66,10 @@ export async function addSource(source: Omit<DataSource, 'id' | 'lastChecked'>):
 }
 
 export async function deleteSource(url: string): Promise<void> {
+    const headers = await getAuthHeaders();
     const response = await fetch(`${SENTINEL_API_URL}/sources?url=${encodeURIComponent(url)}`, {
         method: 'DELETE',
+        headers: headers
     });
 
     if (!response.ok) {
@@ -59,7 +78,10 @@ export async function deleteSource(url: string): Promise<void> {
 }
 
 export async function getIndustries(): Promise<IndustryContext[]> {
-    const response = await fetch(`${SENTINEL_API_URL}/industries`);
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${SENTINEL_API_URL}/industries`, {
+        headers: headers
+    });
     if (!response.ok) {
         console.error(`Failed to fetch industries: ${response.statusText}`);
         return []; // Fail safe default (empty list will trigger fallback to defaults in Context)
@@ -67,29 +89,55 @@ export async function getIndustries(): Promise<IndustryContext[]> {
     return response.json();
 }
 
-export async function getSignals(industryId?: string): Promise<IntelligenceSignal[]> {
+export async function getSignals(industryId?: string, days?: number, query?: string): Promise<IntelligenceSignal[]> {
     const url = new URL(`${SENTINEL_API_URL}/signals`);
     if (industryId) {
         url.searchParams.append('industry_id', industryId);
     }
+    if (days) {
+        url.searchParams.append('days', days.toString());
+    }
+    if (query) {
+        url.searchParams.append('q', query);
+    }
 
-    const response = await fetch(url.toString());
+    const headers = await getAuthHeaders();
+    const response = await fetch(url.toString(), {
+        headers: headers
+    });
     if (!response.ok) {
-        console.error(`Failed to fetch signals: ${response.statusText}`);
-        return [];
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Signal fetch failed: ${response.statusText}`);
     }
     return response.json();
 }
 
 export async function triggerSweep(): Promise<{ status: string }> {
+    const headers = await getAuthHeaders();
     const response = await fetch(`${SENTINEL_API_URL}/tasks/sweep`, {
-        method: 'POST'
+        method: 'POST',
+        headers: headers
     });
 
     if (!response.ok) {
         throw new Error('Failed to trigger sweep');
     }
     return response.json();
+}
+
+export async function generateDossier(signalId: string): Promise<Blob> {
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${SENTINEL_API_URL}/signals/generate/dossier`, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify({ signal_id: signalId })
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to generate dossier: ${response.statusText}`);
+    }
+
+    return response.blob();
 }
 
 // Mock data for development

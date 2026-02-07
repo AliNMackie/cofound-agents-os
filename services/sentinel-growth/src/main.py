@@ -28,13 +28,17 @@ async def lifespan(app: FastAPI):
     # ... scheduler logic ...
     from src.services.pulse_engine import pulse_engine
     
-    # Schedule Morning Pulse for 07:30 AM Daily
-    scheduler.add_job(
-        pulse_engine.generate_morning_pulse,
-        CronTrigger(hour=7, minute=30),
-        id="morning_pulse",
-        replace_existing=True
-    )
+    
+    if pulse_engine:
+        # Schedule Morning Pulse for 07:30 AM Daily
+        scheduler.add_job(
+            pulse_engine.generate_morning_pulse,
+            CronTrigger(hour=7, minute=30),
+            id="morning_pulse",
+            replace_existing=True
+        )
+    else:
+        structlog.get_logger().error("PulseEngine not initialized, skipping schedule.")
     
     # Schedule Market Sweep for 8:00 AM Daily
     scheduler.add_job(

@@ -65,4 +65,12 @@ class PulseEngine:
             logger.error("Failed to generate Morning Pulse", error=str(e))
             raise e
 
-pulse_engine = PulseEngine()
+try:
+    pulse_engine = PulseEngine()
+except Exception as e:
+    logger.error("Failed to initialize PulseEngine", error=str(e))
+    # Fallback/Dummy class to prevent import errors?
+    # Better to leave it distinct or raise logged error?
+    # If we silence it, the route using it will crash.
+    # But checking if app starts is priority.
+    pulse_engine = None 

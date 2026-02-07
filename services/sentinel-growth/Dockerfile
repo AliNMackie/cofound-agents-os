@@ -16,6 +16,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Set up work directory
 WORKDIR /app
 
+# Ensure Python output is logged immediately
+ENV PYTHONUNBUFFERED=1
+
 # Install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt --retries 5 --timeout 60

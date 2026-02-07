@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from typing import List, Optional, Any, Dict
 from google.cloud import firestore
 import datetime
+import structlog
 from src.services.pdf_factory import render_pdf
 
 router = APIRouter()

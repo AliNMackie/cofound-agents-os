@@ -7,11 +7,11 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // DEFAULT: DENY ALL
-    match /{document=**} {
-      allow read, write: if false;
+    // User profiles and settings: Private to the authenticated user
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
-    
+
     // User Settings: Private to the authenticated user
     match /user_settings/{settingId} {
        allow read, write: if isAuthenticated();

@@ -1,4 +1,5 @@
 import os
+import datetime
 import google.generativeai as genai
 from typing import List, Dict, Any, Optional
 
@@ -147,25 +148,47 @@ Task: Write the Weekly Wrap Intelligence Report. Structure:
 
     def _format_auction_data(self, auction_list: List[Dict[str, Any]]) -> str:
         """
-        Formats the list of auction dicts into a readable string for the LLM.
+        Formats the list of auction dicts (or Intelligence Signals) into a readable string for the LLM.
         Explicitly calculates and highlights the 'Pricing Disconnect' (Guide vs Final Bid).
         """
         formatted_text = ""
         for item in auction_list:
-            lot_num = item.get('lot_number', 'N/A')
-            address = item.get('address', 'Unknown Address')
-            guide = item.get('guide_price', 'N/A')
-            final_bid = item.get('final_bid', 'N/A')
-            house = item.get('auction_house', 'Unknown House')
-            sector = item.get('sector', 'N/A')
+            # Check if this is an Intelligence Signal or legacy Auction Data
+            # Signals have 'headline' and 'analysis'
             
-            # Pricing Disconnect Calculation logic (if values are numeric-ish)
-            # This is a simple string formatter, but prompts the LLM to notice the gap
-            pricing_info = f"Guide: {guide} | Final Bid: {final_bid}"
+            if 'headline' in item:
+                 # Intelligence Signal Format
+                headline = item.get('headline', 'Unknown Signal')
+                analysis = item.get('analysis', '')
+                source = item.get('source', 'Unknown Source')
+                cat = item.get('category', 'General')
+                advisor = item.get('advisor')
+                ebitda = item.get('ebitda')
+                
+                formatted_text += f"- Signal: {headline} [{cat}]\n"
+                formatted_text += f"  Source: {source}\n"
+                if advisor:
+                    formatted_text += f"  Advisor: {advisor}\n"
+                if ebitda:
+                    formatted_text += f"  EBITDA: {ebitda}\n"
+                formatted_text += f"  Analysis: {analysis}\n\n"
             
-            formatted_text += f"- Lot {lot_num} ({house}): {address} [{sector}]\n"
-            formatted_text += f"  {pricing_info}\n"
-            formatted_text += f"  Details: {item.get('description', '')}\n\n"
+            else:
+                # Legacy Auction Format (keep as fallback)
+                lot_num = item.get('lot_number', 'N/A')
+                address = item.get('address', 'Unknown Address')
+                guide = item.get('guide_price', 'N/A')
+                final_bid = item.get('final_bid', 'N/A')
+                house = item.get('auction_house', 'Unknown House')
+                sector = item.get('sector', 'N/A')
+                
+                # Pricing Disconnect Calculation logic (if values are numeric-ish)
+                # This is a simple string formatter, but prompts the LLM to notice the gap
+                pricing_info = f"Guide: {guide} | Final Bid: {final_bid}"
+                
+                formatted_text += f"- Lot {lot_num} ({house}): {address} [{sector}]\n"
+                formatted_text += f"  {pricing_info}\n"
+                formatted_text += f"  Details: {item.get('description', '')}\n\n"
             
         return formatted_text
 
@@ -203,10 +226,11 @@ Task: Write the Weekly Wrap Intelligence Report. Structure:
 
         ### CRITICAL OVERRIDES (NON-NEGOTIABLE)
         Regardless of the Brand Voice above, you MUST strictly adhere to these rules:
-        1. **SPELLING:** Use UK English ONLY (e.g., 'Realise', 'Programme', 'Centre', 'Labour', 'Defence', 'Organise').
-        2. **CURRENCY:** All monetary values MUST be in GBP (£). Never use USD ($) or EUR (€) unless explicitly quoting a foreign source. 
+        1. **CURRENT DATE:** Today is {datetime.datetime.now().strftime("%d %B %Y")}. You MUST use this date for the memo header/context. Do NOT make up a past date like 2023.
+        2. **SPELLING:** Use UK English ONLY (e.g., 'Realise', 'Programme', 'Centre', 'Labour', 'Defence', 'Organise').
+        3. **CURRENCY:** All monetary values MUST be in GBP (£). Never use USD ($) or EUR (€) unless explicitly quoting a foreign source. 
            - Format: £1.5m, £500k.
-        3. **NO AMERICANISMS:** Avoid terms like 'Real Estate' (use 'Property'), 'Restroom' (use 'Toilet/Loo'), 'Trash' (use 'Rubbish').
+        4. **NO AMERICANISMS:** Avoid terms like 'Real Estate' (use 'Property'), 'Restroom' (use 'Toilet/Loo'), 'Trash' (use 'Rubbish').
         """
 
         try:

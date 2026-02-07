@@ -1,0 +1,15 @@
+.git
+.next
+node_modules
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.DS_Store
+.env
+.env.local
+.env.production
+dist
+out
+coverage
+.coverage

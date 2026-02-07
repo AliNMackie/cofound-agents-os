@@ -1,7 +1,7 @@
 # src/services/enrichment.py
 import os
 import structlog
-from typing import Optional
+from typing import Optional, List, Dict, Any
 import httpx
 from src.schemas.auctions import CompanyProfile
 

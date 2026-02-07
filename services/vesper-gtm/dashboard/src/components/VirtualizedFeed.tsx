@@ -1,5 +1,5 @@
 // @ts-ignore
-import { FixedSizeList } from 'react-window';
+import { List } from 'react-window';
 import { cn } from "@/lib/utils";
 import { IntelligenceSignal } from "@/types/sentinel";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,7 @@ interface VirtualizedFeedProps {
 export const VirtualizedFeed: React.FC<VirtualizedFeedProps> = ({ items, height, width, onToggleSelect, onAddToNotebook, selectedIds }) => {
     const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => {
         const item = items[index];
+        if (!item) return null;
         const isSelected = selectedIds.includes(item.company_name || item.id);
 
         return (
@@ -73,14 +74,16 @@ export const VirtualizedFeed: React.FC<VirtualizedFeedProps> = ({ items, height,
         );
     };
 
+    const VirtualList = List as any;
+
     return (
-        <FixedSizeList
+        <VirtualList
             height={height}
-            itemCount={items.length}
-            itemSize={60}
+            rowCount={items.length}
+            rowHeight={60}
             width={width}
-        >
-            {Row}
-        </FixedSizeList>
+            rowComponent={Row}
+            rowProps={{}}
+        />
     );
 };

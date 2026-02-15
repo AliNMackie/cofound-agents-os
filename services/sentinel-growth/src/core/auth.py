@@ -1,42 +1,48 @@
+
 import firebase_admin
-from firebase_admin import auth
+from firebase_admin import auth, credentials
+from fastapi import HTTPException, status, Security, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from src.core.config import settings
 import structlog
 
 logger = structlog.get_logger()
-
-# Singleton initialization
-_initialized = False
+security = HTTPBearer()
 
 def initialize_firebase():
-    global _initialized
-    if not _initialized:
-        try:
-            # On Cloud Run, default credentials are automatically populated.
-            # If running locally, you might need GOOGLE_APPLICATION_CREDENTIALS env var.
-            if not firebase_admin._apps:
-                firebase_admin.initialize_app()
-            _initialized = True
-            logger.info("Firebase Admin initialized")
-        except Exception as e:
-            logger.error("Failed to initialize Firebase Admin", error=str(e))
-            # Don't crash if it's just "already initialized" race condition
-            if "The default Firebase app already exists" in str(e):
-                _initialized = True
-            else:
-                raise e
-
-def verify_token(token: str) -> dict:
-    """
-    Verifies a Firebase ID token and returns the decoded token payload.
-    Raises an exception if verification fails.
-    """
-    initialize_firebase()
+    """Initializes Firebase Admin SDK if not already initialized."""
     try:
-        # verify_id_token(token, check_revoked=True/False)
-        # check_revoked=True requires an extra network call, generally safer but slower.
-        # For now, default is False which is fine for stateless JWT validation.
+        if not firebase_admin._apps:
+            # automatic credentials search (GOOGLE_APPLICATION_CREDENTIALS)
+            cred = credentials.ApplicationDefault()
+            firebase_admin.initialize_app(cred, {
+                'projectId': settings.FIRESTORE_DB_NAME
+            })
+            logger.info("Firebase Admin SDK initialized.")
+    except Exception as e:
+        logger.error(f"Failed to initialize Firebase Admin: {e}")
+        # Dont raise here, allow app to start but auth will fail
+
+def verify_token(res: HTTPAuthorizationCredentials = Security(security)):
+    """
+    Verifies the Firebase ID token in the Authorization header.
+    Returns the decoded token (user info).
+    """
+    token = res.credentials
+    try:
         decoded_token = auth.verify_id_token(token)
         return decoded_token
     except Exception as e:
-        logger.warning("Token verification failed", error=str(e))
-        raise e
+        logger.warning(f"Token verification failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+def get_current_user(token: dict = Depends(verify_token)):
+    """
+    Returns the current user dict from the token.
+    Contains 'uid', 'email', etc.
+    """
+    return token

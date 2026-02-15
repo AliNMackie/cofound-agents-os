@@ -11,7 +11,8 @@ from src.services.pdf_factory import render_pdf
 from src.services.word_factory import render_docx
 from src.services.storage import storage_service
 from src.core.config import settings
-
+from src.core.auth import get_current_user
+from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
 router = APIRouter()
 logger = structlog.get_logger()
 
@@ -19,7 +20,7 @@ logger = structlog.get_logger()
 content_generator = ContentGenerator()
 
 @router.post("/generate/proposal", response_model=Dict[str, str])
-async def generate_proposal(request: ProposalRequest):
+async def generate_proposal(request: ProposalRequest, user: dict = Depends(get_current_user)):
     request_id = str(uuid.uuid4())
     start_time = time.time()
     
@@ -81,7 +82,7 @@ async def generate_proposal(request: ProposalRequest):
 
 
 @router.get("/auctions")
-async def get_auctions():
+async def get_auctions(user: dict = Depends(get_current_user)):
     """Retrieves all ingested deal intelligence."""
     try:
         from google.cloud import firestore

@@ -21,14 +21,31 @@ class MarketSweepService:
             logger.error("Failed to initialize Firestore", error=str(e))
             self.db = None
 
-    async def run_market_sweep(self):
+    async def run_market_sweep(self, task_id: str = None):
         """
         Sweeps Google News RSS for distressed/private equity terms.
         Ingests valid findings and saves to Firestore (with dedup).
+        Updates task status in Firestore if task_id is provided.
         """
+        async def update_status(status, progress, message=None):
+            if task_id and self.db:
+                try:
+                    update_data = {
+                        "status": status,
+                        "progress": progress,
+                        "updated_at": datetime.datetime.now(datetime.timezone.utc)
+                    }
+                    if message:
+                        update_data["message"] = message
+                    self.db.collection("tasks").document(task_id).set(update_data, merge=True)
+                except Exception as e:
+                    logger.error("Failed to update task status", task_id=task_id, error=str(e))
+
         if not self.db:
             logger.error("Database not initialized, skipping sweep.")
             return {"status": "error", "detail": "Database unavailable"}
+            
+        await update_status("running", 5, "Initializing sweep...")
 
         # DEFAULT CONFIGURATION (Self-Healing Fallback)
         DEFAULT_CONFIG = {
@@ -78,16 +95,19 @@ class MarketSweepService:
                 })
 
         # 2. RUN WATCHLIST SCAN (New Step)
+        await update_status("running", 25, "Scanning watchlists...")
         # Watchlist hits are currently treated as RESCUE by default, but we'll mark them
         watchlist_deals = await self.run_watchlist_scan()
         
         # 2b. RUN SHADOW MARKET SCAN (Companies House objective signals)
+        await update_status("running", 40, "Scanning shadow market...")
         shadow_market_deals = await self.run_shadow_market_scan()
 
         total_scanned = 0
         new_deals = watchlist_deals + shadow_market_deals # Start count with watchlist and shadow market hits
 
         # 3. Running General RSS Scan (FAST MODE - No AI Processing)
+        await update_status("running", 60, "Scanning general market news...")
         for source_info in active_sources:
             rss_url = source_info["url"]
             source_signal_type = source_info["signal_type"]
@@ -130,7 +150,8 @@ class MarketSweepService:
                         # NEW FIELDS
                         "signal_type": source_signal_type,
                         "source_family": "RSS_NEWS",
-                        "conviction_score": 75
+                        "conviction_score": 75,
+                        "tenant_id": "global" # RSS News is visible to all
                     }
                     
                     # Check for duplicate by link
@@ -146,6 +167,7 @@ class MarketSweepService:
                     logger.warning("Failed to process entry", title=title, error=str(e))
                     continue
 
+        await update_status("completed", 100, f"Sweep complete. Found {new_deals} new deals.")
         return {
             "status": "success", 
             "scanned": total_scanned, 
@@ -160,8 +182,8 @@ class MarketSweepService:
         count = 0
         
         try:
-            # Fetch monitoring targets
-            docs = self.db.collection("watchlists/neish_capital/targets").where("monitoring_active", "==", True).stream()
+            # Fetch monitoring targets from ALL tenants using collection_group
+            docs = self.db.collection_group("watchlist_targets").where("monitoring_active", "==", True).stream()
             
             for doc in docs:
                 target = doc.to_dict()
@@ -212,8 +234,10 @@ class MarketSweepService:
                                 "is_watchlist_hit": True, 
                                 "watchlist_id": doc.id,
                                 "signal_type": sig_type,
+                                "signal_type": sig_type,
                                 "source_family": "RSS_NEWS",
-                                "conviction_score": 90 # High conviction for watchlist hits
+                                "conviction_score": 90, # High conviction for watchlist hits
+                                "tenant_id": target.get("tenant_id", "default_tenant")
                             }
                         )
                         
@@ -237,8 +261,8 @@ class MarketSweepService:
         count = 0
         
         try:
-            # Fetch monitoring targets
-            docs = self.db.collection("watchlists/neish_capital/targets").where("monitoring_active", "==", True).stream()
+            # Fetch monitoring targets from ALL tenants
+            docs = self.db.collection_group("watchlist_targets").where("monitoring_active", "==", True).stream()
             
             for doc in docs:
                 target = doc.to_dict()
@@ -287,6 +311,7 @@ class MarketSweepService:
                     # Only save if it's a high-conviction signal (>70)
                     if normalized["conviction_score"] >= 70:
                         signal_doc = shadow_market.map_to_signal(normalized)
+                        signal_doc["tenant_id"] = target.get("tenant_id", "default")
                         
                         # Check for dupe by analysis text (unique enough for CH events)
                         existing = list(self.collection.where("headline", "==", signal_doc["headline"])

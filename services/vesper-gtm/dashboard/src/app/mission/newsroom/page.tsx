@@ -93,6 +93,7 @@ export default function NewsroomPage() {
     const [usingFallback, setUsingFallback] = useState(false);
     const [pendingReviewData, setPendingReviewData] = useState<any | null>(null);
     const [uploading, setUploading] = useState(false);
+    const [uploadingWatchlist, setUploadingWatchlist] = useState(false);
     const [activeTab, setActiveTab] = useState<"newsletter" | "prompts" | "brand_voice">("newsletter");
 
     // Brand Voice State
@@ -518,6 +519,38 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
         }
     };
 
+    // Watchlist CSV Upload Handler
+    const handleWatchlistUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        setUploadingWatchlist(true);
+        try {
+            const formData = new FormData();
+            formData.append("file", file);
+
+            const apiUrl = process.env.NEXT_PUBLIC_SENTINEL_API_URL || "https://sentinel-growth-hc7um252na-nw.a.run.app";
+            const response = await fetch(`${apiUrl}/ingest/watchlist`, {
+                method: "POST",
+                body: formData,
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.detail || "Upload failed");
+            }
+
+            const data = await response.json();
+            alert(`Watchlist imported successfully! ${data.imported} targets added.`);
+
+        } catch (error: any) {
+            console.error("Watchlist upload failed:", error);
+            alert("Watchlist Upload Failed: " + error.message);
+        } finally {
+            setUploadingWatchlist(false);
+        }
+    };
+
     // Brand Voice Upload Handler
     const handleVoiceUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -683,6 +716,20 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
                         </p>
                     </div>
                     <div className="flex gap-4">
+                        <input
+                            type="file"
+                            id="watchlist-upload"
+                            className="hidden"
+                            accept=".csv,.xlsx,.xls"
+                            onChange={handleWatchlistUpload}
+                        />
+                        <label
+                            htmlFor="watchlist-upload"
+                            className="btn-secondary flex items-center gap-2 cursor-pointer text-[10px] font-bold uppercase tracking-widest px-6 py-3 dark:bg-neutral-900 border-l border-neutral-800"
+                        >
+                            {uploadingWatchlist ? <Loader2 className="h-4 w-4 animate-spin" /> : <><ListIcon size={14} /> Import Watchlist</>}
+                        </label>
+
                         <input
                             type="file"
                             id="pdf-upload"

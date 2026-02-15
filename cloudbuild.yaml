@@ -1,197 +1,37 @@
 steps:
-  # ==========================================================
-  # BUILD STEP: Build all agents in parallel
-  # ==========================================================
-  
-  # 1. Calendar Agent (Onboarding API)
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'Build Calendar Agent'
-    args: ['build', '-t', 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/calendar-agent:$COMMIT_SHA', '.']
-    dir: 'services/calendar-agent/onboarding_api_source'
-    waitFor: ['-'] # Run immediately
-
-  # 2. Communication Agent
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'Build Communication Agent'
-    args: ['build', '-t', 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/communication-agent:$COMMIT_SHA', '.']
-    dir: 'services/communication-agent'
-    waitFor: ['-']
-
-  # 3. Delivery Agent (Stripe Webhook)
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'Build Delivery Agent'
-    args: ['build', '-t', 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/delivery-agent:$COMMIT_SHA', '.']
-    dir: 'services/delivery-agent/src/stripe-webhook-handler'
-    waitFor: ['-']
-
-  # 4. Invoice Agent (Backend)
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'Build Invoice Agent'
-    args: ['build', '-t', 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/invoice-agent:$COMMIT_SHA', '.']
-    dir: 'services/invoice-agent/backend'
-    waitFor: ['-']
-
-  # 5. Sentinel Growth
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'Build Sentinel Growth'
-    args: ['build', '-t', 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/sentinel-growth:$COMMIT_SHA', '.']
-    dir: 'services/sentinel-growth'
-    waitFor: ['-']
-
-  # 6. Travel Agent (Backend)
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'Build Travel Agent'
-    args: ['build', '-t', 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/travel-agent:$COMMIT_SHA', '.']
-    dir: 'services/travel-agent'
-    waitFor: ['-']
-
-  # 7. Travel Agent (Frontend)
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'Build Travel Agent Frontend'
-    args: ['build', '-t', 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/travel-agent-frontend:$COMMIT_SHA', '.']
-    dir: 'services/travel-agent/frontend'
-    waitFor: ['-']
-
-  # 8. Vesper GTM Dashboard
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'Build Vesper GTM'
-    args: 
-      - 'build'
-      - '-t'
-      - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/vesper-gtm:$COMMIT_SHA'
-      - '--build-arg'
-      - 'NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyCoTXMQfMjhfGyhbG296Jc08cv8AwoI-00'
-      - '--build-arg'
-      - 'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=newsletter-engine-9988.firebaseapp.com'
-      - '--build-arg'
-      - 'NEXT_PUBLIC_FIREBASE_PROJECT_ID=newsletter-engine-9988'
-      - '--build-arg'
-      - 'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=newsletter-engine-9988.firebasestorage.app'
-      - '--build-arg'
-      - 'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=99727052460'
-      - '--build-arg'
-      - 'NEXT_PUBLIC_FIREBASE_APP_ID=1:99727052460:web:2bde35c737279a3a4d1909'
-      - '--build-arg'
-      - 'NEXT_PUBLIC_SENTINEL_API_URL=https://sentinel-growth-hc7um252na-nw.a.run.app'
-      - '.'
-    dir: 'services/vesper-gtm/dashboard'
-    waitFor: ['-']
-
-  # 9. Newsletter Engine
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'Build Newsletter Engine'
-    args: ['build', '-t', 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/newsletter-engine:$COMMIT_SHA', '.']
-    dir: 'services/newsletter-engine'
-    waitFor: ['-']
-
-  # ==========================================================
-  # PUSH STEP: Push all images to Artifact Registry
-  # ==========================================================
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'Push All Images'
+  # 1. Install Dependencies & Run Backend Tests
+  - name: 'python:3.11'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        docker push europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/calendar-agent:$COMMIT_SHA
-        docker push europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/communication-agent:$COMMIT_SHA
-        docker push europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/delivery-agent:$COMMIT_SHA
-        docker push europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/invoice-agent:$COMMIT_SHA
-        docker push europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/sentinel-growth:$COMMIT_SHA
-        docker push europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/travel-agent:$COMMIT_SHA
-        docker push europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/travel-agent-frontend:$COMMIT_SHA
-        docker push europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/vesper-gtm:$COMMIT_SHA
-        docker push europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/newsletter-engine:$COMMIT_SHA
-    waitFor:
-      - 'Build Calendar Agent'
-      - 'Build Communication Agent'
-      - 'Build Delivery Agent'
-      - 'Build Invoice Agent'
-      - 'Build Sentinel Growth'
-      - 'Build Travel Agent'
-      - 'Build Travel Agent Frontend'
-      - 'Build Vesper GTM'
-      - 'Build Newsletter Engine'
+        pip install -r services/sentinel-growth/requirements.txt
+        pip install pytest pytest-asyncio
+        export PYTHONPATH=services/sentinel-growth
+        python -m pytest services/sentinel-growth/tests
 
-  # ==========================================================
-  # DEPLOY STEP: Travel Agent Backend
-  # ==========================================================
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    id: 'Deploy Travel Agent'
-    entrypoint: gcloud
+  # 2. Build Dashboard (Frontend)
+  - name: 'node:20'
+    entrypoint: 'bash'
     args:
-      - 'run'
-      - 'deploy'
-      - 'travel-agent'
-      - '--image'
-      - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/travel-agent:$COMMIT_SHA'
-      - '--region'
-      - 'europe-west2'
-      - '--platform'
-      - 'managed'
-      - '--allow-unauthenticated' # TODO: Lock this down after testing!
-      - '--set-secrets'
-      - 'STRIPE_SECRET_KEY=travel-agent-stripe-secret-key:latest,FIREBASE_APPLICATION_CREDENTIALS=travel-agent-firebase-creds:latest,GOOGLE_CLIENT_ID=travel-agent-google-client-id:latest,GOOGLE_CLIENT_SECRET=travel-agent-google-client-secret:latest'
-    waitFor:
-      - 'Push All Images'
+      - '-c'
+      - |
+        cd services/vesper-gtm/dashboard
+        npm install
+        npm run build
 
-  # ==========================================================
-  # DEPLOY STEP: Newsletter Engine
-  # ==========================================================
+  # 3. Deploy Backend to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    id: 'Deploy Newsletter Engine'
-    entrypoint: gcloud
-    args:
-      - 'run'
-      - 'deploy'
-      - 'newsletter-engine'
-      - '--image'
-      - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/newsletter-engine:$COMMIT_SHA'
-      - '--region'
-      - 'europe-west2'
-      - '--platform'
-      - 'managed'
-      - '--allow-unauthenticated'
-    waitFor:
-      - 'Push All Images'
-
-  # ==========================================================
-  # DEPLOY STEP: Sentinel Growth
-  # ==========================================================
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    id: 'Deploy Sentinel Growth'
-    entrypoint: gcloud
+    entrypoint: 'gcloud'
     args:
       - 'run'
       - 'deploy'
       - 'sentinel-growth'
-      - '--image'
-      - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/sentinel-growth:$COMMIT_SHA'
+      - '--source'
+      - 'services/sentinel-growth'
       - '--region'
-      - 'europe-west2'
-      - '--platform'
-      - 'managed'
+      - 'us-central1'
       - '--allow-unauthenticated'
-      - '--set-secrets'
-      - 'GOOGLE_API_KEY=google-api-key:latest,COMPANIES_HOUSE_API_KEY=COMPANIES_HOUSE_API_KEY:latest,SLACK_WEBHOOK_URL=SLACK_WEBHOOK_URL:latest'
-      - '--set-env-vars'
-      - 'GEMINI_MODEL=gemini-3-flash-preview,FIRESTORE_DB_NAME=icorigin'
-    waitFor:
-      - 'Push All Images'
-
-images:
-  - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/calendar-agent:$COMMIT_SHA'
-  - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/communication-agent:$COMMIT_SHA'
-  - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/delivery-agent:$COMMIT_SHA'
-  - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/invoice-agent:$COMMIT_SHA'
-  - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/sentinel-growth:$COMMIT_SHA'
-  - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/travel-agent:$COMMIT_SHA'
-  - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/travel-agent-frontend:$COMMIT_SHA'
-  - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/vesper-gtm:$COMMIT_SHA'
-  - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cofound-agents-registry/newsletter-engine:$COMMIT_SHA'
-
-timeout: '3600s'
 
 options:
-  machineType: 'E2_HIGHCPU_8'
   logging: CLOUD_LOGGING_ONLY

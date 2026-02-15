@@ -5,7 +5,7 @@ import { DataSource, IndustryContext } from '@/types/settings';
 
 import { getAuth } from "firebase/auth";
 
-const SENTINEL_API_URL = process.env.NEXT_PUBLIC_SENTINEL_API_URL || 'https://sentinel-growth-hc7um252na-nw.a.run.app';
+const SENTINEL_API_URL = process.env.NEXT_PUBLIC_SENTINEL_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://sentinel-growth-hc7um252na-nw.a.run.app';
 
 async function getAuthHeaders(): Promise<HeadersInit> {
     const auth = getAuth();
@@ -89,7 +89,7 @@ export async function getIndustries(): Promise<IndustryContext[]> {
     return response.json();
 }
 
-export async function getSignals(industryId?: string, days?: number, query?: string): Promise<IntelligenceSignal[]> {
+export async function getSignals(industryId?: string, days?: number, query?: string, sourceFamily?: string): Promise<IntelligenceSignal[]> {
     const url = new URL(`${SENTINEL_API_URL}/signals`);
     if (industryId) {
         url.searchParams.append('industry_id', industryId);
@@ -99,6 +99,9 @@ export async function getSignals(industryId?: string, days?: number, query?: str
     }
     if (query) {
         url.searchParams.append('q', query);
+    }
+    if (sourceFamily) {
+        url.searchParams.append('source_family', sourceFamily);
     }
 
     const headers = await getAuthHeaders();
@@ -112,7 +115,7 @@ export async function getSignals(industryId?: string, days?: number, query?: str
     return response.json();
 }
 
-export async function triggerSweep(): Promise<{ status: string }> {
+export async function triggerSweep(): Promise<{ status: string; task_id?: string }> {
     const headers = await getAuthHeaders();
     const response = await fetch(`${SENTINEL_API_URL}/tasks/sweep`, {
         method: 'POST',
@@ -121,6 +124,18 @@ export async function triggerSweep(): Promise<{ status: string }> {
 
     if (!response.ok) {
         throw new Error('Failed to trigger sweep');
+    }
+    return response.json();
+}
+
+export async function getTaskStatus(taskId: string): Promise<{ status: string; progress?: number; message?: string; error?: string }> {
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${SENTINEL_API_URL}/tasks/${taskId}`, {
+        headers: headers
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to get task status');
     }
     return response.json();
 }
@@ -138,6 +153,81 @@ export async function generateDossier(signalId: string): Promise<Blob> {
     }
 
     return response.blob();
+}
+
+export async function generateMorningBriefing(): Promise<{ status: string; url: string }> {
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${SENTINEL_API_URL}/pulses/generate-briefing`, {
+        method: 'POST',
+        headers: headers
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to generate briefing');
+    }
+    return response.json();
+}
+
+// API Keys
+export interface ApiKey {
+    id: string;
+    label: string;
+    prefix: string;
+    created_at: string;
+    status: string;
+    key?: string; // Only returned on creation
+}
+
+export async function getApiKeys(): Promise<ApiKey[]> {
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${SENTINEL_API_URL}/api-keys`, {
+        headers
+    });
+    if (!response.ok) throw new Error("Failed to fetch API keys");
+    return response.json();
+}
+
+export async function createApiKey(label: string): Promise<ApiKey> {
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${SENTINEL_API_URL}/api-keys`, {
+        method: "POST",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify({ label, scopes: ["read"] })
+    });
+    if (!response.ok) throw new Error("Failed to create API key");
+    return response.json();
+}
+
+export async function revokeApiKey(keyId: string): Promise<void> {
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${SENTINEL_API_URL}/api-keys/${keyId}`, {
+        method: "DELETE",
+        headers
+    });
+    if (!response.ok) throw new Error("Failed to revoke API key");
+}
+
+
+// Re-export types
+export type { IntelligenceSignal } from '@/types/sentinel';
+
+export async function getLatestPulse(): Promise<any> {
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${SENTINEL_API_URL}/pulses/latest`, {
+        headers
+    });
+    if (!response.ok) throw new Error("Failed to fetch latest pulse");
+    return response.json();
+}
+
+export async function triggerMorningPulse(): Promise<any> {
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${SENTINEL_API_URL}/pulses/trigger`, {
+        method: "POST",
+        headers
+    });
+    if (!response.ok) throw new Error("Failed to trigger pulse");
+    return response.json();
 }
 
 // Mock data for development

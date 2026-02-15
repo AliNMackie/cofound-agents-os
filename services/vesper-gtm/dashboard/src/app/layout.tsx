@@ -13,6 +13,8 @@ export const metadata: Metadata = {
   description: 'Antigravity - Human in the Loop',
 };
 
+import { Toaster } from 'sonner';
+
 import { ThemeProvider } from "@/components/theme-provider";
 import ClientLayout from "@/components/ClientLayout";
 
@@ -33,6 +35,7 @@ export default function RootLayout({
           <ClientLayout>
             {children}
           </ClientLayout>
+          <Toaster position="top-center" richColors />
         </ThemeProvider>
       </body>
     </html>

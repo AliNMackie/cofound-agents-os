@@ -1,10 +1,12 @@
-from fastapi import APIRouter, HTTPException, Query, Response
+from fastapi import APIRouter, HTTPException, Query, Response, Depends
+from src.core.auth import get_current_user
 from pydantic import BaseModel
 from typing import List, Optional, Any, Dict
 from google.cloud import firestore
 import datetime
 import structlog
 from src.services.pdf_factory import render_pdf
+from src.services.memo_service import memo_service
 
 router = APIRouter()
 logger = structlog.get_logger()
@@ -33,7 +35,9 @@ class SignalResponse(BaseModel):
     advisor: Optional[str] = None
     advisor_url: Optional[str] = None
     deal_date: Optional[str] = None
+    deal_date: Optional[str] = None
     source_link: Optional[str] = None
+    source_family: Optional[str] = "RSS_NEWS"
 
 # DB Helper
 def get_db():
@@ -44,7 +48,9 @@ def get_db():
 async def get_signals(
     industry_id: Optional[str] = Query(None),
     days: Optional[int] = Query(None, description="Number of days of history to fetch"),
-    q: Optional[str] = Query(None, description="Search query for company or sector")
+    q: Optional[str] = Query(None, description="Search query for company or sector"),
+    source_family: Optional[str] = Query(None, description="Filter by source family (e.g. GOV_REGISTRY)"),
+    user: dict = Depends(get_current_user)
 ):
     """
     Fetch intelligence signals (auctions/deals) from Firestore.
@@ -54,7 +60,14 @@ async def get_signals(
         col_ref = db.collection(AUCTIONS_COL)
         
         # Base query: Order by newest first (ingestion time)
-        query = col_ref.order_by("ingested_at", direction=firestore.Query.DESCENDING)
+        # Filter by tenant_id (Global + User specific)
+        user_uid = user.get("uid", "unknown")
+        
+        # Note: 'in' query with order_by requires a composite index.
+        # If index is missing, Firestore will throw an error with a link to create it.
+        from google.cloud.firestore import FieldFilter
+        query = col_ref.where(filter=FieldFilter("tenant_id", "in", ["global", user_uid]))
+        query = query.order_by("ingested_at", direction=firestore.Query.DESCENDING)
         
         # Apply time filter if requested
         if days:
@@ -91,6 +104,11 @@ async def get_signals(
                 )
                 if not match:
                     continue
+
+            # Source Family Filtering
+            item_source_family = data.get("source_family", "RSS_NEWS")
+            if source_family and source_family != item_source_family:
+                continue
 
             headline = f"{company}"
             if status and status.lower() != "unknown":
@@ -135,7 +153,8 @@ async def get_signals(
                 advisor=data.get("advisor"),
                 advisor_url=data.get("advisor_url"),
                 deal_date=data.get("deal_date"),
-                source_link=data.get("source_link")
+                source_link=data.get("source_link"),
+                source_family=data.get("source_family", "RSS_NEWS")
             )
             results.append(signal)
             
@@ -153,7 +172,7 @@ async def get_signals(
         )
 
 @router.post("/generate/dossier")
-async def generate_dossier(request: DossierRequest):
+async def generate_dossier(request: DossierRequest, user: dict = Depends(get_current_user)):
     """
     Generates a high-fidelity institutional intelligence dossier for a specific signal.
     """
@@ -230,7 +249,7 @@ async def generate_dossier(request: DossierRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/signals/{signal_id}/watchlist")
-async def add_to_watchlist(signal_id: str):
+async def add_to_watchlist(signal_id: str, user: dict = Depends(get_current_user)):
     """
     Marks a signal as 'WATCHLIST' for tracking.
     """
@@ -247,7 +266,7 @@ async def add_to_watchlist(signal_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/signals/{signal_id}/ignore")
-async def ignore_signal(signal_id: str):
+async def ignore_signal(signal_id: str, user: dict = Depends(get_current_user)):
     """
     Marks a signal as 'IGNORED' so it can be filtered out.
     """
@@ -264,7 +283,7 @@ async def ignore_signal(signal_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/pulses/latest")
-async def get_latest_pulse():
+async def get_latest_pulse(user: dict = Depends(get_current_user)):
     """
     Retrieves the most recent Morning Pulse.
     """
@@ -282,4 +301,35 @@ async def get_latest_pulse():
         raise HTTPException(status_code=404, detail="No pulse available")
     except Exception as e:
         logger.error("Failed to fetch latest pulse", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/pulses/generate-briefing")
+async def generate_briefing(user: dict = Depends(get_current_user)):
+    """
+    Generates a PDF briefing for the latest Morning Pulse.
+    """
+    try:
+        # Re-use get_latest_pulse logic (or extract it)
+        # For now, just duplicate fetch logic slightly or call it if it was a function returning dict
+        # But get_latest_pulse is an async route handler.
+        
+        db = get_db()
+        pulses = db.collection("morning_pulses")\
+            .order_by("generated_at", direction=firestore.Query.DESCENDING)\
+            .limit(1)\
+            .stream()
+            
+        pulse_data = None
+        for p in pulses:
+            pulse_data = p.to_dict()
+            
+        if not pulse_data:
+            raise HTTPException(status_code=404, detail="No pulse available to generate briefing")
+            
+        url = await memo_service.generate_morning_briefing(pulse_data, user)
+        
+        return {"status": "success", "url": url}
+
+    except Exception as e:
+        logger.error("Failed to generate briefing", error=str(e))
         raise HTTPException(status_code=500, detail=str(e))

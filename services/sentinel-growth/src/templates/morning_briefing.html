@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Morning Intelligence Briefing</title>
+    <style>
+        body {
+            font-family: 'Helvetica', sans-serif;
+            color: #333;
+            line-height: 1.5;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #1a1a1a;
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
+        }
+
+        .meta {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 30px;
+        }
+
+        .summary {
+            background: #f9f9f9;
+            padding: 20px;
+            border-left: 4px solid #000;
+            margin-bottom: 30px;
+        }
+
+        .signal {
+            margin-bottom: 20px;
+            page-break-inside: avoid;
+        }
+
+        .signal h3 {
+            margin-bottom: 5px;
+            color: #b71c1c;
+        }
+
+        .signal .details {
+            font-size: 0.9em;
+            color: #555;
+        }
+
+        .footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 0.8em;
+            color: #999;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Morning Intelligence Briefing</h1>
+    <div class="meta">
+        Date: {{ date }}<br>
+        Generated: {{ generated_at }}
+    </div>
+
+    <h2>Executive Summary</h2>
+    <div class="summary">
+        {{ executive_summary | safe }}
+    </div>
+
+    <h2>High Conviction Signals</h2>
+    {% for signal in signals %}
+    <div class="signal">
+        <h3>{{ signal.company_name }}</h3>
+        <div class="details">
+            <strong>Signal:</strong> {{ signal.headline }}<br>
+            <strong>Type:</strong> {{ signal.signal_type }} | <strong>Source:</strong> {{ signal.source_family }}<br>
+            <p>{{ signal.analysis }}</p>
+        </div>
+    </div>
+    {% endfor %}
+
+    <div class="footer">
+        Confidential - IC Origin Intelligence System
+    </div>
+</body>
+
+</html>

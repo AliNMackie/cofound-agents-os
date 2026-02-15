@@ -20,10 +20,10 @@ import { cn } from "@/lib/utils";
 
 const sidebarLinks = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/mission/newsroom", label: "Newsroom", icon: Newspaper },
+    { href: "/newsroom", label: "Newsroom", icon: Newspaper },
     { href: "/sources", label: "Sources", icon: Network },
     { href: "/missions", label: "Market Watch", icon: Search },
-    { href: "/settings/sources", label: "Settings", icon: Settings },
+    { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export function Sidebar() {

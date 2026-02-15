@@ -1,0 +1,47 @@
+
+steps:
+  # 1. Install Dependencies & Run Backend Tests
+  - name: 'python:3.11'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        cd services/sentinel-growth
+        pip install -r requirements.txt
+        export PYTHONPATH=$PYTHONPATH:.
+        # Mocking credentials or relying on build environment might be needed for tests if they hit real APIs
+        # For now, we assume unit tests mock sufficiently
+        # Fixing weasyprint for linux build env
+        apt-get update && apt-get install -y libpango-1.0-0 libpangoft2-1.0-0 || echo "Skipping apt dependencies"
+        pytest tests/
+
+  # 2. Build Backend Container
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/sentinel-growth-staging', './services/sentinel-growth']
+
+  # 3. Push Backend Container
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/sentinel-growth-staging']
+
+  # 4. Deploy Backend to Cloud Run (Staging)
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'sentinel-growth-staging'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/sentinel-growth-staging'
+      - '--region'
+      - 'europe-west2'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated' # Backend handles auth now
+      - '--set-env-vars'
+      - 'ENV=staging'
+
+  # 5. Build Frontend (Optional for Staging, usually Netlify handles this via preview)
+  # Keeping it here just in case we want a containerized frontend too
+  
+options:
+  logging: CLOUD_LOGGING_ONLY

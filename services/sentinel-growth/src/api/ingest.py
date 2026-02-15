@@ -1,6 +1,7 @@
 import json
 import structlog
 import google.generativeai as genai
+from datetime import datetime
 from typing import List
 from google.cloud import firestore
 from fastapi import APIRouter, HTTPException, File, UploadFile
@@ -8,12 +9,14 @@ from src.schemas.requests import AuctionIngestRequest
 from src.schemas.auctions import AuctionDataEnriched, AuctionData
 from src.core.config import settings
 from src.services.ingest import auction_ingestor
+from fastapi import APIRouter, HTTPException, File, UploadFile, Depends
+from src.core.auth import get_current_user
 
 router = APIRouter()
 logger = structlog.get_logger()
 
 @router.post("/ingest/auction", response_model=AuctionDataEnriched)
-async def extract_auction_data(request: AuctionIngestRequest):
+async def extract_auction_data(request: AuctionIngestRequest, user: dict = Depends(get_current_user)):
     """
     Extracts structured auction data from unstructured market intelligence text.
     Enriches with Companies House data.
@@ -37,7 +40,7 @@ async def extract_auction_data(request: AuctionIngestRequest):
         raise HTTPException(status_code=500, detail=f"Extraction failed: {str(e)}")
 
 @router.post("/ingest/historical-batch")
-async def ingest_historical_batch(deals: List[AuctionData]):
+async def ingest_historical_batch(deals: List[AuctionData], user: dict = Depends(get_current_user)):
     """
     Bulk import structured historical deals directly to Firestore.
     Bypasses AI extraction for speed and reliability.
@@ -93,7 +96,7 @@ import io
 from pypdf import PdfReader
 
 @router.post("/api/ingest-intelligence")
-async def ingest_intelligence_pdf(file: UploadFile = File(...)):
+async def ingest_intelligence_pdf(file: UploadFile = File(...), user: dict = Depends(get_current_user)):
     """
     Multimodal PDF ingestion for deal intelligence using Gemini 1.5 Pro.
     Now with Active Optic Nerve: Extracts real text from PDF files.
@@ -136,3 +139,74 @@ async def ingest_intelligence_pdf(file: UploadFile = File(...)):
         import traceback
         log.error("PDF Ingestion failed", error=str(e), traceback=traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"PDF Ingestion failed: {str(e)}")
+
+@router.post("/ingest/watchlist")
+async def ingest_watchlist(file: UploadFile = File(...), user: dict = Depends(get_current_user)):
+    """
+    Ingests a CSV/Excel file of watchlist targets.
+    Expected columns: "Company", "Notes" (Optional).
+    """
+    import pandas as pd
+    import io
+    
+    log = logger.bind(filename=file.filename)
+    log.info("Received watchlist ingestion request")
+
+    try:
+        content = await file.read()
+        
+        if file.filename.endswith('.csv'):
+            df = pd.read_csv(io.BytesIO(content))
+        elif file.filename.endswith(('.xls', '.xlsx')):
+            df = pd.read_excel(io.BytesIO(content))
+        else:
+            raise HTTPException(status_code=400, detail="Invalid file format. Please upload CSV or Excel.")
+
+        # Normalize headers
+        df.columns = [c.lower().strip() for c in df.columns]
+        
+        if "company" not in df.columns:
+             raise HTTPException(status_code=400, detail="Missing required column: 'Company'")
+
+        db = firestore.Client(database=settings.FIRESTORE_DB_NAME)
+        batch = db.batch()
+        count = 0
+        total_imported = 0
+        
+        # Store under tenant-specific subcollection
+        tenant_id = user.get("uid", "default_tenant")
+        collection_ref = db.collection(f"tenants/{tenant_id}/watchlist_targets")
+
+        for _, row in df.iterrows():
+            company_name = str(row.get("company", "")).strip()
+            if not company_name:
+                continue
+                
+            doc_ref = collection_ref.document() # Auto-ID
+            
+            target_data = {
+                "company_name": company_name,
+                "notes": str(row.get("notes", "")),
+                "monitoring_active": True,
+                "added_at": datetime.utcnow().isoformat(),
+                "source_file": file.filename,
+                "tenant_id": tenant_id
+            }
+            
+            batch.set(doc_ref, target_data)
+            count += 1
+            total_imported += 1
+            
+            if count >= 400:
+                batch.commit()
+                batch = db.batch()
+                count = 0
+        
+        if count > 0:
+            batch.commit()
+            
+        return {"status": "success", "imported": total_imported, "message": f"Successfully imported {total_imported} targets"}
+
+    except Exception as e:
+        log.error("Watchlist ingestion failed", error=str(e))
+        raise HTTPException(status_code=500, detail=f"Watchlist ingestion failed: {str(e)}")

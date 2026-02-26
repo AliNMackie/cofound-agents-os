@@ -4,6 +4,10 @@ terraform {
       source  = "hashicorp/google"
       version = ">= 4.0"
     }
+    google-beta = {
+      source  = "hashicorp/google-beta"
+      version = ">= 4.0"
+    }
   }
 }
 
@@ -12,11 +16,15 @@ provider "google" {
   region  = var.region
 }
 
-# --- Secret Manager ---
-# Reference to the Google API Key secret (must be created manually or via separate process)
-data "google_secret_manager_secret_version" "google_api_key" {
-  secret  = "google-api-key"
-  version = "latest"
+provider "google-beta" {
+  project = var.project_id
+  region  = var.region
+}
+
+variable "google_api_key" {
+  description = "Google API Key for Vertex AI (optional for dormant phase)"
+  type        = string
+  default     = "placeholder-key-dormant"
 }
 
 # --- Service Account ---
@@ -113,7 +121,7 @@ resource "google_cloud_run_service" "default" {
         }
         env {
             name  = "GOOGLE_API_KEY"
-            value = data.google_secret_manager_secret_version.google_api_key.secret_data
+            value = var.google_api_key
         }
       }
     }

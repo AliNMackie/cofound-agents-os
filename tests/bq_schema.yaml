@@ -1,0 +1,19 @@
+- dataset_id: ic_origin_themav2
+  tables:
+    - table_id: raw_signals
+      schema:
+        - {name: id, type: STRING, mode: REQUIRED}
+        - {name: timestamp, type: TIMESTAMP, mode: REQUIRED}
+        - {name: source_family, type: STRING, mode: REQUIRED}
+        - {name: signal_type, type: STRING, mode: REQUIRED}
+        - {name: entity_name, type: STRING, mode: NULLABLE}
+        - {name: entity_id, type: STRING, mode: NULLABLE}
+        - {name: raw_content, type: STRING, mode: NULLABLE}
+        - {name: metadata, type: JSON, mode: NULLABLE}
+    - table_id: auctions_enhanced
+      schema:
+        - {name: entity_id, type: STRING, mode: REQUIRED}
+        - {name: canonical_name, type: STRING, mode: REQUIRED}
+        - {name: psc_details, type: JSON, mode: NULLABLE}
+        - {name: last_updated, type: TIMESTAMP, mode: REQUIRED}
+        - {name: resolution_metadata, type: JSON, mode: NULLABLE}

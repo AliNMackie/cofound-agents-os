@@ -26,11 +26,7 @@ catch {
     exit
 }
 
-$PROJECT_ID = (gcloud config get-value project 2>$null).Trim()
-# Handle cases where gcloud might print warnings alongside the project ID
-if ($PROJECT_ID -match "\s") {
-    $PROJECT_ID = ($PROJECT_ID -split "\s")[-1]
-}
+$PROJECT_ID = "cofound-agents-os-788e"
 $REGION = "europe-west2"
 
 if (-not $PROJECT_ID) {

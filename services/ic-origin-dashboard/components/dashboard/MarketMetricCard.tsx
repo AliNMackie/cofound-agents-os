@@ -9,10 +9,12 @@ interface MarketMetricCardProps {
     value: string;
     change?: string;
     isPositive?: boolean;
-    data?: { value: number }[];
+    data?: any[];
+    isLoading?: boolean;
+    isRevalidating?: boolean;
 }
 
-const MarketMetricCard: React.FC<MarketMetricCardProps> = ({ label, value, change, isPositive, data }) => {
+const MarketMetricCard: React.FC<MarketMetricCardProps> = ({ label, value, change, isPositive, data, isLoading, isRevalidating }) => {
     const [mounted, setMounted] = React.useState(false);
 
     React.useEffect(() => {
@@ -28,8 +30,11 @@ const MarketMetricCard: React.FC<MarketMetricCardProps> = ({ label, value, chang
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="bg-[#0d1117] border border-white/5 p-6 rounded-2xl hover:border-emerald-500/20 transition-all group shadow-sm flex flex-col h-full"
+            className={`bg-[#0d1117] border ${isRevalidating ? 'border-emerald-500/40' : 'border-white/5'} p-6 rounded-2xl hover:border-emerald-500/20 transition-all group shadow-sm flex flex-col h-full relative overflow-hidden`}
         >
+            {isRevalidating && (
+                <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-emerald-500 to-transparent animate-shimmer" />
+            )}
             <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">{label}</p>
 
             <div className="flex items-baseline justify-between mb-auto">

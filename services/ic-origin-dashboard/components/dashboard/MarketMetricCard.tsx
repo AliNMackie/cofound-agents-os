@@ -13,6 +13,12 @@ interface MarketMetricCardProps {
 }
 
 const MarketMetricCard: React.FC<MarketMetricCardProps> = ({ label, value, change, isPositive, data }) => {
+    const [mounted, setMounted] = React.useState(false);
+
+    React.useEffect(() => {
+        setMounted(true);
+    }, []);
+
     const defaultData = [
         { value: 10 }, { value: 25 }, { value: 15 }, { value: 30 }, { value: 20 }, { value: 45 }
     ];
@@ -41,24 +47,26 @@ const MarketMetricCard: React.FC<MarketMetricCardProps> = ({ label, value, chang
             </div>
 
             <div className="mt-8 h-12 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={data || defaultData}>
-                        <defs>
-                            <linearGradient id={`gradient-${label.replace(/\s+/g, '')}`} x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor={isPositive ? "#10B981" : "#F43F5E"} stopOpacity={0.3} />
-                                <stop offset="95%" stopColor={isPositive ? "#10B981" : "#F43F5E"} stopOpacity={0} />
-                            </linearGradient>
-                        </defs>
-                        <Area
-                            type="monotone"
-                            dataKey="value"
-                            stroke={isPositive ? "#10B981" : "#F43F5E"}
-                            strokeWidth={2}
-                            fillOpacity={1}
-                            fill={`url(#gradient-${label.replace(/\s+/g, '')})`}
-                        />
-                    </AreaChart>
-                </ResponsiveContainer>
+                {mounted && (
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                        <AreaChart data={data || defaultData}>
+                            <defs>
+                                <linearGradient id={`gradient-${label.replace(/\s+/g, '')}`} x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor={isPositive ? "#10B981" : "#F43F5E"} stopOpacity={0.3} />
+                                    <stop offset="95%" stopColor={isPositive ? "#10B981" : "#F43F5E"} stopOpacity={0} />
+                                </linearGradient>
+                            </defs>
+                            <Area
+                                type="monotone"
+                                dataKey="value"
+                                stroke={isPositive ? "#10B981" : "#F43F5E"}
+                                strokeWidth={2}
+                                fillOpacity={1}
+                                fill={`url(#gradient-${label.replace(/\s+/g, '')})`}
+                            />
+                        </AreaChart>
+                    </ResponsiveContainer>
+                )}
             </div>
 
             <div className="mt-4 flex justify-between items-center text-[8px] font-mono text-slate-600 uppercase tracking-widest">

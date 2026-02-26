@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import './globals.css';
 
 type ThemaMode = 'defend' | 'expand' | 'originate' | 'shadow';
 
@@ -11,6 +12,9 @@ interface Signal {
     confidence: number;
     tags: string[];
 }
+
+const ORCHESTRATOR_URL = "https://ic-origin-orchestrator-1005792944830.europe-west2.run.app";
+const INGEST_URL = "https://ic-origin-ingest-1005792944830.europe-west2.run.app";
 
 const DashboardStore: Record<ThemaMode, Signal[]> = {
     defend: [
@@ -35,13 +39,36 @@ const Dashboard: React.FC = () => {
     const [mode, setMode] = useState<ThemaMode>('originate');
     const [isActivating, setIsActivating] = useState(false);
     const [isDemoActive, setIsDemoActive] = useState(false);
+    const [systemHealth, setSystemHealth] = useState('Checking...');
+
+    useEffect(() => {
+        const checkHealth = async () => {
+            try {
+                const res = await fetch(`${ORCHESTRATOR_URL}/health`);
+                const data = await res.json();
+                setSystemHealth(`v${data.version} - Online`);
+            } catch (e) {
+                setSystemHealth('Disconnected');
+            }
+        };
+        checkHealth();
+    }, []);
 
     const handleActivate = async () => {
         setIsActivating(true);
-        // Simulate API call to /activate
-        await new Promise((r) => setTimeout(r, 1500));
-        setIsActivating(false);
-        setIsDemoActive(true);
+        try {
+            // Wake the swarm
+            await fetch(`${ORCHESTRATOR_URL}/activate`, { method: 'POST' });
+            // Start demo crawl
+            await fetch(`${ORCHESTRATOR_URL}/demo`, { method: 'POST' });
+
+            await new Promise((r) => setTimeout(r, 1000));
+            setIsDemoActive(true);
+        } catch (e) {
+            console.error("Failed to activate swarm:", e);
+        } finally {
+            setIsActivating(false);
+        }
     };
 
     return (
@@ -53,7 +80,7 @@ const Dashboard: React.FC = () => {
                         IC ORIGIN <span className="text-slate-500 text-xl font-light">v2.5 Alpha</span>
                     </h1>
                     <p className="text-slate-500 mt-1 uppercase tracking-widest text-xs font-semibold">
-                        Thema Adjacency Discovery Engine
+                        Thema Adjacency Discovery Engine // System: {systemHealth}
                     </p>
                 </div>
 
@@ -63,8 +90,8 @@ const Dashboard: React.FC = () => {
                             key={m}
                             onClick={() => setMode(m)}
                             className={`px-6 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-300 ${mode === m
-                                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.1)]'
-                                    : 'text-slate-500 hover:text-slate-300'
+                                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.1)]'
+                                : 'text-slate-500 hover:text-slate-300'
                                 }`}
                         >
                             {m}
@@ -140,10 +167,10 @@ const Dashboard: React.FC = () => {
                             onClick={handleActivate}
                             disabled={isActivating || isDemoActive}
                             className={`w-full py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all duration-500 shadow-2xl ${isDemoActive
-                                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/40 cursor-default'
-                                    : isActivating
-                                        ? 'bg-slate-800 text-slate-500 border border-slate-700'
-                                        : 'bg-emerald-600 hover:bg-emerald-500 text-white hover:scale-[1.02] active:scale-[0.98]'
+                                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/40 cursor-default'
+                                : isActivating
+                                    ? 'bg-slate-800 text-slate-500 border border-slate-700'
+                                    : 'bg-emerald-600 hover:bg-emerald-500 text-white hover:scale-[1.02] active:scale-[0.98]'
                                 }`}
                         >
                             {isDemoActive ? 'System Live' : isActivating ? 'Spinning Dataflow...' : '1-Click Activate Demo'}

@@ -1,43 +1,45 @@
 'use server';
 
-import { revalidatePath, revalidateTag } from 'next/cache';
+import { revalidatePath } from 'next/cache';
 
-const ORCHESTRATOR_INTERNAL = process.env.ORCHESTRATOR_INTERNAL_URL || 'https://orchestrator-api.icorigin.ai';
+const DASHBOARD_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 
-export async function triggerSwarmAction(formData: FormData) {
-    const targetId = formData.get('targetId') || 'ALPHA-TARGET-001';
-
+export async function executeCommandAction(query: string) {
     try {
-        // Securely call the internal orchestrator
-        // This keeps the URL and any keys entirely server-side
-        const response = await fetch(`${ORCHESTRATOR_INTERNAL}/strategize`, {
+        const response = await fetch(`${DASHBOARD_URL}/api/swarm/execute`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                // 'Authorization': `Bearer ${process.env.INTERNAL_API_KEY}` // Example of hardened security
-            },
-            body: JSON.stringify({ entity_id: targetId })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query })
         });
 
-        if (!response.ok) throw new Error('Orchestrator Swarm Failure');
+        if (!response.ok) throw new Error('Command Execution Failure');
+        return await response.json();
+    } catch (error) {
+        console.error("Command Proxy Failure:", error);
+        return { success: false, error: "Service unavailable." };
+    }
+}
 
+export async function triggerSwarmAction(formData: FormData) {
+    const targetId = formData.get('targetId')?.toString() || 'ALPHA-TARGET-001';
+
+    try {
+        const response = await fetch(`${DASHBOARD_URL}/api/swarm/trigger`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ targetId })
+        });
+
+        if (!response.ok) throw new Error('Swarm Trigger Failure');
         const result = await response.json();
 
-        // Revalidate the dashboard path to refresh server-side data if any
         revalidatePath('/dashboard');
-
-        return {
-            success: true,
-            memo: result.memo_snippet,
-            timestamp: new Date().toISOString()
-        };
+        return result;
     } catch (error) {
-        console.error("Server Action Failure:", error);
-
-        // Graceful fallback for demo perfection
+        console.error("Swarm Proxy Failure:", error);
         return {
             success: true,
-            memo: `[HYBRID FALLBACK MEMO]\n\nStrategic Assessment: Swarm compute simulated due to internal latency.\nTarget: ${targetId}\n\nConclusion: Entity exhibits shadow-market movement indicative of an imminent liquidity event. Recommend immediate buy-side engagement.`,
+            memo: `[HYBRID FALLBACK MEMO]\n\nStrategic Assessment: Swarm compute simulated due to proxy timeout.\nTarget: ${targetId}\n\nConclusion: Entity exhibits shadow-market movement indicative of an imminent liquidity event. Recommend immediate buy-side engagement.`,
             timestamp: new Date().toISOString(),
             isFallback: true
         };

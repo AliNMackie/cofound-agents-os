@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import '../globals.css';
 import SummaryHeader from '../../components/dashboard/SummaryHeader';
@@ -11,13 +11,55 @@ import CompetitiveBenchmark from '../../components/dashboard/CompetitiveBenchmar
 import SignalCard from '../../components/dashboard/SignalCard';
 import useSWR from 'swr';
 import { triggerSwarmAction } from '../actions';
+import { Download } from 'lucide-react';
+import { exportToPDF } from '../../lib/export';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
+import EntityDetailModal from '../../components/dashboard/EntityDetailModal';
+import CommandTerminal from '../../components/dashboard/CommandTerminal';
+import { useAuth } from '../../context/AuthContext';
+import { useRouter } from 'next/navigation';
+
 const DashboardV2: React.FC = () => {
+    const { user, loading } = useAuth();
+    const router = useRouter();
+
     // Local state for UI
     const [timeRange, setTimeRange] = useState('7D');
     const [region, setRegion] = useState('Global');
+
+    // Phase 3: Interactive Topology & Command State
+    const [selectedEntity, setSelectedEntity] = useState<any>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isTerminalOpen, setIsTerminalOpen] = useState(false);
+
+    // Auth Redirect Loop
+    useEffect(() => {
+        if (!loading && !user) {
+            router.push('/');
+        }
+    }, [user, loading, router]);
+
+    // Command Terminal Shortcut (Institutional UX)
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                setIsTerminalOpen(prev => !prev);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
+
+    const handleNodeClick = (entity: any) => {
+        setSelectedEntity(entity);
+        setIsModalOpen(true);
+    };
+
+    // Role-based Multi-tenant Mock (Zombie Hunter context)
+    const tenantId = user?.email?.split('@')[1] || 'global';
 
     // SWR Polling Logic (Ralph Wuggum Precision)
     const { data: telemetry, error, isLoading, isValidating } = useSWR('/api/telemetry', fetcher, {
@@ -43,10 +85,11 @@ const DashboardV2: React.FC = () => {
         setIsGenerating(true);
 
         // Optimistic UI state
-        setMemo("Swarm computing initiated... Synthesizing web-scale signals [Estimated completion: 14s]");
+        const targetName = selectedEntity?.name || 'ALPHA-TARGET-001';
+        setMemo(`Swarm computing initiated... Synthesizing web-scale signals for ${targetName} [Estimated completion: 14s]`);
 
         const formData = new FormData();
-        formData.append('targetId', 'ALPHA-TARGET-001');
+        formData.append('targetId', selectedEntity?.id || 'ALPHA-TARGET-001');
 
         try {
             const result = await triggerSwarmAction(formData);
@@ -188,7 +231,7 @@ const DashboardV2: React.FC = () => {
                                 <p className="text-lg font-bold text-white uppercase tracking-tighter">Growth x Profitability</p>
                             </div>
                             <div className="flex-1">
-                                <MarketMapScatter />
+                                <MarketMapScatter onNodeClick={handleNodeClick} />
                             </div>
                         </div>
 
@@ -217,13 +260,24 @@ const DashboardV2: React.FC = () => {
                         </form>
                     </div>
 
+
                     {memo && (
                         <motion.div
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: 'auto' }}
-                            className="mb-12 p-8 bg-indigo-500/5 border border-indigo-500/20 rounded-[32px] font-mono text-xs text-indigo-300 whitespace-pre-wrap relative overflow-hidden shadow-inner"
+                            id="strategy-memo-content"
+                            className="mb-12 p-8 bg-indigo-500/5 border border-indigo-500/20 rounded-[32px] font-mono text-xs text-indigo-300 whitespace-pre-wrap relative overflow-hidden shadow-inner group"
                         >
-                            <div className="absolute top-0 right-0 p-4 font-black uppercase tracking-widest text-[8px] text-indigo-500/40">Orchestrator Memo // Dynamic Synthesis</div>
+                            <div className="absolute top-0 right-0 p-4 flex gap-4 items-center">
+                                <span className="font-black uppercase tracking-widest text-[8px] text-indigo-500/40">Orchestrator Memo // Dynamic Synthesis</span>
+                                <button
+                                    onClick={() => exportToPDF('strategy-memo-content', 'IC_Origin_Strategic_Dossier')}
+                                    className="p-2 bg-indigo-500/10 hover:bg-indigo-500/20 rounded-lg text-indigo-400 opacity-0 group-hover:opacity-100 transition-all flex items-center gap-2"
+                                >
+                                    <Download className="w-3 h-3" />
+                                    <span className="text-[8px] font-black uppercase">Export Dossier</span>
+                                </button>
+                            </div>
                             {memo}
                         </motion.div>
                     )}
@@ -288,6 +342,16 @@ const DashboardV2: React.FC = () => {
                     <span className="text-slate-700 underline cursor-help">API Documentation</span>
                 </div>
             </div>
+            <EntityDetailModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                entity={selectedEntity}
+            />
+
+            <CommandTerminal
+                isOpen={isTerminalOpen}
+                onClose={() => setIsTerminalOpen(false)}
+            />
         </div>
     );
 };

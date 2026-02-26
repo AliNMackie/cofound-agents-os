@@ -1,6 +1,0 @@
-{
-  "/_not-found": "app/_not-found.js",
-  "/api/telemetry/route": "app/api/telemetry/route.js",
-  "/dashboard/page": "app/dashboard/page.js",
-  "/page": "app/page.js"
-}

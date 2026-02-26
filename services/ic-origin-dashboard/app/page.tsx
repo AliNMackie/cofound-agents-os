@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import Navbar from '../components/marketing/Navbar';
 import Hero from '../components/marketing/Hero';
@@ -10,17 +12,27 @@ import FinalCTA from '../components/marketing/FinalCTA';
 import Footer from '../components/marketing/Footer';
 
 export default function MarketingPage() {
+    const [mounted, setMounted] = React.useState(false);
+
+    React.useEffect(() => {
+        setMounted(true);
+    }, []);
+
     return (
         <main className="min-h-screen bg-[#05070A] selection:bg-emerald-500/30">
-            <Navbar />
-            <Hero />
-            <SocialProof />
-            <HowItWorks />
-            <Benefits />
-            <ProductTour />
-            <UseCases />
-            <FinalCTA />
-            <Footer />
+            {mounted && (
+                <>
+                    <Navbar />
+                    <Hero />
+                    <SocialProof />
+                    <HowItWorks />
+                    <Benefits />
+                    <ProductTour />
+                    <UseCases />
+                    <FinalCTA />
+                    <Footer />
+                </>
+            )}
         </main>
     );
 }

@@ -5,6 +5,7 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
+    metadataBase: new URL('https://icorigin.netlify.app'),
     title: 'IC Origin | The AI Infrastructure for Market Defensibility',
     description: 'Defend, expand, and originate with precision. Institutional-grade market understanding processed at machine speed.',
     openGraph: {

@@ -1,9 +1,6 @@
 [build]
   base = "services/ic-origin-dashboard"
-  publish = "out"
   command = "npm run build"
 
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

@@ -26,12 +26,12 @@ catch {
     exit
 }
 
-Set-Variable -Name "PROJECT_ID" -Value ((gcloud config get-value project 2>$null).Trim())
+$PROJECT_ID = (gcloud config get-value project 2>$null).Trim()
 # Handle cases where gcloud might print warnings alongside the project ID
 if ($PROJECT_ID -match "\s") {
-    Set-Variable -Name "PROJECT_ID" -Value ($PROJECT_ID -split "\s")[-1]
+    $PROJECT_ID = ($PROJECT_ID -split "\s")[-1]
 }
-Set-Variable -Name "REGION" -Value "europe-west2"
+$REGION = "europe-west2"
 
 if (-not $PROJECT_ID) {
     Write-Host "  ❌ No active GCP project found. Run 'gcloud config set project [YOUR_PROJECT_ID]'" -ForegroundColor Red

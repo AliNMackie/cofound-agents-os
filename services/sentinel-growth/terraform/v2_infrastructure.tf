@@ -104,14 +104,31 @@ resource "google_bigquery_table" "auctions_enhanced" {
 EOF
 }
 
+# Networking for AlloyDB (Private Service Access)
+resource "google_compute_global_address" "v2_peering_address" {
+  name          = "ic-origin-v2-peering"
+  purpose       = "VPC_PEERING"
+  address_type  = "INTERNAL"
+  prefix_length = 16
+  network       = "projects/${var.project_id}/global/networks/default"
+}
+
+resource "google_service_networking_connection" "v2_vpc_connection" {
+  network                 = "projects/${var.project_id}/global/networks/default"
+  service                 = "servicenetworking.googleapis.com"
+  reserved_peering_ranges = [google_compute_global_address.v2_peering_address.name]
+}
+
 # AlloyDB Cluster (for RAG with pgvector)
 resource "google_alloydb_cluster" "v2_cluster" {
   cluster_id = "ic-origin-v2-cluster"
   location   = var.region
 
   network_config {
-    network = "projects/${var.project_id}/global/networks/default" # Assuming default network
+    network = "projects/${var.project_id}/global/networks/default"
   }
+
+  depends_on = [google_service_networking_connection.v2_vpc_connection]
 }
 
 resource "google_alloydb_instance" "v2_instance" {

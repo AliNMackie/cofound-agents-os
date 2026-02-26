@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import './globals.css';
+import '../globals.css';
 
 type ThemaMode = 'defend' | 'expand' | 'originate' | 'shadow';
 

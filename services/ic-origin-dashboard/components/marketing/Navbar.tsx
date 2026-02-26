@@ -5,7 +5,7 @@ const Navbar: React.FC = () => {
         <nav className="fixed top-0 w-full z-50 border-b border-white/5 bg-[#05070A]/80 backdrop-blur-xl">
             <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-gradient-to-tr from-emerald-500 to-blue-600 rounded-lg shadow-lg shadow-emerald-500/20" />
+                    <div className="w-8 h-8 bg-gradient-to-tr from-emerald-500 to-indigo-600 rounded-lg shadow-lg shadow-emerald-500/20" />
                     <span className="font-black tracking-tighter text-xl text-white">IC ORIGIN</span>
                 </div>
 

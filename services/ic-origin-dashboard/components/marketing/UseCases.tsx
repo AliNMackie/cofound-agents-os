@@ -3,21 +3,21 @@ import React from 'react';
 const UseCases: React.FC = () => {
     const cases = [
         {
-            role: 'Strategy Directors',
+            role: 'Strategy Leaders',
             title: 'Defend Core Markets',
-            scenario: 'Monitor regional overlaps and talent drains to proactively safeguard your dominant market positions.',
+            scenario: 'Safeguard dominant market positions by monitoring regional overlaps and key personnel outflows in real-time. Prevent encroachment before it scales.',
             icon: '🛡️'
         },
         {
-            role: 'Product Leaders',
-            title: 'Identify Expansion Latitudes',
-            scenario: 'Map IP landscapes and customer intent to discover high-value adjacencies for new feature or product launches.',
+            role: 'Product Teams',
+            title: 'Expand into Adjacencies',
+            scenario: 'Identify high-value expansion latitudes. Map IP landscapes and latent customer demand to discover the next logical product adjacency.',
             icon: '🚀'
         },
         {
             role: 'GTM & Investors',
-            title: 'Originate New Bets',
-            scenario: 'Use Day-Zero discovery to find stealth startups and distressed opportunities before they enter the public domain.',
+            title: 'Originate Strategic Alpha',
+            scenario: 'Search the shadow market for stealth entrants and distressed assets. Originate new bets while others are still reading last month’s reports.',
             icon: '💎'
         }
     ];
@@ -33,7 +33,7 @@ const UseCases: React.FC = () => {
                 <div className="grid md:grid-cols-3 gap-8">
                     {cases.map((c) => (
                         <div key={c.title} className="bg-gradient-to-br from-[#0d1117] to-transparent border border-white/5 p-10 rounded-[40px] hover:border-emerald-500/20 transition-all group">
-                            <div className="text-4xl mb-8 group-hover:scale-125 transition-transform duration-500 inline-block bg-slate-900/50 p-4 rounded-2xl">
+                            <div className="text-4xl mb-8 group-hover:scale-125 transition-transform duration-500 inline-block bg-slate-900/50 p-4 rounded-2xl shadow-xl">
                                 {c.icon}
                             </div>
                             <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500/60 mb-2">{c.role}</p>

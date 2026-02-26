@@ -4,20 +4,20 @@ const HowItWorks: React.FC = () => {
     const steps = [
         {
             id: '01',
-            label: 'Ingest & Structure',
-            description: 'Our ingest swarm monitors web-scale signals across 1,200+ sources, structuring the un-structured in real-time.',
+            label: 'Ingest Swarm',
+            description: 'Continuous web-scale signal telemetry across specialized sources. Raw market noise is ingested, cleaned, and structured into institutional-grade data in real-time.',
             icon: '📡'
         },
         {
             id: '02',
-            label: 'Map Market Topology',
-            description: 'Automated multi-agent agents map the competitive landscape, highlighting non-obvious adjacencies and overlaps.',
+            label: 'Map Topology',
+            description: 'Our agents map the competitive landscape to reveal non-obvious adjacencies and hidden market overlaps. See the architecture of your market as it forms.',
             icon: '🗺️'
         },
         {
             id: '03',
             label: 'Surface Strategy',
-            description: 'Receive IC-ready strategy memos focused on three key outcomes: where to defend, expand, and originate.',
+            description: 'High-fidelity strategy memos are generated with full evidentiary support. Shift from research to board-ready decisions in hours.',
             icon: '🎯'
         }
     ];
@@ -30,18 +30,20 @@ const HowItWorks: React.FC = () => {
                     <p className="text-3xl font-bold text-white tracking-tight">How our infrastructure builds your alpha.</p>
                 </div>
 
-                <div className="grid md:grid-cols-3 gap-12">
+                <div className="grid md:grid-cols-3 gap-16">
                     {steps.map((step) => (
                         <div key={step.id} className="relative group">
-                            <div className="absolute -top-10 -left-6 text-6xl font-black text-white/5 group-hover:text-emerald-500/10 transition-colors pointer-events-none">
+                            <div className="absolute -top-12 -left-8 text-8xl font-black text-white/[0.03] font-mono group-hover:text-emerald-500/[0.08] transition-colors pointer-events-none">
                                 {step.id}
                             </div>
-                            <div className="text-4xl mb-6">{step.icon}</div>
+                            <div className="text-4xl mb-6 bg-slate-900 w-16 h-16 flex items-center justify-center rounded-2xl group-hover:scale-110 transition-transform shadow-xl">
+                                {step.icon}
+                            </div>
                             <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-3">
                                 {step.label}
                                 <div className="h-px bg-white/10 flex-1" />
                             </h3>
-                            <p className="text-slate-500 text-sm leading-relaxed">
+                            <p className="text-slate-400 text-sm leading-relaxed">
                                 {step.description}
                             </p>
                         </div>

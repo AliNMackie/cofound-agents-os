@@ -5,7 +5,7 @@ const Hero: React.FC = () => {
         <section className="relative pt-44 pb-32 overflow-hidden">
             {/* Background Glows */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-emerald-500/10 blur-[120px] rounded-full opacity-50 pointer-events-none" />
-            <div className="absolute top-40 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-blue-600/5 blur-[100px] rounded-full opacity-30 pointer-events-none" />
+            <div className="absolute top-40 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-indigo-600/5 blur-[100px] rounded-full opacity-30 pointer-events-none" />
 
             <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-emerald-500/20 bg-emerald-500/5 mb-8">
@@ -14,7 +14,7 @@ const Hero: React.FC = () => {
                 </div>
 
                 <h1 className="text-5xl md:text-7xl font-black tracking-tight leading-[1.1] mb-8 max-w-4xl mx-auto text-white">
-                    The AI Infrastructure for Market <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-blue-500">Defensibility</span> and Growth.
+                    The AI Infrastructure for Market <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-indigo-500">Defensibility</span> and Growth.
                 </h1>
 
                 <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-12 leading-relaxed">
@@ -30,10 +30,14 @@ const Hero: React.FC = () => {
                     </a>
                 </div>
 
+                <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-slate-500 mb-20">
+                    Institutional-grade market understanding. Processed at machine speed.
+                </p>
+
                 {/* Product UI Shot Mockup */}
-                <div className="relative max-w-5xl mx-auto">
-                    <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-blue-600 rounded-[32px] blur opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200" />
-                    <div className="relative bg-[#0d1117] border border-white/10 rounded-[30px] shadow-2xl overflow-hidden aspect-video group">
+                <div className="relative max-w-5xl mx-auto group">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-indigo-600 rounded-[32px] blur opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200" />
+                    <div className="relative bg-[#0d1117] border border-white/10 rounded-[30px] shadow-2xl overflow-hidden aspect-video">
                         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#05070a]/80 z-10" />
 
                         {/* Simulated UI Content */}
@@ -49,20 +53,20 @@ const Hero: React.FC = () => {
                             <div className="grid grid-cols-3 gap-6 flex-1">
                                 <div className="col-span-2 bg-slate-900/50 rounded-2xl border border-white/5 p-6 backdrop-blur">
                                     <div className="w-1/3 h-6 bg-emerald-500/20 rounded-lg mb-6" />
-                                    <div className="space-y-4">
+                                    <div className="space-y-4 font-mono text-[10px]">
                                         {[1, 2, 3].map(i => (
                                             <div key={i} className="flex justify-between items-center py-3 border-b border-white/5">
-                                                <div className="w-1/3 h-4 bg-slate-800 rounded" />
-                                                <div className="w-1/4 h-3 bg-slate-800 rounded" />
+                                                <div className="w-1/3 h-4 bg-slate-800/40 rounded" />
+                                                <div className="w-1/4 h-3 bg-emerald-500/20 rounded" />
                                             </div>
                                         ))}
                                     </div>
                                 </div>
                                 <div className="bg-slate-900/50 rounded-2xl border border-white/5 p-6 backdrop-blur">
-                                    <div className="w-1/2 h-6 bg-blue-500/20 rounded-lg mb-6" />
+                                    <div className="w-1/2 h-6 bg-indigo-500/20 rounded-lg mb-6" />
                                     <div className="space-y-6">
                                         <div className="w-full h-32 bg-slate-800/40 rounded-xl" />
-                                        <div className="w-full h-4 bg-slate-800 rounded" />
+                                        <div className="w-full h-4 bg-slate-800/60 rounded" />
                                     </div>
                                 </div>
                             </div>

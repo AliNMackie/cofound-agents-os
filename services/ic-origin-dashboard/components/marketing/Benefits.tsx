@@ -3,20 +3,20 @@ import React from 'react';
 const Benefits: React.FC = () => {
     const outcomes = [
         {
-            title: 'Stop Guessing Resource Deployment',
-            description: 'Shift from reactive responses to proactive GTM precision with evidence-backed territory mapping.',
-            metric: '92% Faster Targeting',
-            icon: '⚡'
-        },
-        {
-            title: 'Get IC-Ready Views in Hours',
-            description: 'Our agents synthesize raw market signals into board-ready strategy memos, bypassing weeks of analyst grunt work.',
-            metric: 'Save 120hrs/mo per analyst',
+            title: 'IC-Ready Intel',
+            description: 'Board-ready views synthesized without analyst grunt work. Move from raw signal to investment committee consensus with absolute confidence.',
+            metric: 'Board-Grade Strategy',
             icon: '📄'
         },
         {
-            title: 'Spot the Shadow Market',
-            description: 'Gain visibility into private placement, OTC secondary, and distressed credit signals before they hit the wire.',
+            title: 'Precision GTM',
+            description: 'Stop guessing territory potential. Deploy go-to-market resources into high-growth adjacencies backed by real-time telemetry and mapping.',
+            metric: 'Telemetry-Backed Playbooks',
+            icon: '⚡'
+        },
+        {
+            title: 'Shadow Market Access',
+            description: 'Gain visibility into private placement, OTC secondary, and distressed credit signals. Identify stealth entrants before they hit the wire.',
             metric: 'Day-Zero Discovery',
             icon: '🔍'
         }

@@ -1,5 +1,5 @@
 [build]
-  base = "services/vesper-gtm/dashboard"
+  base = "services/ic-origin-dashboard"
   publish = "out"
   command = "npm run build"
 

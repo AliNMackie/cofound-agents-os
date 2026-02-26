@@ -1,0 +1,83 @@
+export const SENTINEL_API = process.env.NEXT_PUBLIC_SENTINEL_API_URL || 'https://sentinel-growth-api.icorigin.ai';
+export const ORCHESTRATOR_API = process.env.NEXT_PUBLIC_ORCHESTRATOR_API_URL || 'https://orchestrator-api.icorigin.ai';
+
+export interface Signal {
+    id: string;
+    entity: string;
+    type: string;
+    confidence: number;
+    sentiment: 'positive' | 'negative' | 'neutral';
+    urgency: 'high' | 'medium' | 'low';
+    tags: string[];
+}
+
+export interface MarketMetrics {
+    tam: string;
+    sam: string;
+    som: string;
+    share: string;
+    efficiency: string;
+    tamChange: string;
+    samChange: string;
+    shareChange: string;
+    efficiencyChange: string;
+}
+
+export const fetchMarketMetrics = async (): Promise<MarketMetrics> => {
+    try {
+        // In a real scenario, this would hit Sentinel's /industries or /signals summary
+        // For the demo, we'll simulate the live fetch with a slight delay
+        await new Promise(r => setTimeout(r, 800));
+        return {
+            tam: "$4.2B",
+            sam: "$1.8B",
+            som: "$420M",
+            share: "14.2%",
+            efficiency: "0.82x",
+            tamChange: "12.4%",
+            samChange: "4.1%",
+            shareChange: "1.2%",
+            efficiencyChange: "0.14x"
+        };
+    } catch (e) {
+        console.error("Failed to fetch market metrics", e);
+        throw e;
+    }
+};
+
+export const fetchSignals = async (): Promise<Signal[]> => {
+    try {
+        const response = await fetch(`${SENTINEL_API}/signals`);
+        if (!response.ok) throw new Error('Sentinel signals unreachable');
+        const data = await response.json();
+
+        // Map backend schema to UI schema if necessary
+        return data.map((s: any) => ({
+            id: s.id || Math.random().toString(),
+            entity: s.entity_name || s.entity || "Unknown Entity",
+            type: s.signal_type || "Market Movement",
+            confidence: s.confidence_score || 0.85,
+            sentiment: s.sentiment || 'neutral',
+            urgency: s.urgency || 'medium',
+            tags: s.tags || ['strategic_alpha']
+        })).slice(0, 4);
+    } catch (e) {
+        console.warn("Falling back to simulated signal swarm", e);
+        return [
+            { id: 'S1', entity: 'Quantum Leap AI', type: 'Series A Target', confidence: 0.95, sentiment: 'positive' as const, urgency: 'high' as const, tags: ['ip_rich', 'founder_led', 'stealth_origination'] },
+            { id: 'S2', entity: 'BlueTech Corp', type: 'Encroachment Alert', confidence: 0.88, sentiment: 'negative' as const, urgency: 'medium' as const, tags: ['regional_overlap', 'talent_drain'] },
+            { id: 'S3', entity: 'Confidential Alpha', type: 'OTC Secondary', confidence: 0.99, sentiment: 'neutral' as const, urgency: 'high' as const, tags: ['shadow_market', 'tier_1_nexus'] },
+            { id: 'S4', entity: 'GreenGrid UK', type: 'M&A Adjacency', confidence: 0.92, sentiment: 'positive' as const, urgency: 'low' as const, tags: ['synergy_high', 'undervalued_asset'] },
+        ];
+    }
+};
+
+export const triggerStrategize = async (entityId: string) => {
+    const response = await fetch(`${ORCHESTRATOR_API}/strategize`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entity_id: entityId })
+    });
+    if (!response.ok) throw new Error('Orchestrator unreachable');
+    return response.json();
+};

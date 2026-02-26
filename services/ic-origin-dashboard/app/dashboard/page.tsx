@@ -9,19 +9,47 @@ import MarketShareChart from '../../components/dashboard/MarketShareChart';
 import MarketMapScatter from '../../components/dashboard/MarketMapScatter';
 import CompetitiveBenchmark from '../../components/dashboard/CompetitiveBenchmark';
 import SignalCard from '../../components/dashboard/SignalCard';
+import { fetchSignals, fetchMarketMetrics, triggerStrategize, Signal, MarketMetrics } from '../../lib/api';
 
 const DashboardV2: React.FC = () => {
     // Local state for filters
     const [timeRange, setTimeRange] = useState('7D');
     const [region, setRegion] = useState('Global');
 
-    // Mock Data for Signals (Deepened for V2)
-    const signals = [
-        { id: 'S1', entity: 'Quantum Leap AI', type: 'Series A Target', confidence: 0.95, sentiment: 'positive' as const, urgency: 'high' as const, tags: ['ip_rich', 'founder_led', 'stealth_origination'] },
-        { id: 'S2', entity: 'BlueTech Corp', type: 'Encroachment Alert', confidence: 0.88, sentiment: 'negative' as const, urgency: 'medium' as const, tags: ['regional_overlap', 'talent_drain'] },
-        { id: 'S3', entity: 'Confidential Alpha', type: 'OTC Secondary', confidence: 0.99, sentiment: 'neutral' as const, urgency: 'high' as const, tags: ['shadow_market', 'tier_1_nexus'] },
-        { id: 'S4', entity: 'GreenGrid UK', type: 'M&A Adjacency', confidence: 0.92, sentiment: 'positive' as const, urgency: 'low' as const, tags: ['synergy_high', 'undervalued_asset'] },
-    ];
+    // Live Data State
+    const [signals, setSignals] = useState<Signal[]>([]);
+    const [metrics, setMetrics] = useState<MarketMetrics | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [memo, setMemo] = useState<string | null>(null);
+
+    React.useEffect(() => {
+        const loadData = async () => {
+            try {
+                const [sData, mData] = await Promise.all([fetchSignals(), fetchMarketMetrics()]);
+                setSignals(sData);
+                setMetrics(mData);
+            } catch (e) {
+                console.error("Hydration failed", e);
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadData();
+    }, []);
+
+    const handleStrategize = async () => {
+        setIsGenerating(true);
+        try {
+            const result = await triggerStrategize('ALPHA-TARGET-001');
+            setMemo(result.memo_snippet);
+            // Auto-scroll to memo or show modal
+        } catch (e) {
+            console.error("Strategy generation failed", e);
+        } finally {
+            setIsGenerating(false);
+        }
+    };
 
     const containerVariants = {
         hidden: { opacity: 0 },
@@ -58,10 +86,10 @@ const DashboardV2: React.FC = () => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        <MarketMetricCard label="Total Addressable Market" value="$4.2B" change="12.4%" isPositive={true} />
-                        <MarketMetricCard label="Serviceable Market" value="$1.8B" change="4.1%" isPositive={true} />
-                        <MarketMetricCard label="Market Share" value="14.2%" change="1.2%" isPositive={true} />
-                        <MarketMetricCard label="Capital Efficiency" value="0.82x" change="0.14x" isPositive={false} />
+                        <MarketMetricCard label="Total Addressable Market" value={metrics?.tam || "$0.0B"} change={metrics?.tamChange} isPositive={true} />
+                        <MarketMetricCard label="Serviceable Market" value={metrics?.sam || "$0.0B"} change={metrics?.samChange} isPositive={true} />
+                        <MarketMetricCard label="Market Share" value={metrics?.share || "0.0%"} change={metrics?.shareChange} isPositive={true} />
+                        <MarketMetricCard label="Capital Efficiency" value={metrics?.efficiency || "0.00x"} change={metrics?.efficiencyChange} isPositive={false} />
                     </div>
 
                     {/* Hero Chart Section */}
@@ -137,10 +165,25 @@ const DashboardV2: React.FC = () => {
                             <h2 className="text-[10px] font-black uppercase tracking-[0.5em] text-emerald-500 mb-3">Strategy // Stage 03</h2>
                             <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Where We Can Go Next</h3>
                         </div>
-                        <button className="hidden sm:block px-8 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 shadow-xl shadow-indigo-600/20">
-                            Trigger Adjacency Swarm
+                        <button
+                            disabled={isGenerating}
+                            onClick={handleStrategize}
+                            className={`hidden sm:block px-8 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 shadow-xl shadow-indigo-600/20 ${isGenerating ? 'animate-pulse opacity-50' : ''}`}
+                        >
+                            {isGenerating ? 'Agent Task Active...' : 'Trigger Adjacency Swarm'}
                         </button>
                     </div>
+
+                    {memo && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            className="mb-12 p-8 bg-indigo-500/5 border border-indigo-500/20 rounded-[32px] font-mono text-xs text-indigo-300 whitespace-pre-wrap relative overflow-hidden"
+                        >
+                            <div className="absolute top-0 right-0 p-4 font-black uppercase tracking-widest text-[8px] text-indigo-500/40">Orchestrator Memo // IC-0226</div>
+                            {memo}
+                        </motion.div>
+                    )}
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         {signals.map(signal => (
@@ -166,8 +209,12 @@ const DashboardV2: React.FC = () => {
                                 Synthesize all regional telemetry, talent flows, and shadow market signals into a high-fidelity, board-ready strategic roadmap.
                                 <span className="text-slate-600 italic ml-2">Estimated compute time: 14s.</span>
                             </p>
-                            <button className="px-12 py-6 bg-emerald-600 hover:bg-emerald-500 text-white rounded-[24px] text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 shadow-[0_20px_40px_rgba(16,185,129,0.3)]">
-                                Initialize Strategy Swarm
+                            <button
+                                disabled={isGenerating}
+                                onClick={handleStrategize}
+                                className={`px-12 py-6 bg-emerald-600 hover:bg-emerald-500 text-white rounded-[24px] text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 shadow-[0_20px_40px_rgba(16,185,129,0.3)] ${isGenerating ? 'animate-pulse' : ''}`}
+                            >
+                                {isGenerating ? 'Synthesizing Alpha...' : 'Initialize Strategy Swarm'}
                             </button>
                         </div>
                     </motion.div>

@@ -3,12 +3,12 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import '../globals.css';
-import SummaryHeader from '../components/dashboard/SummaryHeader';
-import MarketMetricCard from '../components/dashboard/MarketMetricCard';
-import MarketShareChart from '../components/dashboard/MarketShareChart';
-import MarketMapScatter from '../components/dashboard/MarketMapScatter';
-import CompetitiveBenchmark from '../components/dashboard/CompetitiveBenchmark';
-import SignalCard from '../components/dashboard/SignalCard';
+import SummaryHeader from '../../components/dashboard/SummaryHeader';
+import MarketMetricCard from '../../components/dashboard/MarketMetricCard';
+import MarketShareChart from '../../components/dashboard/MarketShareChart';
+import MarketMapScatter from '../../components/dashboard/MarketMapScatter';
+import CompetitiveBenchmark from '../../components/dashboard/CompetitiveBenchmark';
+import SignalCard from '../../components/dashboard/SignalCard';
 
 const DashboardV2: React.FC = () => {
     // Local state for filters

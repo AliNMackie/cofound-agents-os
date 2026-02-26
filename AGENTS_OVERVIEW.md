@@ -8,30 +8,22 @@ This monorepo contains 8 specialized AI agents that form a complete business aut
 
 ## 📊 Agent Catalog
 
-### 1. **Sentinel Growth** - Market Intelligence & Company Enrichment
+### 1. **Sentinel Growth** - Market Intelligence & V2 Swarm
 **Location**: `services/sentinel-growth`  
-**Status**: ✅ Active (Deployed)  
-**Tech Stack**: Python, FastAPI, Google Gemini, Companies House API, WeasyPrint
+**Status**: ✅ V2.5 Deployed (Dormant)  
+**Tech Stack**: Python, FastAPI, Google Gemini, AlloyDB (RAG), GKE Autopilot, Dataflow
 
-**Purpose**:
-AI-powered market intelligence platform that extracts company data from news articles and enriches it with official registry information to identify investment opportunities.
+**V2 Capabilities**:
+- **Scale-to-Zero Ingest**: Serverless endpoint for Companies House & RSS feeds.
+- **Thema Adjacency Engine**: Multi-agent orchestration for 'Defend/Expand/Originate' strategies.
+- **AlloyDB RAG**: pgvector-powered semantic search for non-obvious deal discovery.
+- **Shadow Market Layer**: Private deal tracking (OTC/Secondary signals).
 
-**Key Capabilities**:
-- **News Extraction**: Uses Gemini to extract structured company data (EBITDA, ownership, advisors, process status) from unstructured text
-- **Company Enrichment**: Automatically enriches extracted data with Companies House registry information (registration number, incorporation date, SIC codes, registered address)
-- **Market Sweeps**: Automated daily RSS feed scanning for auction/sale processes
-- **Document Generation**: Creates professional proposals in PDF/DOCX formats
-- **Firestore Integration**: Stores enriched auction data with duplicate detection
-
-**API Endpoints**:
-- `POST /ingest/auction` - Extract and enrich company data from text
-- `POST /tasks/sweep` - Trigger market sweep
-- `POST /generate/proposal` - Generate proposal documents
-
-**Deployment**:
-- Cloud Run (europe-west2)
-- Cloud Scheduler (daily 9 AM sweeps)
-- URL: https://sentinel-growth-1005792944830.europe-west2.run.app
+**V2 Core Endpoints**:
+- `POST /ingest` - [Ingest URL](https://ic-origin-ingest-1005792944830.europe-west2.run.app)
+- `POST /strategize` - [Orchestrator URL](https://ic-origin-orchestrator-1005792944830.europe-west2.run.app)
+- `POST /activate` - Wake dormant crons and GKE agents.
+- `POST /demo` - Trigger mock 2-hour web-scale crawl simulation.
 
 ---
 

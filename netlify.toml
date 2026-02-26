@@ -1,5 +1,6 @@
 [build]
   base = "services/ic-origin-dashboard"
+  publish = ".next"
   command = "npm run build"
 
 [[plugins]]

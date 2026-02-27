@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import ArchitectureStack from './ArchitectureStack';
 
 const ProductTour: React.FC = () => {
     const [activeTab, setActiveTab] = useState(0);

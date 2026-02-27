@@ -64,26 +64,12 @@ const ProductTour: React.FC = () => {
                     </div>
 
                     <div className="lg:col-span-3">
-                        <div className="relative aspect-[4/3] bg-slate-900/50 rounded-[40px] border border-white/10 p-6 backdrop-blur shadow-2xl overflow-hidden">
+                        <div className="relative bg-slate-900/50 rounded-[40px] border border-white/10 p-4 sm:p-6 backdrop-blur shadow-2xl overflow-hidden">
                             <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 blur-[100px] rounded-full" />
+                            <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/5 blur-[100px] rounded-full" />
 
-                            {/* Visual Placeholder for Tab Content */}
-                            <div className="h-full border border-white/5 rounded-[24px] bg-[#05070A] overflow-hidden flex flex-col p-8">
-                                <div className="flex justify-between items-center mb-12">
-                                    <div className="w-32 h-6 bg-slate-800/50 rounded-lg" />
-                                    <div className="flex gap-2">
-                                        <div className="w-12 h-6 bg-slate-800/50 rounded-lg" />
-                                        <div className="w-12 h-6 bg-indigo-500/20 rounded-lg" />
-                                    </div>
-                                </div>
-                                <div className="flex-1 space-y-8 animate-pulse">
-                                    <div className="grid grid-cols-4 gap-4">
-                                        {[1, 2, 3, 4].map(i => <div key={i} className="h-20 bg-slate-900 border border-white/5 rounded-xl" />)}
-                                    </div>
-                                    <div className="w-full h-32 bg-slate-900 border border-white/5 rounded-2xl" />
-                                    <div className="w-2/3 h-4 bg-slate-900 rounded-full" />
-                                    <div className="w-1/2 h-4 bg-slate-900 rounded-full" />
-                                </div>
+                            <div className="relative">
+                                <ArchitectureStack />
                             </div>
                         </div>
                     </div>

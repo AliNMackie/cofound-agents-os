@@ -28,6 +28,9 @@ const DashboardV2: React.FC = () => {
     // Local state for UI
     const [timeRange, setTimeRange] = useState('7D');
     const [region, setRegion] = useState('Global');
+    const [sector, setSector] = useState('All Sectors');
+    const [category, setCategory] = useState('All Categories');
+    const [activeSignal, setActiveSignal] = useState<string | null>(null);
 
     // Phase 3: Interactive Topology & Command State
     const [selectedEntity, setSelectedEntity] = useState<any>(null);
@@ -41,7 +44,7 @@ const DashboardV2: React.FC = () => {
         }
     }, [user, loading, router]);
 
-    // Command Terminal Shortcut (Institutional UX)
+    // Command Terminal Shortcut (Institutional UX) — must be before early returns
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
@@ -53,13 +56,26 @@ const DashboardV2: React.FC = () => {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, []);
 
-    const handleNodeClick = (entity: any) => {
-        setSelectedEntity(entity);
-        setIsModalOpen(true);
-    };
-
-    // Role-based Multi-tenant Mock (Zombie Hunter context)
+    // Role-based Multi-tenant Mock
     const tenantId = user?.email?.split('@')[1] || 'global';
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-[#05070A] flex items-center justify-center">
+                <div className="relative">
+                    <div className="w-24 h-24 border-2 border-emerald-500/20 rounded-full animate-ping" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-12 h-12 border-t-2 border-emerald-500 rounded-full animate-spin" />
+                    </div>
+                    <div className="mt-8 text-center">
+                        <p className="text-[10px] font-black uppercase tracking-[0.5em] text-emerald-500 animate-pulse">Establishing Secure Session</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (!user) return null;
 
     // SWR Polling Logic (Ralph Wuggum Precision)
     const { data: telemetry, error, isLoading, isValidating } = useSWR('/api/telemetry', fetcher, {
@@ -80,25 +96,25 @@ const DashboardV2: React.FC = () => {
     const [isGenerating, setIsGenerating] = useState(false);
     const [memo, setMemo] = useState<string | null>(null);
 
-    const handleTriggerSwarm = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleTriggerSwarm = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
         setIsGenerating(true);
 
-        // Optimistic UI state
-        const targetName = selectedEntity?.name || 'ALPHA-TARGET-001';
-        setMemo(`Swarm computing initiated... Synthesizing web-scale signals for ${targetName} [Estimated completion: 14s]`);
+        const targetId = selectedEntity?.id || selectedEntity?.company_id || 'alpha-001';
+        const targetName = selectedEntity?.name || selectedEntity?.company_name || 'Alpha Target';
 
-        const formData = new FormData();
-        formData.append('targetId', selectedEntity?.id || 'ALPHA-TARGET-001');
+        setMemo(`[EMERALD_ORCHESTRATOR] Initiating recursive signal synthesis for ${targetName}...`);
 
         try {
+            const formData = new FormData();
+            formData.append('targetId', targetId);
             const result = await triggerSwarmAction(formData);
             if (result.success) {
                 setMemo(result.memo);
             }
         } catch (err) {
             console.error("Orchestration failed", err);
-            setMemo("Engine Timeout: Shadow-market volatility too high for current compute threshold. Retrying sequence...");
+            setMemo("Engine Timeout: Shadow-market volatility too high for current compute threshold.");
         } finally {
             setIsGenerating(false);
         }
@@ -109,7 +125,50 @@ const DashboardV2: React.FC = () => {
         visible: {
             opacity: 1,
             transition: {
-                staggerChildren: 0.1
+                staggerChildren: 0.15,
+                delayChildren: 0.2
+            }
+        }
+    };
+
+    // Institutional Filtering Logic
+    const filteredTopology = (telemetry?.topology || []).filter((entity: any) => {
+        const matchesRegion = region === 'Global' || entity.region === region;
+        const matchesCategory = category === 'All Categories' || entity.ic_origin_classification?.category === category;
+
+        let matchesSignal = true;
+        if (activeSignal) {
+            const hasTalentFreeze = (entity.human_capital?.hiring_velocity_6mo_pct || 0) < 0 && (entity.human_capital?.active_job_postings || 0) === 0;
+            const hasDebtWhiplash = (entity.statutory_signals?.recent_mr01_count_24mo || 0) > 0 && (entity.statutory_signals?.recent_mr04_count_24mo || 0) > 0;
+            const hasLeverageCreep = (entity.statutory_signals?.total_active_charges || 0) > 3;
+            const hasBoardVolatility = (entity.statutory_signals?.director_churn_index || 0) > 0.5;
+
+            if (activeSignal === 'Talent Freeze') matchesSignal = hasTalentFreeze;
+            if (activeSignal === 'Debt Whiplash') matchesSignal = hasDebtWhiplash;
+            if (activeSignal === 'Leverage Creep') matchesSignal = hasLeverageCreep;
+            if (activeSignal === 'Board Volatility') matchesSignal = hasBoardVolatility;
+        }
+
+        return matchesRegion && matchesCategory && matchesSignal;
+    });
+
+    const handleNodeClick = (entity: any) => {
+        const fullEntity = telemetry?.topology?.find((e: any) => (e.company_id === entity.id || e.company_name === entity.name));
+        setSelectedEntity(fullEntity || entity);
+        setIsModalOpen(true);
+    };
+
+    const sectionVariants = {
+        hidden: { opacity: 0, y: 30, scale: 0.98 },
+        visible: {
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            transition: {
+                type: 'spring' as const,
+                stiffness: 100,
+                damping: 20,
+                duration: 0.8
             }
         }
     };
@@ -125,15 +184,23 @@ const DashboardV2: React.FC = () => {
                 className="max-w-7xl mx-auto space-y-24 pb-20"
             >
                 {/* 1. Where We Stand Now (Executive Overview) */}
-                <section id="executive-overview" className="scroll-mt-24">
+                <motion.section
+                    variants={sectionVariants}
+                    id="executive-overview"
+                    className="scroll-mt-24"
+                >
                     <div className="flex justify-between items-end mb-10">
-                        <div>
+                        <motion.div
+                            initial={{ x: -20, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            transition={{ delay: 0.4 }}
+                        >
                             <h2 className="text-[10px] font-black uppercase tracking-[0.5em] text-emerald-500 mb-3 flex items-center gap-2">
                                 <div className={`w-1.5 h-1.5 rounded-full ${isLoading || isValidating ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}`} />
                                 Telemetry // Stage 01
                             </h2>
                             <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Where We Stand Now</h3>
-                        </div>
+                        </motion.div>
                         <div className="hidden md:flex gap-3">
                             {['TAM', 'SAM', 'SOM'].map(t => (
                                 <div key={t} className="px-4 py-1.5 bg-slate-900 border border-white/10 rounded-lg text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest">{t} Exposure</div>
@@ -183,42 +250,66 @@ const DashboardV2: React.FC = () => {
                             <p className="text-lg font-bold text-white uppercase tracking-tighter">Share Trajectory</p>
                         </div>
                         <div className="absolute inset-0 pt-20 pb-6 px-4">
-                            <MarketShareChart />
+                            <MarketShareChart isLoading={isLoading} />
                         </div>
                     </div>
-                </section>
+                </motion.section>
 
                 {/* 2. Forces Reshaping the Market (Competitive Intelligence) */}
-                <section id="competitive-intelligence" className="scroll-mt-24">
+                <motion.section
+                    variants={sectionVariants}
+                    id="competitive-intelligence"
+                    className="scroll-mt-24"
+                >
                     <div className="flex justify-between items-end mb-10">
-                        <div>
+                        <motion.div
+                            initial={{ x: -20, opacity: 0 }}
+                            whileInView={{ x: 0, opacity: 1 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: 0.2 }}
+                        >
                             <h2 className="text-[10px] font-black uppercase tracking-[0.5em] text-indigo-500 mb-3">Intelligence // Stage 02</h2>
                             <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Forces Reshaping the Market</h3>
-                        </div>
+                        </motion.div>
 
-                        {/* Control Bar */}
-                        <div className="flex items-center gap-6 bg-slate-900/50 p-2 rounded-2xl border border-white/10 backdrop-blur-xl">
-                            <div className="flex gap-1 px-1">
-                                {['24H', '7D', '30D'].map(range => (
-                                    <button
-                                        key={range}
-                                        onClick={() => setTimeRange(range)}
-                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all ${timeRange === range ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-slate-500 hover:text-slate-300'}`}
-                                    >
-                                        {range}
-                                    </button>
-                                ))}
-                            </div>
-                            <div className="w-px h-6 bg-white/10" />
+                        {/* Control Bar - Institutional Facets */}
+                        <div className="flex flex-wrap items-center gap-4 bg-slate-900/50 p-3 rounded-2xl border border-white/10 backdrop-blur-xl">
                             <select
                                 value={region}
                                 onChange={(e) => setRegion(e.target.value)}
-                                className="bg-transparent text-[10px] font-black text-slate-400 focus:text-white border-none outline-none cursor-pointer uppercase tracking-widest pr-4"
+                                className="bg-transparent text-[10px] font-black text-slate-400 focus:text-white border-none outline-none cursor-pointer uppercase tracking-widest"
                             >
-                                <option value="Global">Global Topology</option>
-                                <option value="EMEA">EMEA Topology</option>
-                                <option value="AMER">AMER Topology</option>
-                                <option value="APAC">APAC Topology</option>
+                                <option value="Global">All Regions</option>
+                                <option value="North West">North West Cluster</option>
+                                <option value="Midlands">Midlands Hub</option>
+                                <option value="Scotland">Central Belt Scotland</option>
+                            </select>
+
+                            <div className="w-px h-6 bg-white/10" />
+
+                            <select
+                                value={category}
+                                onChange={(e) => setCategory(e.target.value)}
+                                className="bg-transparent text-[10px] font-black text-slate-400 focus:text-white border-none outline-none cursor-pointer uppercase tracking-widest"
+                            >
+                                <option value="All Categories">All Categories</option>
+                                <option value="Obvious Winner">Obvious Winners</option>
+                                <option value="Borderline">Borderline</option>
+                                <option value="Distressed / Contrarian">Distressed</option>
+                            </select>
+
+                            <div className="w-px h-6 bg-white/10" />
+
+                            <select
+                                value={activeSignal || ''}
+                                onChange={(e) => setActiveSignal(e.target.value || null)}
+                                className="bg-transparent text-[10px] font-black text-slate-400 focus:text-emerald-400 border-none outline-none cursor-pointer uppercase tracking-widest"
+                            >
+                                <option value="">No Signal Filters</option>
+                                <option value="Talent Freeze">Talent Freeze</option>
+                                <option value="Debt Whiplash">Debt Whiplash</option>
+                                <option value="Leverage Creep">Leverage Creep</option>
+                                <option value="Board Volatility">Board Volatility</option>
                             </select>
                         </div>
                     </div>
@@ -231,24 +322,37 @@ const DashboardV2: React.FC = () => {
                                 <p className="text-lg font-bold text-white uppercase tracking-tighter">Growth x Profitability</p>
                             </div>
                             <div className="flex-1">
-                                <MarketMapScatter onNodeClick={handleNodeClick} />
+                                <MarketMapScatter
+                                    onNodeClick={handleNodeClick}
+                                    isLoading={isLoading}
+                                    data={filteredTopology}
+                                />
                             </div>
                         </div>
 
                         {/* Benchmark Table */}
                         <div className="lg:col-span-3">
-                            <CompetitiveBenchmark />
+                            <CompetitiveBenchmark data={filteredTopology} />
                         </div>
                     </div>
-                </section>
+                </motion.section>
 
                 {/* 3. Where We Can Go Next (Strategic Signals) */}
-                <section id="strategic-signals" className="scroll-mt-24">
+                <motion.section
+                    variants={sectionVariants}
+                    id="strategic-signals"
+                    className="scroll-mt-24"
+                >
                     <div className="flex justify-between items-center mb-10">
-                        <div>
+                        <motion.div
+                            initial={{ x: -20, opacity: 0 }}
+                            whileInView={{ x: 0, opacity: 1 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: 0.2 }}
+                        >
                             <h2 className="text-[10px] font-black uppercase tracking-[0.5em] text-emerald-500 mb-3">Strategy // Stage 03</h2>
                             <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Where We Can Go Next</h3>
-                        </div>
+                        </motion.div>
                         <form onSubmit={handleTriggerSwarm}>
                             <button
                                 type="submit"
@@ -322,7 +426,7 @@ const DashboardV2: React.FC = () => {
                             </form>
                         </div>
                     </motion.div>
-                </section>
+                </motion.section>
             </motion.div>
 
             {/* Sticky Foot Terminal */}

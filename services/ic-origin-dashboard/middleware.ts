@@ -13,7 +13,7 @@ export function middleware(request: NextRequest) {
         response.headers.set('X-Frame-Options', 'DENY');
         response.headers.set('X-Content-Type-Options', 'nosniff');
         response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-        response.headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://sentinel-growth-api.icorigin.ai https://orchestrator-api.icorigin.ai;");
+        response.headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://sentinel-growth-api.icorigin.ai https://orchestrator-api.icorigin.ai https://securetoken.googleapis.com https://identitytoolkit.googleapis.com https://firebaseinstallations.googleapis.com https://*.firebaseio.com;");
 
         return response;
     }

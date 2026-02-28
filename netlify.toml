@@ -3,5 +3,10 @@
   publish = ".next"
   command = "npm run build"
 
+[build.environment]
+  NEXT_PUBLIC_API_URL = "https://sentinel-growth-placeholder.a.run.app"
+  FIREBASE_PRIVATE_KEY = "PLACEHOLDER"
+  FIREBASE_CLIENT_EMAIL = "PLACEHOLDER"
+
 [[plugins]]
   package = "@netlify/plugin-nextjs"

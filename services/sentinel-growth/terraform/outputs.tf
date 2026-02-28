@@ -1,5 +1,5 @@
 output "service_url" {
-  value       = google_cloud_run_service.default.status[0].url
+  value       = google_cloud_run_v2_service.sentinel_v2.uri
   description = "The URL of the Cloud Run service"
 }
 

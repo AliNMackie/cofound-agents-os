@@ -92,47 +92,68 @@ resource "google_project_iam_member" "sa_secret_accessor" {
   member  = "serviceAccount:${google_service_account.sentinel_sa.email}"
 }
 
-# --- Cloud Run Service ---
-resource "google_cloud_run_service" "default" {
+# --- Cloud Run Service (V2) ---
+resource "google_cloud_run_v2_service" "sentinel_v2" {
   name     = var.service_name
   location = var.region
-
-  metadata {
-    annotations = {
-      "run.googleapis.com/ingress" = "internal-and-cloud-load-balancing"
-    }
-  }
+  ingress  = "INGRESS_TRAFFIC_ALL"
 
   template {
-    spec {
-      service_account_name = google_service_account.sentinel_sa.email
-      containers {
-        # Using a placeholder image for initial deployment definition.
-        # In a real pipeline, this would be updated to the built image.
-        image = "us-docker.pkg.dev/cloudrun/container/hello" 
-        
-        env {
-          name  = "GCS_BUCKET_NAME"
-          value = google_storage_bucket.vault.name
+    scaling {
+      min_instance_count = 0
+      max_instance_count = 10
+    }
+    
+    service_account = google_service_account.sentinel_sa.email
+
+    containers {
+      image = "us-docker.pkg.dev/cloudrun/container/hello" # Placeholder
+
+      env {
+        name  = "GOOGLE_CLOUD_PROJECT"
+        value = var.project_id
+      }
+      env {
+        name  = "GCS_BUCKET_NAME"
+        value = google_storage_bucket.vault.name
+      }
+      env {
+        name  = "PUBSUB_TOPIC_ID"
+        value = google_pubsub_topic.signals_topic.name
+      }
+      env {
+        name  = "FIRESTORE_DB_NAME"
+        value = "(default)"
+      }
+      
+      # Secret references
+      env {
+        name = "NEO4J_URI"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.neo4j_uri.secret_id
+            version = "latest"
+          }
         }
-        env {
-          name  = "GOOGLE_CLOUD_PROJECT"
-          value = var.project_id
+      }
+      env {
+        name = "NEO4J_PASSWORD"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.neo4j_password.secret_id
+            version = "latest"
+          }
         }
-        env {
-            name  = "GOOGLE_API_KEY"
-            value = var.google_api_key
+      }
+
+      resources {
+        limits = {
+          cpu    = "1"
+          memory = "1Gi"
         }
       }
     }
   }
-
-  traffic {
-    percent         = 100
-    latest_revision = true
-  }
-  
-  autogenerate_revision_name = true
 }
 
 # --- Audit Logs ---

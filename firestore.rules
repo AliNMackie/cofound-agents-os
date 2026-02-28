@@ -37,5 +37,35 @@ service cloud.firestore {
        allow read: if isAuthenticated();
        allow write: if false;
     }
+
+    // [PHASE 1] Audit Logs: Read-only for authenticated users
+    match /audit_logs/{logId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Only via Admin SDK
+    }
+
+    // [PHASE 2] Adjacency Scores: Critical institutional signals
+    match /adjacency_scores/{scoreId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Managed by Sentinel-Growth
+    }
+
+    // [PHASE 2] Monitored Entities: Enrichment & History
+    match /monitored_entities/{entityId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    // [PHASE 2] Strategic Alerts: Threshold Notifications
+    match /strategic_alerts/{alertId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    // Multi-tenant organization data
+    match /organizations/{orgId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
   }
 }

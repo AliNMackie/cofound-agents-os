@@ -119,33 +119,50 @@ const CommandTerminal: React.FC<CommandTerminalProps> = ({ isOpen, onClose }) =>
                                 <div className="space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-500">
                                     <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest">Matched Institutional Targets</p>
                                     <div className="grid grid-cols-1 gap-2">
-                                        {results.map((res: any, i: number) => (
-                                            <div key={i} className="group flex items-center justify-between p-3 bg-white/[0.02] border border-white/5 hover:border-emerald-500/30 rounded-xl transition-all cursor-pointer">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-6 h-6 bg-emerald-500/10 rounded flex items-center justify-center border border-emerald-500/20">
-                                                        <Cpu className="w-3 h-3 text-emerald-400" />
+                                        {results.map((res: any, i: number) => {
+                                            const isShadow = res.tags?.some((t: string) => t.toLowerCase().includes('shadow') || t.toLowerCase().includes('debt'));
+                                            return (
+                                                <div key={i} className={`group flex items-center justify-between p-3 bg-white/[0.02] border ${isShadow ? 'border-amber-500/20 bg-amber-500/[0.02]' : 'border-white/5'} hover:border-emerald-500/30 rounded-xl transition-all cursor-pointer`}>
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`w-6 h-6 ${isShadow ? 'bg-amber-500/10 border-amber-500/20' : 'bg-emerald-500/10 border-emerald-500/20'} rounded flex items-center justify-center border`}>
+                                                            <Cpu className={`w-3 h-3 ${isShadow ? 'text-amber-400' : 'text-emerald-400'}`} />
+                                                        </div>
+                                                        <div>
+                                                            <div className="flex items-center gap-2">
+                                                                <p className="text-[10px] font-bold text-white uppercase tracking-tight">{res.name}</p>
+                                                                {isShadow && <span className="text-[7px] font-black px-1.5 py-0.5 bg-amber-500/20 text-amber-500 rounded uppercase">Shadow Market</span>}
+                                                            </div>
+                                                            <p className="text-[8px] font-medium text-slate-500 uppercase tracking-widest">Score: {res.score}</p>
+                                                        </div>
                                                     </div>
-                                                    <div>
-                                                        <p className="text-[10px] font-bold text-white uppercase tracking-tight">{res.name}</p>
-                                                        <p className="text-[8px] font-medium text-slate-500 uppercase tracking-widest">Score: {res.score}</p>
-                                                    </div>
+                                                    <ArrowRight className="w-3 h-3 text-slate-700 group-hover:text-emerald-400 transition-colors" />
                                                 </div>
-                                                <ArrowRight className="w-3 h-3 text-slate-700 group-hover:text-emerald-400 transition-colors" />
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             )}
 
                             {history.length > 0 && results.length === 0 && !isAnalyzing && (
-                                <div className="space-y-2">
-                                    <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest">Recent Orchestrations</p>
-                                    {history.slice(-3).reverse().map((h, i) => (
-                                        <div key={i} className="flex items-center gap-3 text-slate-500 opacity-50">
-                                            <Command className="w-3 h-3" />
-                                            <span className="text-[11px] font-medium">{h}</span>
-                                        </div>
-                                    ))}
+                                <div className="p-12 text-center space-y-4 bg-white/[0.01] border border-white/5 rounded-2xl animate-in fade-in zoom-in-95 duration-500">
+                                    <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <Search className="w-5 h-5 text-slate-700" />
+                                    </div>
+                                    <h4 className="text-xs font-black text-white uppercase tracking-widest">No Matches Identified</h4>
+                                    <p className="text-[10px] text-slate-500 max-w-[240px] mx-auto leading-relaxed uppercase font-bold tracking-tighter">
+                                        The engine found no high-conviction institutional matches for this query. Refine your strategic parameters.
+                                    </p>
+                                    <div className="pt-4 flex flex-wrap justify-center gap-2">
+                                        {['High Growth', 'Shadow Market', 'Series B'].map(tag => (
+                                            <button
+                                                key={tag}
+                                                onClick={() => setQuery(tag)}
+                                                className="px-2 py-1 bg-white/5 hover:bg-white/10 border border-white/10 rounded text-[8px] font-black text-slate-400 uppercase tracking-widest transition-colors"
+                                            >
+                                                Try "{tag}"
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
 

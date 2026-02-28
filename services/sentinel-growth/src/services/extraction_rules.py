@@ -96,5 +96,86 @@ class SectorLogicController:
             
         return True
 
+
+# ──────────────── Counterparty Risk Intelligence (Sprint 2) ────────────────
+
+# The canonical schema for counterparty risk extraction.
+# Every LLM response MUST include these keys.
+RISK_EXTRACTION_SCHEMA: List[str] = [
+    "company_name",
+    "company_number",
+    "new_charge_registered",      # bool — new charge/debenture filed
+    "charge_description",         # str | null — description of the charge
+    "director_resigned",          # bool — any director departures detected
+    "director_appointed",         # bool — new director appointments
+    "director_churn_count",       # int — net director changes
+    "overdue_filings_detected",   # bool — annual accounts/confirmation overdue
+    "debt_cleared",               # bool — charge fully satisfied
+    "psc_change_detected",        # bool — person of significant control changed
+    "accounts_category",          # str — FULL / SMALL / MICRO / DORMANT
+    "incorporation_years",        # int — years since incorporation
+    "risk_narrative",             # str — 2-3 sentence analyst note
+]
+
+
+def build_risk_system_prompt(sector_config: Optional[Dict[str, Any]] = None) -> str:
+    """
+    Construct a specialised LLM System Prompt for Counterparty Credit Risk Analysis.
+
+    Instructs the model to act as a Senior Credit Risk Analyst, extracting
+    structured signals from raw Companies House text (filing descriptions,
+    charge data, PSC notifications, director change notices).
+
+    Args:
+        sector_config: Optional sector-specific overrides. If provided, may
+                       contain 'label' and 'extraction_schema' keys to extend
+                       the base risk schema.
+
+    Returns:
+        A fully formatted system prompt string.
+    """
+    # Allow sector_config to inject additional schema fields
+    extra_fields: List[str] = []
+    sector_label = "General Corporate"
+    if sector_config:
+        extra_fields = sector_config.get("extraction_schema", [])
+        sector_label = sector_config.get("label", sector_label)
+
+    # Merge base risk schema with any sector-specific extras
+    full_schema = RISK_EXTRACTION_SCHEMA + [f for f in extra_fields if f not in RISK_EXTRACTION_SCHEMA]
+    schema_list = ", ".join(full_schema)
+
+    prompt = (
+        "You are a Senior Credit Risk Analyst at an institutional intelligence firm.\n"
+        f"Specialisation: {sector_label}.\n\n"
+        "YOUR MANDATE:\n"
+        "Analyze the provided Companies House text (filing descriptions, charge data,\n"
+        "PSC notifications, director change notices, accounts filings) and extract\n"
+        "structured counterparty risk signals.\n\n"
+        "EXTRACTION SCHEMA:\n"
+        f"Return a single JSON object with exactly these keys:\n"
+        f"[{schema_list}]\n\n"
+        "FIELD RULES:\n"
+        "- new_charge_registered (bool): True if a new charge, debenture, or mortgage has been filed.\n"
+        "- charge_description (str|null): Brief description of the charge. Null if no charge.\n"
+        "- director_resigned (bool): True if any director has resigned or been removed.\n"
+        "- director_appointed (bool): True if any new director has been appointed.\n"
+        "- director_churn_count (int): Net count of director changes (appointments minus resignations). Can be negative.\n"
+        "- overdue_filings_detected (bool): True if annual accounts or confirmation statement is overdue.\n"
+        "- debt_cleared (bool): True if a charge has been fully satisfied or released.\n"
+        "- psc_change_detected (bool): True if a Person of Significant Control has been added, removed, or changed.\n"
+        "- accounts_category (str): One of 'FULL', 'SMALL', 'MICRO', 'DORMANT', or 'UNKNOWN'.\n"
+        "- incorporation_years (int): Number of years since incorporation. Estimate from available data.\n"
+        "- risk_narrative (str): A 2-3 sentence professional analyst note summarising the risk posture.\n\n"
+        "CRITICAL OUTPUT RULES:\n"
+        "1. Return ONLY valid JSON. No markdown code fences. No explanatory text.\n"
+        "2. Do NOT wrap the output in ```json``` blocks.\n"
+        "3. All boolean fields must be lowercase true/false.\n"
+        "4. If a value cannot be determined from the source text, use null for strings, false for booleans, 0 for integers.\n"
+        "5. Do not hallucinate data. Only extract what is explicitly present in the source text.\n"
+    )
+    return prompt
+
+
 # Singleton instance for easy import
 rule_engine = SectorLogicController()

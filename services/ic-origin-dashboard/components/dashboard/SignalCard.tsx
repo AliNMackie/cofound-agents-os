@@ -31,8 +31,8 @@ const SignalCard: React.FC<SignalCardProps> = ({ entity, type, confidence, senti
                     <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.3em] mt-3">{type}</p>
                 </div>
                 <div className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${sentiment === 'positive' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/10' :
-                        sentiment === 'negative' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/10' :
-                            'bg-white/5 text-slate-400 border border-white/5'
+                    sentiment === 'negative' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/10' :
+                        'bg-white/5 text-slate-400 border border-white/5'
                     }`}>
                     {sentiment}
                 </div>
@@ -57,7 +57,7 @@ const SignalCard: React.FC<SignalCardProps> = ({ entity, type, confidence, senti
                         />
                     </div>
                     <span className="text-[10px] font-mono font-black text-slate-400 tracking-tighter">
-                        Match: {(confidence * 100).toFixed(0)}%
+                        Adjacency: {(confidence * 100).toFixed(0)}%
                     </span>
                 </div>
                 <div className="flex items-center gap-2">

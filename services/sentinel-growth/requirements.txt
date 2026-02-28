@@ -17,3 +17,5 @@ pypdf
 pandas
 apscheduler>=3.10.0
 firebase-admin>=6.4.0
+google-cloud-pubsub>=2.23.0
+resend>=2.0.0

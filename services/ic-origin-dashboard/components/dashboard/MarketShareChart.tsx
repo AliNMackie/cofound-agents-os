@@ -13,12 +13,33 @@ const data = [
     { name: 'Sun', share: 14.2 },
 ];
 
-const MarketShareChart: React.FC = () => {
+interface MarketShareChartProps {
+    isLoading?: boolean;
+}
+
+const MarketShareChart: React.FC<MarketShareChartProps> = ({ isLoading }) => {
     const [mounted, setMounted] = React.useState(false);
 
     React.useEffect(() => {
         setMounted(true);
     }, []);
+
+    if (isLoading || !mounted) {
+        return (
+            <div className="w-full h-full flex flex-col justify-end gap-2 relative overflow-hidden">
+                <div className="absolute inset-0 bg-slate-900/10 animate-pulse rounded-2xl" />
+                <div className="flex items-end justify-between h-48 w-full px-4 opacity-20">
+                    {[...Array(7)].map((_, i) => (
+                        <div key={i} className="w-8 bg-emerald-500 rounded-t-lg animate-pulse" style={{
+                            height: `${30 + Math.random() * 60}%`,
+                            animationDelay: `${i * 100}ms`
+                        }} />
+                    ))}
+                </div>
+                <div className="h-px w-full bg-white/5" />
+            </div>
+        );
+    }
 
     return (
         <div className="w-full h-full">

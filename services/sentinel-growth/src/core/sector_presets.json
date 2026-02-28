@@ -103,6 +103,36 @@
                 "route_origin",
                 "cargo_type_teu"
             ]
+        },
+        "talent_intelligence": {
+            "id": "sec_talent_001",
+            "label": "Talent Intelligence / Human Capital Analytics",
+            "standard_sources": [
+                {
+                    "id": "src_talent_001",
+                    "name": "Reed.co.uk (UK Jobs RSS)",
+                    "url": "https://www.reed.co.uk/jobs?keywords={company_name}&proximity=10",
+                    "type": "watch",
+                    "frequency": "daily"
+                },
+                {
+                    "id": "src_talent_002",
+                    "name": "Adzuna API (UK Jobs)",
+                    "url": "https://api.adzuna.com/v1/api/jobs/gb/search/1?app_id={app_id}&app_key={app_key}&what={company_name}",
+                    "type": "api",
+                    "frequency": "daily"
+                }
+            ],
+            "extraction_schema": [
+                "role_title",
+                "department",
+                "seniority",
+                "location",
+                "company_name",
+                "hiring_signal_type",
+                "compensation_band",
+                "posting_date"
+            ]
         }
     }
 }

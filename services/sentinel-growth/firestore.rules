@@ -1,0 +1,100 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ══════════════════════════════════════════════════════════
+    // IC Origin — Firestore Security Rules
+    // Enforces strict tenant isolation via custom claims.
+    //
+    // Every authenticated user MUST have:
+    //   - request.auth.token.tenant_id  (string)
+    //   - request.auth.token.role       (ADMIN | ANALYST | VIEWER)
+    // ══════════════════════════════════════════════════════════
+
+    // ── Helper Functions ────────────────────────────────────
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function hasTenantClaim() {
+      return isAuthenticated() && request.auth.token.tenant_id != null;
+    }
+
+    function isOwnerTenant(tenantId) {
+      return hasTenantClaim() && request.auth.token.tenant_id == tenantId;
+    }
+
+    function hasRole(role) {
+      return hasTenantClaim() && request.auth.token.role == role;
+    }
+
+    function isAdmin(tenantId) {
+      return isOwnerTenant(tenantId) && hasRole('ADMIN');
+    }
+
+    function isAnalystOrAbove(tenantId) {
+      return isOwnerTenant(tenantId) &&
+             (hasRole('ADMIN') || hasRole('ANALYST'));
+    }
+
+    function isAnyRole(tenantId) {
+      return isOwnerTenant(tenantId) &&
+             (hasRole('ADMIN') || hasRole('ANALYST') || hasRole('VIEWER'));
+    }
+
+    // ── Tenant Root ─────────────────────────────────────────
+    // tenants/{tenant_id}
+    match /tenants/{tenantId} {
+      allow read: if isAnyRole(tenantId);
+      allow write: if isAdmin(tenantId);
+
+      // ── Monitored Entities ────────────────────────────────
+      // tenants/{tenant_id}/monitored_entities/{entity_id}
+      match /monitored_entities/{entityId} {
+        allow read: if isAnyRole(tenantId);
+        allow create, update: if isAnalystOrAbove(tenantId);
+        allow delete: if isAdmin(tenantId);
+      }
+
+      // ── Portfolios ────────────────────────────────────────
+      // tenants/{tenant_id}/portfolios/{portfolio_id}
+      match /portfolios/{portfolioId} {
+        allow read: if isAnyRole(tenantId);
+        allow create, update: if isAnalystOrAbove(tenantId);
+        allow delete: if isAdmin(tenantId);
+      }
+
+      // ── Strategic Alerts ──────────────────────────────────
+      // tenants/{tenant_id}/strategic_alerts/{alert_id}
+      match /strategic_alerts/{alertId} {
+        allow read: if isAnyRole(tenantId);
+        allow create: if isAnalystOrAbove(tenantId);
+        allow update: if isAnalystOrAbove(tenantId);
+        allow delete: if isAdmin(tenantId);
+      }
+
+      // ── Catch-all: deny any other subcollections ──────────
+      match /{subcollection}/{docId} {
+        allow read, write: if false;
+      }
+    }
+
+    // ── Global collections (non-tenant-scoped legacy) ───────
+    // These remain accessible for backward compatibility but
+    // should be migrated to tenant-scoped paths.
+    match /auctions/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    match /tasks/{docId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // ── Default deny ────────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

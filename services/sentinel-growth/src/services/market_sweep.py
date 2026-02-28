@@ -321,6 +321,28 @@ class MarketSweepService:
                             self.collection.add(signal_doc)
                             count += 1
                             logger.info("Shadow Market Signal Found!", company=company_name, type=normalized["signal_type"])
+                            
+                            # PROACTIVE: Notify Orchestrator for Agentic Synthesis
+                            try:
+                                import httpx
+                                orchestrator_url = settings.ORCHESTRATOR_INTERNAL_URL or "http://ic-origin-orchestrator:8080"
+                                async with httpx.AsyncClient() as client:
+                                    await client.post(
+                                        f"{orchestrator_url}/strategize",
+                                        json={
+                                            "entity_id": company_name,
+                                            "context": {
+                                                "signal_type": normalized["signal_type"],
+                                                "conviction": normalized["conviction_score"],
+                                                "headline": normalized["headline"],
+                                                "triggered_by": "sentinel_shadow_market"
+                                            }
+                                        },
+                                        timeout=10.0
+                                    )
+                                logger.info("Orchestrator Notified", company=company_name)
+                            except Exception as oe:
+                                logger.warning("Orchestrator Notify Failed (Non-Blocking)", error=str(oe))
 
         except Exception as e:
             logger.error("Failed to run shadow market scan", error=str(e))
@@ -360,5 +382,301 @@ class MarketSweepService:
         self.collection.add(doc_data)
         logger.info("New deal saved", company=auction_data.company_name, signal_type=doc_data["signal_type"])
         return True
+
+    # ──────────────── Counterparty Risk Intelligence (Sprint 1) ────────────────
+
+    async def run_portfolio_sweep(self, portfolio_id: str, company_numbers: list[str]) -> dict:
+        """
+        Sweep a portfolio of Companies House numbers for counterparty risk signals.
+
+        Iterates through each company number, fetches CH filings (charges, PSCs),
+        scores them through the Shadow Market engine, and assigns a risk tier.
+
+        Rate-limited to stay under the Companies House API limit of 600 req / 5 min
+        (~2 req/sec). We use 0.5s delay per company as each company triggers
+        2–3 API calls (search + charges + PSCs).
+
+        Args:
+            portfolio_id: The portfolio being swept.
+            company_numbers: List of Companies House registration numbers.
+
+        Returns:
+            Summary dict with counts and per-entity results.
+        """
+        from src.schemas.auctions import RiskTier
+
+        log = logger.bind(portfolio_id=portfolio_id)
+        log.info("Portfolio sweep started", total_entities=len(company_numbers))
+
+        results: list[dict] = []
+        errors: list[dict] = []
+
+        for idx, company_number in enumerate(company_numbers):
+            entity_log = log.bind(company_number=company_number, index=idx + 1, total=len(company_numbers))
+
+            # ── Rate Limiting ──
+            # Companies House allows 600 requests per 5 minutes (~2 req/sec).
+            # Each entity triggers up to 3 API calls (search, charges, PSCs),
+            # so we sleep 0.5s per entity to stay safely under the limit.
+            if idx > 0:
+                await asyncio.sleep(0.5)
+
+            try:
+                # 1. Fetch company profile
+                profile = await enrichment_service._fetch_company_profile(company_number)
+                company_name = "Unknown"
+                tenure_years = 0
+
+                if profile:
+                    company_name = profile.registration_number or company_number
+                    if profile.incorporation_date:
+                        try:
+                            inc_date = datetime.datetime.fromisoformat(
+                                profile.incorporation_date.replace("Z", "+00:00")
+                            )
+                            tenure_years = (
+                                datetime.datetime.now(datetime.timezone.utc) - inc_date
+                            ).days // 365
+                        except (ValueError, TypeError):
+                            pass
+
+                # 2. Fetch filings (charges + PSCs)
+                charges = await enrichment_service.fetch_company_charges(company_number)
+                pscs = await enrichment_service.fetch_company_pscs(company_number)
+
+                # 3. Score through Shadow Market engine
+                all_events: list[dict] = []
+                for charge in charges[:5]:
+                    charge["type"] = "charge"
+                    charge["tenure_years"] = tenure_years
+                    charge["company_number"] = company_number
+                    all_events.append(charge)
+                for psc in pscs[:5]:
+                    psc["type"] = "psc"
+                    psc["tenure_years"] = tenure_years
+                    psc["company_number"] = company_number
+                    all_events.append(psc)
+
+                max_conviction = 0
+                signals_found = 0
+
+                for event in all_events:
+                    normalized = shadow_market.normalize_ch_event(event, company_name)
+                    conviction = normalized.get("conviction_score", 0)
+                    max_conviction = max(max_conviction, conviction)
+
+                    if conviction >= 70:
+                        signals_found += 1
+                        signal_doc = shadow_market.map_to_signal(normalized)
+                        signal_doc["monitoring_portfolio_id"] = portfolio_id
+                        signal_doc["source_family"] = "GOV_REGISTRY"
+
+                        # Persist if DB available
+                        if self.db:
+                            try:
+                                self.collection.add(signal_doc)
+                            except Exception as db_err:
+                                entity_log.warning("Failed to persist signal", error=str(db_err))
+
+                # 4. Assign Risk Tier based on max conviction score
+                if max_conviction >= 80:
+                    risk_tier = RiskTier.ELEVATED_RISK
+                elif max_conviction >= 50:
+                    risk_tier = RiskTier.STABLE
+                elif max_conviction > 0:
+                    risk_tier = RiskTier.IMPROVED
+                else:
+                    risk_tier = RiskTier.UNSCORED
+
+                results.append({
+                    "company_number": company_number,
+                    "company_name": company_name,
+                    "risk_tier": risk_tier.value,
+                    "max_conviction_score": max_conviction,
+                    "signals_found": signals_found,
+                    "charges_checked": len(charges[:5]),
+                    "pscs_checked": len(pscs[:5]),
+                })
+
+                entity_log.info(
+                    "Entity scored",
+                    risk_tier=risk_tier.value,
+                    conviction=max_conviction,
+                    signals=signals_found,
+                )
+
+            except Exception as e:
+                entity_log.error("Failed to process entity", error=str(e))
+                errors.append({
+                    "company_number": company_number,
+                    "error": str(e),
+                })
+
+        log.info(
+            "Portfolio sweep completed",
+            processed=len(results),
+            errors=len(errors),
+        )
+
+        return {
+            "status": "completed",
+            "portfolio_id": portfolio_id,
+            "total_entities": len(company_numbers),
+            "processed": len(results),
+            "errors_count": len(errors),
+            "results": results,
+            "errors": errors,
+        }
+
+    # ──────────────── Talent Intelligence (Sprint 8) ────────────────
+
+    async def run_talent_sweep(self, company_name: str) -> dict:
+        """
+        Sweep public job posting feeds for talent signals related to a company.
+
+        Parses RSS feeds from Google News (job posting proxy) and Reed.co.uk
+        to identify hiring patterns, key departures, and talent concentration.
+        Does NOT scrape LinkedIn (anti-bot). Uses public RSS only.
+
+        Args:
+            company_name: The company to search for job postings.
+
+        Returns:
+            dict with HumanCapital-shaped data:
+                headcount_delta, key_hire_departures, hiring_velocity_pct,
+                talent_concentration, active_job_postings, talent_signal
+        """
+        log = logger.bind(company=company_name, sweep_type="talent")
+        log.info("Talent sweep started")
+
+        postings: list[dict] = []
+
+        # ── 1. Fetch job postings via Google News RSS (proxy for job activity) ──
+        try:
+            encoded = urllib.parse.quote(f'"{company_name}" (hiring OR "new role" OR vacancy OR appointment OR resign)')
+            rss_url = f"https://news.google.com/rss/search?q={encoded}&hl=en-GB&gl=GB&ceid=GB:en"
+
+            loop = asyncio.get_running_loop()
+            feed = await loop.run_in_executor(None, feedparser.parse, rss_url)
+
+            for entry in feed.entries[:15]:
+                title = entry.get("title", "")
+                summary = entry.get("summary", "")
+                posting = self._classify_talent_posting(title, summary, company_name)
+                if posting:
+                    postings.append(posting)
+
+        except Exception as e:
+            log.warning("RSS talent sweep failed", error=str(e))
+
+        # ── 2. Classify and aggregate ──
+        active_job_postings = len([p for p in postings if p.get("type") == "HIRE"])
+        departures = [p for p in postings if p.get("type") == "DEPARTURE"]
+
+        # Department concentration
+        dept_counts: dict[str, int] = {}
+        for p in postings:
+            dept = p.get("department", "other")
+            dept_counts[dept] = dept_counts.get(dept, 0) + 1
+
+        total = max(sum(dept_counts.values()), 1)
+        talent_concentration = {
+            dept: round(count / total, 2) for dept, count in dept_counts.items()
+        }
+
+        # Hiring velocity (simplified: postings found / expected baseline * 100 - 100)
+        # Baseline: 3 postings per company per 30 days
+        baseline = 3.0
+        hiring_velocity_pct = round(((active_job_postings / baseline) * 100) - 100, 1)
+
+        # ── 3. Run through talent scoring engine ──
+        talent_payload = {
+            "company_name": company_name,
+            "hiring_velocity_pct": hiring_velocity_pct,
+            "active_job_postings": active_job_postings,
+            "key_hire_departures": departures,
+        }
+
+        talent_signal = shadow_market.evaluate_talent_signals(talent_payload)
+
+        result = {
+            "headcount_delta": active_job_postings - len(departures),
+            "key_hire_departures": departures,
+            "hiring_velocity_pct": hiring_velocity_pct,
+            "talent_concentration": talent_concentration,
+            "active_job_postings": active_job_postings,
+            "talent_signal": talent_signal,
+            "postings_analysed": len(postings),
+        }
+
+        log.info(
+            "Talent sweep completed",
+            postings=len(postings),
+            signal=talent_signal,
+            velocity=hiring_velocity_pct,
+        )
+        return result
+
+    def _classify_talent_posting(
+        self, title: str, summary: str, company_name: str
+    ) -> dict | None:
+        """Classify a news item as a hiring, departure, or irrelevant posting."""
+        text = f"{title} {summary}".lower()
+
+        # Skip if company name not mentioned
+        if company_name.lower() not in text:
+            return None
+
+        # Determine type
+        departure_keywords = [
+            "resign", "departure", "steps down", "leaves",
+            "exit", "fired", "terminated", "replaced",
+        ]
+        hire_keywords = [
+            "hiring", "vacancy", "new role", "appointment",
+            "appoints", "recruits", "onboard", "joins",
+        ]
+
+        posting_type = None
+        if any(kw in text for kw in departure_keywords):
+            posting_type = "DEPARTURE"
+        elif any(kw in text for kw in hire_keywords):
+            posting_type = "HIRE"
+        else:
+            return None  # Not relevant
+
+        # Determine seniority
+        c_suite = ["ceo", "cfo", "cto", "coo", "chief", "managing director", "head of"]
+        seniority = "senior" if any(s in text for s in c_suite) else "mid"
+
+        # Determine department
+        dept_map = {
+            "tech": ["engineer", "developer", "data", "ai", "ml", "devops", "cto", "technology"],
+            "finance": ["finance", "accounting", "cfo", "treasurer", "controller"],
+            "legal": ["legal", "counsel", "compliance", "regulatory"],
+            "ops": ["operations", "logistics", "supply chain", "coo"],
+            "sales": ["sales", "business development", "commercial", "revenue"],
+            "hr": ["hr", "human resources", "people", "talent"],
+        }
+
+        department = "other"
+        for dept, keywords in dept_map.items():
+            if any(kw in text for kw in keywords):
+                department = dept
+                break
+
+        # Extract role from title
+        role = title.split("-")[0].strip() if "-" in title else title[:60]
+
+        return {
+            "name": "",
+            "role": role,
+            "type": posting_type,
+            "date": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "seniority": seniority,
+            "department": department,
+            "company_name": company_name,
+        }
+
 
 sweep_service = MarketSweepService()

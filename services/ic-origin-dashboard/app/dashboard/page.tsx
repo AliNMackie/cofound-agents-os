@@ -9,6 +9,10 @@ import MarketShareChart from '../../components/dashboard/MarketShareChart';
 import MarketMapScatter from '../../components/dashboard/MarketMapScatter';
 import CompetitiveBenchmark from '../../components/dashboard/CompetitiveBenchmark';
 import SignalCard from '../../components/dashboard/SignalCard';
+import PortfolioRisk from '../../components/dashboard/PortfolioRisk';
+import PortfolioStatus from '../../components/dashboard/PortfolioStatus';
+import RiskTrend from '../../components/dashboard/RiskTrend';
+import { DEMO_COUNTERPARTIES } from '../../lib/counterparty-data';
 import useSWR from 'swr';
 import { triggerSwarmAction } from '../actions';
 import { Download } from 'lucide-react';
@@ -396,7 +400,59 @@ const DashboardV2: React.FC = () => {
                             <SignalCard key={signal.id} {...signal} />
                         ))}
                     </div>
+                </motion.section>
 
+                {/* 3.5 Portfolio Status Telemetry */}
+                <motion.section
+                    variants={sectionVariants}
+                    id="portfolio-status"
+                    className="scroll-mt-24"
+                >
+                    <div className="flex justify-between items-end mb-10">
+                        <motion.div
+                            initial={{ x: -20, opacity: 0 }}
+                            whileInView={{ x: 0, opacity: 1 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: 0.2 }}
+                        >
+                            <h2 className="text-[10px] font-black uppercase tracking-[0.5em] text-cyan-500 mb-3">Status // Telemetry</h2>
+                            <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Portfolio Command Centre</h3>
+                        </motion.div>
+                    </div>
+                    <PortfolioStatus />
+                </motion.section>
+
+                {/* 4. Counterparty Risk Intelligence */}
+                <motion.section
+                    variants={sectionVariants}
+                    id="counterparty-risk"
+                    className="scroll-mt-24"
+                >
+                    <div className="flex justify-between items-end mb-10">
+                        <motion.div
+                            initial={{ x: -20, opacity: 0 }}
+                            whileInView={{ x: 0, opacity: 1 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: 0.2 }}
+                        >
+                            <h2 className="text-[10px] font-black uppercase tracking-[0.5em] text-rose-500 mb-3">Exposure // Stage 04</h2>
+                            <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Counterparty Risk Intelligence</h3>
+                        </motion.div>
+                    </div>
+
+                    <PortfolioRisk entities={DEMO_COUNTERPARTIES} />
+
+                    <div className="mt-8">
+                        <RiskTrend entities={DEMO_COUNTERPARTIES} />
+                    </div>
+                </motion.section>
+
+                {/* 5. Strategy (Where We Can Go Next) */}
+                <motion.section
+                    variants={sectionVariants}
+                    id="strategy-generator"
+                    className="scroll-mt-24"
+                >
                     {/* Premium Strategy Generator Trigger */}
                     <motion.div
                         whileHover={{ y: -10 }}

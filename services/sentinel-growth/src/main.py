@@ -12,6 +12,10 @@ from src.api.sources import router as sources_router
 from src.api.industries import router as industries_router
 from src.api.signals import router as signals_router
 from src.api.api_keys import router as api_keys_router
+from src.api.portfolio import router as portfolio_router
+from src.api.webhooks import router as webhooks_router
+from src.api.telemetry import router as telemetry_router
+from src.api.graph import router as graph_router
 
 from src.services.market_sweep import sweep_service
 import uuid
@@ -85,12 +89,20 @@ app.add_middleware(
     expose_headers=["Content-Disposition"]
 )
 
+# SOC 2 Audit Logging (Sprint 9)
+from src.core.audit import AuditLogMiddleware
+app.add_middleware(AuditLogMiddleware)
+
 app.include_router(content_router)
 app.include_router(ingest_router)
 app.include_router(sources_router)
 app.include_router(industries_router)
 app.include_router(signals_router)
 app.include_router(api_keys_router)
+app.include_router(portfolio_router)
+app.include_router(webhooks_router)
+app.include_router(telemetry_router)
+app.include_router(graph_router)
 
 @app.post("/tasks/sweep")
 async def trigger_market_sweep(background_tasks: BackgroundTasks):

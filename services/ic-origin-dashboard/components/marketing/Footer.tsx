@@ -18,9 +18,9 @@ const Footer: React.FC = () => {
                     <div>
                         <h4 className="font-bold text-white mb-6 text-sm">Platform</h4>
                         <ul className="space-y-4 text-xs font-medium text-slate-500 uppercase tracking-wider">
-                            <li><a href="#" className="hover:text-emerald-400 transition-colors">Ingest Swarm</a></li>
-                            <li><a href="#" className="hover:text-emerald-400 transition-colors">Topology Mapping</a></li>
-                            <li><a href="#" className="hover:text-emerald-400 transition-colors">Strategy Memos</a></li>
+                            <li><a href="/platform/ingest" className="hover:text-emerald-400 transition-colors">Ingest Swarm</a></li>
+                            <li><a href="/platform/topology" className="hover:text-emerald-400 transition-colors">Topology Mapping</a></li>
+                            <li><a href="/platform/strategy" className="hover:text-emerald-400 transition-colors">Strategy Memos</a></li>
                         </ul>
                     </div>
 
@@ -29,6 +29,7 @@ const Footer: React.FC = () => {
                         <ul className="space-y-4 text-xs font-medium text-slate-500 uppercase tracking-wider">
                             <li><a href="/privacy" className="hover:text-emerald-400 transition-colors">Privacy Policy</a></li>
                             <li><a href="/terms" className="hover:text-emerald-400 transition-colors">Terms of Service</a></li>
+                            <li><a href="/cookies" className="hover:text-emerald-400 transition-colors">Cookie Policy</a></li>
                         </ul>
                     </div>
                 </div>

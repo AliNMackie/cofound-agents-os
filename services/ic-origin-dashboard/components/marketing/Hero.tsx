@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
+import ContactModal from './ContactModal';
 
 const Hero: React.FC = () => {
+    const [isContactOpen, setIsContactOpen] = useState(false);
+
     return (
         <section className="relative pt-44 pb-32 overflow-hidden">
             {/* Background Glows */}
@@ -22,13 +25,17 @@ const Hero: React.FC = () => {
                 </p>
 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20">
-                    <button className="w-full sm:w-auto px-10 py-5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black uppercase tracking-[0.15em] text-xs transition-all hover:scale-105 active:scale-95 shadow-2xl shadow-emerald-600/30">
+                    <button
+                        onClick={() => setIsContactOpen(true)}
+                        className="w-full sm:w-auto px-10 py-5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black uppercase tracking-[0.15em] text-xs transition-all hover:scale-105 active:scale-95 shadow-2xl shadow-emerald-600/30"
+                    >
                         Book a 15-minute demo
                     </button>
                     <a href="#product-tour" className="w-full sm:w-auto px-10 py-5 border border-white/10 hover:bg-white/5 text-white rounded-2xl font-black uppercase tracking-[0.15em] text-xs transition-all">
                         View Sample Dashboard
                     </a>
                 </div>
+                <ContactModal isOpen={isContactOpen} onClose={() => setIsContactOpen(false)} />
 
                 <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-slate-500 mb-20">
                     Institutional-grade market understanding. Processed at machine speed.

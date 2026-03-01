@@ -2,8 +2,11 @@ import React, { useState } from 'react';
 import ContactModal from './ContactModal';
 import TerminalPreviewModal from './TerminalPreviewModal';
 
-const Hero: React.FC = () => {
-    const [isContactOpen, setIsContactOpen] = useState(false);
+interface HeroProps {
+    onOpenContact: () => void;
+}
+
+const Hero: React.FC<HeroProps> = ({ onOpenContact }) => {
     const [isTerminalOpen, setIsTerminalOpen] = useState(false);
 
     return (
@@ -28,7 +31,7 @@ const Hero: React.FC = () => {
 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20">
                     <button
-                        onClick={() => setIsContactOpen(true)}
+                        onClick={onOpenContact}
                         className="w-full sm:w-auto px-10 py-5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black uppercase tracking-[0.15em] text-xs transition-all hover:scale-105 active:scale-95 shadow-2xl shadow-emerald-600/30"
                     >
                         Book a 15-minute demo
@@ -37,7 +40,7 @@ const Hero: React.FC = () => {
                         View Sample Dashboard
                     </a>
                 </div>
-                <ContactModal isOpen={isContactOpen} onClose={() => setIsContactOpen(false)} />
+
                 <TerminalPreviewModal isOpen={isTerminalOpen} onClose={() => setIsTerminalOpen(false)} />
 
                 <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-slate-500 mb-20">

@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import ContactModal from './ContactModal';
 
-const FinalCTA: React.FC = () => {
-    const [isContactOpen, setIsContactOpen] = useState(false);
+interface FinalCTAProps {
+    onOpenContact: () => void;
+}
 
+const FinalCTA: React.FC<FinalCTAProps> = ({ onOpenContact }) => {
     return (
         <section className="py-48 relative overflow-hidden">
             <div className="absolute inset-0 bg-emerald-600/5 blur-[120px] rounded-full scale-50 pointer-events-none" />
@@ -18,7 +20,7 @@ const FinalCTA: React.FC = () => {
 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
                     <button
-                        onClick={() => setIsContactOpen(true)}
+                        onClick={onOpenContact}
                         className="w-full sm:w-auto px-12 py-5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black uppercase tracking-widest text-xs transition-all hover:scale-105 active:scale-95 shadow-2xl shadow-emerald-600/40"
                     >
                         Book a 15-minute demo
@@ -27,7 +29,6 @@ const FinalCTA: React.FC = () => {
                         Contact Sales Engineering <span className="text-lg">→</span>
                     </a>
                 </div>
-                <ContactModal isOpen={isContactOpen} onClose={() => setIsContactOpen(false)} />
             </div>
         </section>
     );

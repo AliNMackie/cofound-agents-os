@@ -6,7 +6,7 @@ import ContactModal from './ContactModal';
 import { useRouter } from 'next/navigation';
 
 const Navbar: React.FC = () => {
-    const { user, logout } = useAuth();
+    const { user, loading, logout } = useAuth();
     const [isContactOpen, setIsContactOpen] = useState(false);
     const router = useRouter();
 
@@ -40,7 +40,9 @@ const Navbar: React.FC = () => {
                     </div>
 
                     <div className="flex items-center gap-4">
-                        {user ? (
+                        {loading ? (
+                            <div className="w-24 h-8 bg-white/10 rounded-full animate-pulse" />
+                        ) : user ? (
                             <div className="flex items-center gap-6">
                                 <a href="/dashboard" className="text-sm font-black text-emerald-400 uppercase tracking-widest animate-pulse">Dashboard</a>
                                 <button

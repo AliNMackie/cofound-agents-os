@@ -7,11 +7,12 @@
   NEXT_PUBLIC_API_URL = "https://sentinel-growth-1005792944830.europe-west2.run.app"
   NEXT_PUBLIC_SENTINEL_API_URL = "https://sentinel-growth-1005792944830.europe-west2.run.app"
   NEXT_PUBLIC_ORCHESTRATOR_API_URL = "https://ic-origin-orchestrator-1005792944830.europe-west2.run.app"
-  NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN = "ic-origin.firebaseapp.com"
-  NEXT_PUBLIC_FIREBASE_PROJECT_ID = "ic-origin"
-  NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET = "ic-origin.firebasestorage.app"
-  NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID = "279427639144"
-  NEXT_PUBLIC_FIREBASE_APP_ID = "1:279427639144:web:eb8c5a2a2fccad1b7818dd"
+  NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN = "cofound-agents-os-788e.firebaseapp.com"
+  NEXT_PUBLIC_FIREBASE_PROJECT_ID = "cofound-agents-os-788e"
+  NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET = "cofound-agents-os-788e.firebasestorage.app"
+  NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID = "1005792944830"
+  NEXT_PUBLIC_FIREBASE_APP_ID = "1:1005792944830:web:87e9c5a122b229acf9b4ef"
+  NEXT_PUBLIC_FIREBASE_API_KEY = "AIzaSyDsewuTZx3rWznvCnC968LAyRLOwGLSWIo"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"

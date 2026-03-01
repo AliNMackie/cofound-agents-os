@@ -6,11 +6,17 @@ if (!admin.apps.length) {
     const privateKey = process.env.FIREBASE_PRIVATE_KEY;
 
     if (projectId && clientEmail && privateKey) {
+        // Robust cleaning of the private key
+        const cleanedKey = privateKey
+            .trim()
+            .replace(/^["']|["']$/g, '') // Remove surrounding quotes if they exist
+            .replace(/\\n/g, '\n');      // Handle escaped newlines from .env
+
         admin.initializeApp({
             credential: admin.credential.cert({
                 projectId,
                 clientEmail,
-                privateKey: privateKey.replace(/\\n/g, '\n'),
+                privateKey: cleanedKey,
             }),
         });
     } else {

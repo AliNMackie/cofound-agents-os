@@ -6,19 +6,36 @@ if (!admin.apps.length) {
     const privateKey = process.env.FIREBASE_PRIVATE_KEY;
 
     if (projectId && clientEmail && privateKey) {
-        // Robust cleaning of the private key
-        const cleanedKey = privateKey
+        // Aggressive cleaning for PEM formatting
+        // This handles: surrounding quotes, double-escaped newlines (\\n), 
+        // and literal newlines.
+        let cleanedKey = privateKey
             .trim()
-            .replace(/^["']|["']$/g, '') // Remove surrounding quotes if they exist
-            .replace(/\\n/g, '\n');      // Handle escaped newlines from .env
+            .replace(/^["']|["']$/g, '')
+            .replace(/\\n/g, '\n');
 
-        admin.initializeApp({
-            credential: admin.credential.cert({
-                projectId,
-                clientEmail,
-                privateKey: cleanedKey,
-            }),
-        });
+        // Final safety check: if it still doesn't look like it has real newlines in the body,
+        // it might be entirely single-line with literal \n strings still present
+        if (!cleanedKey.includes('\n', cleanedKey.indexOf('-----BEGIN PRIVATE KEY-----') + 25)) {
+            cleanedKey = cleanedKey.replace(/\\n/g, '\n');
+        }
+
+        console.log(`Firebase Admin: Initializing for project ${projectId}`);
+        console.log(`Cleaned key length: ${cleanedKey.length}`);
+
+        try {
+            admin.initializeApp({
+                credential: admin.credential.cert({
+                    projectId,
+                    clientEmail,
+                    privateKey: cleanedKey,
+                }),
+            });
+            console.log("Firebase Admin: Successfully initialized.");
+        } catch (initError: any) {
+            console.error("Firebase Admin: Initialization failed:", initError.message);
+            throw initError;
+        }
     } else {
         console.warn("Firebase Admin: Missing credentials. Skipping initialization (expected during build).");
     }

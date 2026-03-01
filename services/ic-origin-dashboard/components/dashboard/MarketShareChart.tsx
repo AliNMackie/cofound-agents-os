@@ -44,7 +44,7 @@ const MarketShareChart: React.FC<MarketShareChartProps> = ({ isLoading }) => {
     return (
         <div className="w-full h-full">
             {mounted && (
-                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                     <AreaChart
                         data={data}
                         margin={{ top: 10, right: 10, left: -20, bottom: 0 }}

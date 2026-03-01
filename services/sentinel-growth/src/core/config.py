@@ -13,7 +13,7 @@ class Settings(BaseSettings):
         "https://vesper-gtm-1005792944830.europe-west2.run.app"
     ]
     SLACK_WEBHOOK_URL: str = ""
-    GCP_PROJECT_ID: str = "ic-origin"
+    GCP_PROJECT_ID: str = "cofound-agents-os-788e"
     PUBSUB_TOPIC_ID: str = "ic-origin-signals"
     RESEND_API_KEY: str = ""
     ALERT_SENDER_EMAIL: str = "alerts@icorigin.ai"

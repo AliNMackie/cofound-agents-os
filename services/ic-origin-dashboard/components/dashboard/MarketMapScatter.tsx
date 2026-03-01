@@ -71,7 +71,7 @@ const MarketMapScatter: React.FC<MarketMapScatterProps> = ({ onNodeClick, isLoad
 
     return (
         <div className="w-full h-full">
-            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                 <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                     <XAxis

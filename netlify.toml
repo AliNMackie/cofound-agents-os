@@ -4,9 +4,9 @@
   command = "npm run build"
 
 [build.environment]
-  NEXT_PUBLIC_API_URL = "https://sentinel-growth-1005792944830.europe-west2.run.app"
-  NEXT_PUBLIC_SENTINEL_API_URL = "https://sentinel-growth-1005792944830.europe-west2.run.app"
-  NEXT_PUBLIC_ORCHESTRATOR_API_URL = "https://ic-origin-orchestrator-1005792944830.europe-west2.run.app"
+  NEXT_PUBLIC_API_URL = "https://sentinel-growth-hc7um252na-nw.a.run.app"
+  NEXT_PUBLIC_SENTINEL_API_URL = "https://sentinel-growth-hc7um252na-nw.a.run.app"
+  NEXT_PUBLIC_ORCHESTRATOR_API_URL = "https://ic-origin-orchestrator-hc7um252na-nw.a.run.app"
   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN = "cofound-agents-os-788e.firebaseapp.com"
   NEXT_PUBLIC_FIREBASE_PROJECT_ID = "cofound-agents-os-788e"
   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET = "cofound-agents-os-788e.firebasestorage.app"

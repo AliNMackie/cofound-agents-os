@@ -29,26 +29,25 @@ const DashboardV2: React.FC = () => {
     const { user, loading } = useAuth();
     const router = useRouter();
 
-    // Local state for UI
+    // 1. Hoist all state hooks to the top
     const [timeRange, setTimeRange] = useState('7D');
     const [region, setRegion] = useState('Global');
     const [sector, setSector] = useState('All Sectors');
     const [category, setCategory] = useState('All Categories');
     const [activeSignal, setActiveSignal] = useState<string | null>(null);
-
-    // Phase 3: Interactive Topology & Command State
     const [selectedEntity, setSelectedEntity] = useState<any>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isTerminalOpen, setIsTerminalOpen] = useState(false);
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [memo, setMemo] = useState<string | null>(null);
 
-    // Auth Redirect Loop
+    // 2. All Effect hooks
     useEffect(() => {
         if (!loading && !user) {
             router.push('/');
         }
     }, [user, loading, router]);
 
-    // Command Terminal Shortcut (Institutional UX) — must be before early returns
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
@@ -60,28 +59,7 @@ const DashboardV2: React.FC = () => {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, []);
 
-    // Role-based Multi-tenant Mock
-    const tenantId = user?.email?.split('@')[1] || 'global';
-
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-[#05070A] flex items-center justify-center">
-                <div className="relative">
-                    <div className="w-24 h-24 border-2 border-emerald-500/20 rounded-full animate-ping" />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-12 h-12 border-t-2 border-emerald-500 rounded-full animate-spin" />
-                    </div>
-                    <div className="mt-8 text-center">
-                        <p className="text-[10px] font-black uppercase tracking-[0.5em] text-emerald-500 animate-pulse">Establishing Secure Session</p>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    if (!user) return null;
-
-    // SWR Polling Logic (Ralph Wuggum Precision)
+    // 3. All Data fetching hooks
     const { data: telemetry, error, isLoading, isValidating } = useSWR('/api/telemetry', fetcher, {
         refreshInterval: 60000,
         revalidateOnFocus: true,
@@ -97,8 +75,8 @@ const DashboardV2: React.FC = () => {
         }
     });
 
-    const [isGenerating, setIsGenerating] = useState(false);
-    const [memo, setMemo] = useState<string | null>(null);
+    // 4. Derived logic (moved after hooks)
+    const tenantId = user?.email?.split('@')[1] || 'global';
 
     const handleTriggerSwarm = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
@@ -134,6 +112,25 @@ const DashboardV2: React.FC = () => {
             }
         }
     };
+
+    // 5. Early return replacement (Rendering logic)
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-[#05070A] flex items-center justify-center">
+                <div className="relative">
+                    <div className="w-24 h-24 border-2 border-emerald-500/20 rounded-full animate-ping" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-12 h-12 border-t-2 border-emerald-500 rounded-full animate-spin" />
+                    </div>
+                    <div className="mt-8 text-center">
+                        <p className="text-[10px] font-black uppercase tracking-[0.5em] text-emerald-500 animate-pulse">Establishing Secure Session</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (!user) return null;
 
     // Institutional Filtering Logic
     const filteredTopology = (telemetry?.topology || []).filter((entity: any) => {

@@ -5,16 +5,16 @@ resource "google_pubsub_topic" "signals_topic" {
 
 # --- BigQuery ---
 resource "google_bigquery_dataset" "ic_origin_dataset" {
-  dataset_id                  = "ic_origin"
-  friendly_name               = "IC Origin Production"
-  description                 = "Analytics warehouse for IC Origin signals and audit logs"
-  location                    = var.region
-  delete_contents_on_destroy  = false
+  dataset_id                 = "ic_origin"
+  friendly_name              = "IC Origin Production"
+  description                = "Analytics warehouse for IC Origin signals and audit logs"
+  location                   = var.region
+  delete_contents_on_destroy = false
 }
 
 resource "google_bigquery_table" "fact_signals" {
-  dataset_id = google_bigquery_dataset.ic_origin_dataset.dataset_id
-  table_id   = "fact_signals"
+  dataset_id          = google_bigquery_dataset.ic_origin_dataset.dataset_id
+  table_id            = "fact_signals"
   deletion_protection = false
 
   schema = <<EOF
@@ -71,9 +71,19 @@ resource "google_secret_manager_secret" "neo4j_uri" {
   }
 }
 
+resource "google_secret_manager_secret_version" "neo4j_uri_v1" {
+  secret      = google_secret_manager_secret.neo4j_uri.id
+  secret_data = "bolt://localhost:7687" # Placeholder
+}
+
 resource "google_secret_manager_secret" "neo4j_password" {
   secret_id = "neo4j-password"
   replication {
     auto {}
   }
+}
+
+resource "google_secret_manager_secret_version" "neo4j_password_v1" {
+  secret      = google_secret_manager_secret.neo4j_password.id
+  secret_data = "placeholder-password" # Placeholder
 }

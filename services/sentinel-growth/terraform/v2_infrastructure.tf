@@ -1,16 +1,16 @@
 # BigQuery Dataset
 resource "google_bigquery_dataset" "v2_dataset" {
-  dataset_id                  = "ic_origin_themav2"
-  friendly_name               = "IC Origin Thema V2"
-  description                 = "Web-scale crawling dataset for IC Origin V2"
-  location                    = var.region
-  delete_contents_on_destroy  = false
+  dataset_id                 = "ic_origin_themav2"
+  friendly_name              = "IC Origin Thema V2"
+  description                = "Web-scale crawling dataset for IC Origin V2"
+  location                   = var.region
+  delete_contents_on_destroy = false
 }
 
 # BigQuery Table: Raw Signals
 resource "google_bigquery_table" "raw_signals" {
-  dataset_id = google_bigquery_dataset.v2_dataset.dataset_id
-  table_id   = "raw_signals"
+  dataset_id          = google_bigquery_dataset.v2_dataset.dataset_id
+  table_id            = "raw_signals"
   deletion_protection = false
 
   schema = <<EOF
@@ -69,8 +69,8 @@ EOF
 
 # BigQuery Table: Auctions Enhanced
 resource "google_bigquery_table" "auctions_enhanced" {
-  dataset_id = google_bigquery_dataset.v2_dataset.dataset_id
-  table_id   = "auctions_enhanced"
+  dataset_id          = google_bigquery_dataset.v2_dataset.dataset_id
+  table_id            = "auctions_enhanced"
   deletion_protection = false
 
   schema = <<EOF
@@ -121,8 +121,9 @@ resource "google_service_networking_connection" "v2_vpc_connection" {
 
 # AlloyDB Cluster (for RAG with pgvector)
 resource "google_alloydb_cluster" "v2_cluster" {
-  cluster_id = "ic-origin-v2-cluster"
-  location   = var.region
+  cluster_id          = "ic-origin-v2-cluster"
+  location            = var.region
+  deletion_protection = false
 
   network_config {
     network = "projects/${var.project_id}/global/networks/default"
@@ -181,12 +182,12 @@ resource "google_cloud_run_v2_service" "ingest_service" {
 
 # Cloud Scheduler: Cron Toggle (Disabled by default)
 resource "google_cloud_scheduler_job" "ingest_cron" {
-  name             = "v2-ingest-cron"
-  description      = "Trigger for web-scale crawling (Dormant)"
-  schedule         = "0 * * * *"
-  time_zone        = "UTC"
-  paused           = true
-  region           = var.region
+  name        = "v2-ingest-cron"
+  description = "Trigger for web-scale crawling (Dormant)"
+  schedule    = "0 * * * *"
+  time_zone   = "UTC"
+  paused      = true
+  region      = var.region
 
   http_target {
     http_method = "POST"
@@ -227,12 +228,12 @@ resource "google_cloud_run_v2_service" "orchestrator_service" {
 
 # Cloud Scheduler: Strategize Cron (Disabled by default)
 resource "google_cloud_scheduler_job" "strategize_cron" {
-  name             = "v2-strategize-cron"
-  description      = "Trigger for multi-agent strategy orchestration (Dormant)"
-  schedule         = "0 0 * * *" # Daily
-  time_zone        = "UTC"
-  paused           = true
-  region           = var.region
+  name        = "v2-strategize-cron"
+  description = "Trigger for multi-agent strategy orchestration (Dormant)"
+  schedule    = "0 0 * * *" # Daily
+  time_zone   = "UTC"
+  paused      = true
+  region      = var.region
 
   http_target {
     http_method = "POST"
@@ -245,14 +246,28 @@ resource "google_cloud_scheduler_job" "strategize_cron" {
 
 # GKE Autopilot Cluster (for agent workloads & spot training)
 resource "google_container_cluster" "v2_autopilot" {
-  name     = "ic-origin-v2-autopilot"
-  location = var.region
-  enable_autopilot = true
+  name                = "ic-origin-v2-autopilot"
+  location            = var.region
+  enable_autopilot    = true
+  deletion_protection = false
 
-  # Spot VMs for cost-effective training/heavy workloads
-  node_config {
-    spot = true
+  # Private cluster to satisfy "constraints/compute.vmExternalIpAccess"
+  private_cluster_config {
+    enable_private_nodes    = true
+    enable_private_endpoint = false # Keep master public for easier control
+    master_ipv4_cidr_block  = "172.16.0.0/28"
   }
+
+  ip_allocation_policy {
+    cluster_ipv4_cidr_block  = "/16"
+    services_ipv4_cidr_block = "/20"
+  }
+
+  network    = "default"
+  subnetwork = "default"
+
+  # Note: Autopilot manages node configuration automatically.
+  # Spot VMs can be requested per-workload via nodeSelector.
 }
 
 # API Gateway (Lifecycle Management)
@@ -262,13 +277,13 @@ resource "google_api_gateway_api" "v2_gateway_api" {
 }
 
 resource "google_api_gateway_api_config" "v2_gateway_config" {
-  provider      = google-beta
-  api           = google_api_gateway_api.v2_gateway_api.api_id
+  provider             = google-beta
+  api                  = google_api_gateway_api.v2_gateway_api.api_id
   api_config_id_prefix = "v2-config-"
 
   openapi_documents {
     document {
-      path     = "openapi.yaml"
+      path = "openapi.yaml"
       contents = base64encode(<<EOF
 swagger: '2.0'
 info:

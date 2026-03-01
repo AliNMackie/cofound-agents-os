@@ -38,11 +38,17 @@ firebase-key.json
 
 # Terraform
 .terraform/
-*.tfstate
-*.tfstate.backup
-*.tfvars
-*.tfvars.json
+*.tfstate*
+*.tfvars*
+*.tfplan
 .terraform.lock.hcl
+*.txt
+*.tx
+!README.txt
+!LICENSE.txt
+!package.json
+!tsconfig.json
+!composer.json
 
 # Node / Next.js
 node_modules/

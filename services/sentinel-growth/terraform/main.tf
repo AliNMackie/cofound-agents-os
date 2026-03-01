@@ -92,6 +92,12 @@ resource "google_project_iam_member" "sa_secret_accessor" {
   member  = "serviceAccount:${google_service_account.sentinel_sa.email}"
 }
 
+resource "google_project_iam_member" "sa_secret_viewer" {
+  project = var.project_id
+  role    = "roles/secretmanager.viewer"
+  member  = "serviceAccount:${google_service_account.sentinel_sa.email}"
+}
+
 # --- Cloud Run Service (V2) ---
 resource "google_cloud_run_v2_service" "sentinel_v2" {
   name     = var.service_name
@@ -103,7 +109,7 @@ resource "google_cloud_run_v2_service" "sentinel_v2" {
       min_instance_count = 0
       max_instance_count = 10
     }
-    
+
     service_account = google_service_account.sentinel_sa.email
 
     containers {
@@ -125,7 +131,7 @@ resource "google_cloud_run_v2_service" "sentinel_v2" {
         name  = "FIRESTORE_DB_NAME"
         value = "(default)"
       }
-      
+
       # Secret references
       env {
         name = "NEO4J_URI"
@@ -154,13 +160,19 @@ resource "google_cloud_run_v2_service" "sentinel_v2" {
       }
     }
   }
+
+  depends_on = [
+    google_secret_manager_secret_version.neo4j_uri_v1,
+    google_secret_manager_secret_version.neo4j_password_v1,
+    google_project_iam_member.sa_secret_accessor
+  ]
 }
 
 # --- Audit Logs ---
 # Configure Retention for Default Logs Bucket to 365 days (1 year)
 resource "google_logging_project_bucket_config" "default_log_bucket" {
-    project        = var.project_id
-    location       = "global" # _Default bucket is global
-    bucket_id      = "_Default"
-    retention_days = 365
+  project        = var.project_id
+  location       = "global" # _Default bucket is global
+  bucket_id      = "_Default"
+  retention_days = 365
 }

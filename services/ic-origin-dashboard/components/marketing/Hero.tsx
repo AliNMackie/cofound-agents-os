@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import ContactModal from './ContactModal';
+import TerminalPreviewModal from './TerminalPreviewModal';
 
 const Hero: React.FC = () => {
     const [isContactOpen, setIsContactOpen] = useState(false);
+    const [isTerminalOpen, setIsTerminalOpen] = useState(false);
 
     return (
         <section className="relative pt-44 pb-32 overflow-hidden">
@@ -36,6 +38,7 @@ const Hero: React.FC = () => {
                     </a>
                 </div>
                 <ContactModal isOpen={isContactOpen} onClose={() => setIsContactOpen(false)} />
+                <TerminalPreviewModal isOpen={isTerminalOpen} onClose={() => setIsTerminalOpen(false)} />
 
                 <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-slate-500 mb-20">
                     Institutional-grade market understanding. Processed at machine speed.
@@ -80,10 +83,13 @@ const Hero: React.FC = () => {
                         </div>
 
                         {/* Floating Interaction Prompt */}
-                        <div className="absolute inset-0 flex items-center justify-center z-20 transition-transform duration-700 group-hover:scale-110">
-                            <div className="bg-emerald-600 text-white px-8 py-3 rounded-full font-black uppercase tracking-widest text-[10px] shadow-2xl shadow-emerald-600/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="absolute inset-0 flex items-center justify-center z-20">
+                            <button
+                                onClick={() => setIsTerminalOpen(true)}
+                                className="bg-emerald-600 text-white px-8 py-3 rounded-full font-black uppercase tracking-widest text-[10px] shadow-2xl shadow-emerald-600/40 opacity-0 group-hover:opacity-100 transition-all hover:scale-105 active:scale-95 duration-300 transform translate-y-4 group-hover:translate-y-0"
+                            >
                                 Preview Interactive Terminal
-                            </div>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -91,5 +97,6 @@ const Hero: React.FC = () => {
         </section>
     );
 };
+
 
 export default Hero;

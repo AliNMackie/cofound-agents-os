@@ -9,7 +9,7 @@ import { Share2, Map, Layers } from 'lucide-react';
 const TopologyMapping = () => {
     return (
         <div className="min-h-screen bg-[#05070A] text-slate-300 font-sans selection:bg-emerald-500/30">
-            <Navbar />
+            <Navbar onOpenContact={() => { }} />
 
             <main className="max-w-7xl mx-auto px-6 pt-40 pb-32">
                 <motion.div

@@ -165,7 +165,7 @@ const ContagionMap: React.FC<ContagionMapProps> = ({
     );
 
     // Link styling
-    const getLinkColor = useCallback((link: GraphLink) => {
+    const getLinkColor = useCallback((link: any) => {
         if (link.type === 'PSC') return 'rgba(244, 63, 94, 0.4)';     // Rose
         if (link.type === 'DIRECTOR') return 'rgba(6, 182, 212, 0.4)'; // Cyan
         return 'rgba(100, 116, 139, 0.3)';                              // Slate

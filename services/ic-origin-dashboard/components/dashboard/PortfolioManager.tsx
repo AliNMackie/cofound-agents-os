@@ -130,10 +130,10 @@ const PortfolioManager: React.FC<PortfolioManagerProps> = ({
 
     // ── Helpers ────────────────────────────────────────
 
-    const getAuthHeaders = useCallback(async () => {
+    const getAuthHeaders = useCallback(async (): Promise<HeadersInit> => {
         if (!user) return {};
         const token = await user.getIdToken();
-        return { Authorization: `Bearer ${token}` };
+        return { Authorization: `Bearer ${token}` } as HeadersInit;
     }, [user]);
 
     const showMessage = (msg: string, isError = false) => {
@@ -476,8 +476,8 @@ const PortfolioManager: React.FC<PortfolioManagerProps> = ({
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ delay: idx * 0.03 }}
                                     className={`hover:bg-white/[0.02] transition-colors group ${entity.risk_tier === 'ELEVATED_RISK'
-                                            ? 'bg-rose-500/[0.03] border-l-2 border-l-rose-500/40'
-                                            : ''
+                                        ? 'bg-rose-500/[0.03] border-l-2 border-l-rose-500/40'
+                                        : ''
                                         }`}
                                 >
                                     <td className="px-8 py-5">

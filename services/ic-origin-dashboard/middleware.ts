@@ -13,6 +13,8 @@ export function middleware(request: NextRequest) {
         response.headers.set('X-Frame-Options', 'DENY');
         response.headers.set('X-Content-Type-Options', 'nosniff');
         response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+        response.headers.set('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+        response.headers.set('Cross-Origin-Embedder-Policy', 'unsafe-none');
 
         // Define the production API origins
         const RUN_APP_ORIGIN = "https://*.run.app";

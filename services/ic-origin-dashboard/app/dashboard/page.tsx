@@ -40,6 +40,7 @@ const DashboardV2: React.FC = () => {
     const [isTerminalOpen, setIsTerminalOpen] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
     const [memo, setMemo] = useState<string | null>(null);
+    const [isFetchingNeo4j, setIsFetchingNeo4j] = useState(false);
 
     // 2. All Effect hooks
     useEffect(() => {
@@ -77,6 +78,47 @@ const DashboardV2: React.FC = () => {
 
     // 4. Derived logic (moved after hooks)
     const tenantId = user?.email?.split('@')[1] || 'global';
+
+    const handleNodeClick = (entity: any) => {
+        setIsFetchingNeo4j(true);
+        setIsModalOpen(true);
+
+        // Simulate a 1.5s network request to Neo4j
+        setTimeout(() => {
+            const baseEntity = telemetry?.topology?.find((e: any) => (e.company_id === entity.id || e.company_name === entity.name)) || entity;
+
+            // Highly realistic, M&A-focused dummy JSON payload for the Neo4j graph data
+            const dummyNeo4jData = {
+                ...baseEntity,
+                contagionData: {
+                    target: {
+                        ch_number: baseEntity.company_id || "01234567",
+                        name: baseEntity.company_name || baseEntity.name || "Target Entity",
+                        risk_tier: "STABLE"
+                    },
+                    nodes: [
+                        { id: 'target', label: baseEntity.company_name || baseEntity.name || "Target Entity", type: 'Company', is_target: true },
+                        { id: 'supplier_1', label: 'Apex Logistics Ltd', type: 'Company', risk_tier: 'ELEVATED_RISK' },
+                        { id: 'supplier_2', label: 'Meridian Manufacturing', type: 'Company', risk_tier: 'STABLE' },
+                        { id: 'buyer_1', label: 'Global Retail Corp', type: 'Company', risk_tier: 'STABLE' },
+                        { id: 'person_1', label: 'John Smith (Director)', type: 'Person' },
+                        { id: 'person_2', label: 'Jane Doe (PSC)', type: 'Person' }
+                    ],
+                    links: [
+                        { source: 'supplier_1', target: 'target', type: 'SUPPLIER' }, // The "sick" supplier connected to the target
+                        { source: 'supplier_2', target: 'target', type: 'SUPPLIER' },
+                        { source: 'target', target: 'buyer_1', type: 'CUSTOMER' },
+                        { source: 'person_1', target: 'target', type: 'DIRECTOR' },
+                        { source: 'person_2', target: 'target', type: 'PSC' },
+                        { source: 'person_1', target: 'supplier_1', type: 'DIRECTOR' } // Cross-directorship risk
+                    ]
+                }
+            };
+
+            setSelectedEntity(dummyNeo4jData);
+            setIsFetchingNeo4j(false);
+        }, 1500);
+    };
 
     const handleTriggerSwarm = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
@@ -152,49 +194,6 @@ const DashboardV2: React.FC = () => {
 
         return matchesRegion && matchesCategory && matchesSignal;
     });
-
-    const [isFetchingNeo4j, setIsFetchingNeo4j] = useState(false);
-
-    const handleNodeClick = (entity: any) => {
-        setIsFetchingNeo4j(true);
-        setIsModalOpen(true);
-
-        // Simulate a 1.5s network request to Neo4j
-        setTimeout(() => {
-            const baseEntity = telemetry?.topology?.find((e: any) => (e.company_id === entity.id || e.company_name === entity.name)) || entity;
-
-            // Highly realistic, M&A-focused dummy JSON payload for the Neo4j graph data
-            const dummyNeo4jData = {
-                ...baseEntity,
-                contagionData: {
-                    target: {
-                        ch_number: baseEntity.company_id || "01234567",
-                        name: baseEntity.company_name || baseEntity.name || "Target Entity",
-                        risk_tier: "STABLE"
-                    },
-                    nodes: [
-                        { id: 'target', label: baseEntity.company_name || baseEntity.name || "Target Entity", type: 'Company', is_target: true },
-                        { id: 'supplier_1', label: 'Apex Logistics Ltd', type: 'Company', risk_tier: 'ELEVATED_RISK' },
-                        { id: 'supplier_2', label: 'Meridian Manufacturing', type: 'Company', risk_tier: 'STABLE' },
-                        { id: 'buyer_1', label: 'Global Retail Corp', type: 'Company', risk_tier: 'STABLE' },
-                        { id: 'person_1', label: 'John Smith (Director)', type: 'Person' },
-                        { id: 'person_2', label: 'Jane Doe (PSC)', type: 'Person' }
-                    ],
-                    links: [
-                        { source: 'supplier_1', target: 'target', type: 'SUPPLIER' }, // The "sick" supplier connected to the target
-                        { source: 'supplier_2', target: 'target', type: 'SUPPLIER' },
-                        { source: 'target', target: 'buyer_1', type: 'CUSTOMER' },
-                        { source: 'person_1', target: 'target', type: 'DIRECTOR' },
-                        { source: 'person_2', target: 'target', type: 'PSC' },
-                        { source: 'person_1', target: 'supplier_1', type: 'DIRECTOR' } // Cross-directorship risk
-                    ]
-                }
-            };
-
-            setSelectedEntity(dummyNeo4jData);
-            setIsFetchingNeo4j(false);
-        }, 1500);
-    };
 
     const sectionVariants = {
         hidden: { opacity: 0, y: 30, scale: 0.98 },

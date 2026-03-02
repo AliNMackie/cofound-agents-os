@@ -51,10 +51,10 @@ const CustomTooltip = ({
             <div className="flex items-center gap-3 mb-2">
                 <div
                     className={`w-2 h-2 rounded-full ${score >= 75
-                            ? 'bg-rose-500'
-                            : score >= 40
-                                ? 'bg-amber-500'
-                                : 'bg-emerald-500'
+                        ? 'bg-rose-500'
+                        : score >= 40
+                            ? 'bg-amber-500'
+                            : 'bg-emerald-500'
                         }`}
                 />
                 <span className="text-xl font-black text-white">{score}</span>
@@ -124,7 +124,7 @@ const RiskTrend: React.FC<RiskTrendProps> = ({ entities }) => {
 
             {/* Chart Container — CRITICAL: parent div must have fixed height */}
             <div className="h-[300px] w-full">
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                     <AreaChart
                         data={chartData}
                         margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
@@ -201,10 +201,10 @@ const RiskTrend: React.FC<RiskTrendProps> = ({ entities }) => {
                         </p>
                         <span
                             className={`text-sm font-black uppercase tracking-wider ${entity.risk_tier === 'ELEVATED_RISK'
-                                    ? 'text-rose-400'
-                                    : entity.risk_tier === 'IMPROVED'
-                                        ? 'text-emerald-400'
-                                        : 'text-amber-400'
+                                ? 'text-rose-400'
+                                : entity.risk_tier === 'IMPROVED'
+                                    ? 'text-emerald-400'
+                                    : 'text-amber-400'
                                 }`}
                         >
                             {entity.risk_tier.replace('_', ' ')}

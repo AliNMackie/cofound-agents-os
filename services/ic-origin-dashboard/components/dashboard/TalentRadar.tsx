@@ -189,56 +189,16 @@ const TalentRadar: React.FC<TalentRadarProps> = ({ data, companyName = 'Portfoli
             {/* Charts Row */}
             <div className="grid grid-cols-2 border-b border-white/5">
                 {/* Hiring Velocity Bar Chart */}
-                <div className="p-6 border-r border-white/5">
-                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-4">
+                <div className="p-6 border-r border-white/5 h-[180px] flex flex-col">
+                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-4 shrink-0">
                         Hiring Velocity vs Threshold
                     </p>
-                    <ResponsiveContainer width="100%" height={180}>
-                        <BarChart data={velocityData} layout="vertical">
-                            <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                            <XAxis type="number" stroke="#475569" fontSize={10} />
-                            <YAxis type="category" dataKey="name" stroke="#475569" fontSize={10} width={70} />
-                            <Tooltip
-                                contentStyle={{
-                                    backgroundColor: '#1e293b',
-                                    border: '1px solid rgba(255,255,255,0.1)',
-                                    borderRadius: '12px',
-                                    fontSize: '11px',
-                                    color: '#e2e8f0',
-                                }}
-                            />
-                            <Bar dataKey="velocity" radius={[0, 6, 6, 0]}>
-                                {velocityData.map((entry, idx) => (
-                                    <Cell key={idx} fill={entry.fill} />
-                                ))}
-                            </Bar>
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
-
-                {/* Talent Concentration Pie Chart */}
-                <div className="p-6">
-                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-4">
-                        Talent Concentration
-                    </p>
-                    {concentrationData.length > 0 ? (
-                        <ResponsiveContainer width="100%" height={180}>
-                            <PieChart>
-                                <Pie
-                                    data={concentrationData}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={40}
-                                    outerRadius={70}
-                                    paddingAngle={3}
-                                    dataKey="value"
-                                    label={({ name, value }) => `${name} ${value}%`}
-                                    labelLine={false}
-                                >
-                                    {concentrationData.map((entry, idx) => (
-                                        <Cell key={idx} fill={entry.fill} />
-                                    ))}
-                                </Pie>
+                    <div className="flex-1 w-full relative min-h-0">
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                            <BarChart data={velocityData} layout="vertical">
+                                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                                <XAxis type="number" stroke="#475569" fontSize={10} />
+                                <YAxis type="category" dataKey="name" stroke="#475569" fontSize={10} width={70} />
                                 <Tooltip
                                     contentStyle={{
                                         backgroundColor: '#1e293b',
@@ -248,8 +208,52 @@ const TalentRadar: React.FC<TalentRadarProps> = ({ data, companyName = 'Portfoli
                                         color: '#e2e8f0',
                                     }}
                                 />
-                            </PieChart>
+                                <Bar dataKey="velocity" radius={[0, 6, 6, 0]}>
+                                    {velocityData.map((entry, idx) => (
+                                        <Cell key={idx} fill={entry.fill} />
+                                    ))}
+                                </Bar>
+                            </BarChart>
                         </ResponsiveContainer>
+                    </div>
+                </div>
+
+                {/* Talent Concentration Pie Chart */}
+                <div className="p-6 h-[180px] flex flex-col">
+                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-4 shrink-0">
+                        Talent Concentration
+                    </p>
+                    {concentrationData.length > 0 ? (
+                        <div className="flex-1 w-full relative min-h-0">
+                            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                                <PieChart>
+                                    <Pie
+                                        data={concentrationData}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={40}
+                                        outerRadius={70}
+                                        paddingAngle={3}
+                                        dataKey="value"
+                                        label={({ name, value }) => `${name} ${value}%`}
+                                        labelLine={false}
+                                    >
+                                        {concentrationData.map((entry, idx) => (
+                                            <Cell key={idx} fill={entry.fill} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip
+                                        contentStyle={{
+                                            backgroundColor: '#1e293b',
+                                            border: '1px solid rgba(255,255,255,0.1)',
+                                            borderRadius: '12px',
+                                            fontSize: '11px',
+                                            color: '#e2e8f0',
+                                        }}
+                                    />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
                     ) : (
                         <div className="h-[180px] flex items-center justify-center text-slate-600 text-xs">
                             No talent data available

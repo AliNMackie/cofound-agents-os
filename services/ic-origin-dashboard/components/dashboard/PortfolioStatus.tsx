@@ -78,12 +78,16 @@ const StatusMetric = ({
 const PortfolioStatus: React.FC<PortfolioStatusProps> = ({
     apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
 }) => {
-    const { user } = useAuth();
+    const { user, loading: authLoading } = useAuth();
     const [data, setData] = useState<TelemetryData | null>(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     const fetchStatus = useCallback(async () => {
-        if (!user) return;
+        if (!user) {
+            setLoading(false);
+            return;
+        }
         try {
             const token = await user.getIdToken();
             if (!token) {
@@ -97,26 +101,33 @@ const PortfolioStatus: React.FC<PortfolioStatusProps> = ({
 
             if (res.status === 401) {
                 console.warn("Unauthorized API access. Redirecting to login.");
+                setError("Authentication expired. Please refresh your session.");
                 // Graceful fallback for stale sessions
                 return;
             }
 
-            if (res.ok) {
-                const json = await res.json();
-                setData(json);
+            if (!res.ok) {
+                throw new Error(`API returned ${res.status}`);
             }
+
+            const json = await res.json();
+            setData(json);
+            setError(null);
         } catch (err) {
             console.error('Failed to fetch telemetry:', err);
+            setError("Telemetry offline - Reconnecting...");
         } finally {
             setLoading(false);
         }
     }, [user, apiBaseUrl]);
 
     useEffect(() => {
-        fetchStatus();
-        const interval = setInterval(fetchStatus, 30000); // Poll every 30s
-        return () => clearInterval(interval);
-    }, [fetchStatus]);
+        if (!authLoading) {
+            fetchStatus();
+            const interval = setInterval(fetchStatus, 30000); // Poll every 30s
+            return () => clearInterval(interval);
+        }
+    }, [fetchStatus, authLoading]);
 
     // Format time helpers
     const formatTime = (iso: string | null) => {
@@ -144,6 +155,33 @@ const PortfolioStatus: React.FC<PortfolioStatusProps> = ({
     };
 
     const isOperational = data?.sync_active ?? false;
+
+    if (authLoading || (!user && loading)) {
+        return (
+            <div className="bg-[#0d1117] border border-white/5 rounded-3xl p-8 relative flex flex-col items-center justify-center min-h-[300px]">
+                <div className="w-12 h-12 border-2 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin mb-4" />
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-500 animate-pulse">Awaiting Authentication Sync...</p>
+            </div>
+        );
+    }
+
+    if (!user) {
+        return (
+            <div className="bg-[#0d1117] border border-white/5 rounded-3xl p-8 relative flex flex-col items-center justify-center min-h-[300px]">
+                <Shield className="w-10 h-10 text-slate-600 mb-4" />
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Authentication Required</p>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="bg-[#0d1117] border border-rose-500/20 rounded-3xl p-8 relative flex flex-col items-center justify-center min-h-[300px]">
+                <Activity className="w-10 h-10 text-rose-500/50 mb-4 animate-pulse" />
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-rose-500">{error}</p>
+            </div>
+        );
+    }
 
     return (
         <motion.div

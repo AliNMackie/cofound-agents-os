@@ -86,9 +86,21 @@ const PortfolioStatus: React.FC<PortfolioStatusProps> = ({
         if (!user) return;
         try {
             const token = await user.getIdToken();
+            if (!token) {
+                console.warn("Awaiting valid ID token...");
+                return;
+            }
+
             const res = await fetch(`${apiBaseUrl}/api/v1/telemetry/status`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
+
+            if (res.status === 401) {
+                console.warn("Unauthorized API access. Redirecting to login.");
+                // Graceful fallback for stale sessions
+                return;
+            }
+
             if (res.ok) {
                 const json = await res.json();
                 setData(json);
@@ -151,8 +163,8 @@ const PortfolioStatus: React.FC<PortfolioStatusProps> = ({
                         <div className="relative">
                             <div
                                 className={`w-3 h-3 rounded-full ${isOperational
-                                        ? 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.6)]'
-                                        : 'bg-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.6)]'
+                                    ? 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.6)]'
+                                    : 'bg-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.6)]'
                                     }`}
                             />
                             {isOperational && (

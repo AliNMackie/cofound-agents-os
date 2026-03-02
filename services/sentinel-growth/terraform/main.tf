@@ -168,6 +168,15 @@ resource "google_cloud_run_v2_service" "sentinel_v2" {
   ]
 }
 
+# --- Cloud Run IAM Binding (Allow Unauthenticated Invocations to backend RBAC) ---
+resource "google_cloud_run_v2_service_iam_member" "public_access" {
+  name     = google_cloud_run_v2_service.sentinel_v2.name
+  location = google_cloud_run_v2_service.sentinel_v2.location
+  project  = google_cloud_run_v2_service.sentinel_v2.project
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}
+
 # --- Audit Logs ---
 # Configure Retention for Default Logs Bucket to 365 days (1 year)
 resource "google_logging_project_bucket_config" "default_log_bucket" {

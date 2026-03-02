@@ -132,7 +132,13 @@ const DashboardV2: React.FC = () => {
         try {
             const formData = new FormData();
             formData.append('targetId', targetId);
-            const result = await triggerSwarmAction(formData);
+
+            // Enforce minimum 20s loading state to allow Cloud Run backend to warm up and process
+            const [result] = await Promise.all([
+                triggerSwarmAction(formData),
+                new Promise(resolve => setTimeout(resolve, 20000))
+            ]);
+
             if (result.success) {
                 setMemo(result.memo);
             }

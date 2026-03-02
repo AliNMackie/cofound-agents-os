@@ -123,7 +123,7 @@ const RiskTrend: React.FC<RiskTrendProps> = ({ entities }) => {
             </div>
 
             {/* Chart Container — CRITICAL: parent div must have fixed height */}
-            <div className="h-[300px] w-full">
+            <div className="h-[300px] w-full" style={{ width: '100%', minHeight: '300px' }}>
                 <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                     <AreaChart
                         data={chartData}

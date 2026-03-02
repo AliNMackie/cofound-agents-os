@@ -193,7 +193,7 @@ const TalentRadar: React.FC<TalentRadarProps> = ({ data, companyName = 'Portfoli
                     <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-4 shrink-0">
                         Hiring Velocity vs Threshold
                     </p>
-                    <div className="flex-1 w-full relative min-h-0">
+                    <div className="flex-1 w-full relative min-h-0" style={{ width: '100%', minHeight: '180px' }}>
                         <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                             <BarChart data={velocityData} layout="vertical">
                                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
@@ -224,7 +224,7 @@ const TalentRadar: React.FC<TalentRadarProps> = ({ data, companyName = 'Portfoli
                         Talent Concentration
                     </p>
                     {concentrationData.length > 0 ? (
-                        <div className="flex-1 w-full relative min-h-0">
+                        <div className="flex-1 w-full relative min-h-0" style={{ width: '100%', minHeight: '180px' }}>
                             <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                                 <PieChart>
                                     <Pie

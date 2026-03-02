@@ -51,7 +51,7 @@ const MarketMetricCard: React.FC<MarketMetricCardProps> = ({ label, value, chang
                 )}
             </div>
 
-            <div className="mt-8 h-12 w-full">
+            <div className="mt-8 h-12 w-full" style={{ width: '100%', minHeight: '48px' }}>
                 {mounted && (
                     <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                         <AreaChart data={data || defaultData}>

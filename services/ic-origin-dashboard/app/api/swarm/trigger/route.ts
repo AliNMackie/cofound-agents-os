@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 import { db } from '../../../../lib/firebase-admin';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 

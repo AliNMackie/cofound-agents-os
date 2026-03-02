@@ -42,7 +42,7 @@ const MarketShareChart: React.FC<MarketShareChartProps> = ({ isLoading }) => {
     }
 
     return (
-        <div className="w-full h-full">
+        <div className="w-full h-full" style={{ width: '100%', minHeight: '192px' }}>
             {mounted && (
                 <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                     <AreaChart

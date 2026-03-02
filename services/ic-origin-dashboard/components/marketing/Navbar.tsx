@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { auth } from '../../lib/firebase';
-import { GoogleAuthProvider, signInWithRedirect } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import ContactModal from './ContactModal';
 import { useRouter } from 'next/navigation';
 
@@ -20,8 +20,10 @@ const Navbar: React.FC<NavbarProps> = ({ onOpenContact }) => {
         }
         const provider = new GoogleAuthProvider();
         try {
-            await signInWithRedirect(auth, provider);
-            // Router push is not needed here as redirect happens at top level
+            const result = await signInWithPopup(auth, provider);
+            if (result.user) {
+                router.push('/dashboard');
+            }
         } catch (error) {
             console.error("Login failed:", error);
         }

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { onAuthStateChanged, User, signOut, getRedirectResult } from 'firebase/auth';
+import { onAuthStateChanged, User, signOut } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { useRouter } from 'next/navigation';
 
@@ -27,19 +27,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setLoading(false);
             return;
         }
-
-        console.log("AuthContext: Checking for redirect result...");
-        // Handle redirect result
-        getRedirectResult(auth).then((result) => {
-            if (result?.user) {
-                console.log("AuthContext: Redirect login successful for", result.user.email);
-                router.push('/dashboard');
-            } else {
-                console.log("AuthContext: No redirect result found.");
-            }
-        }).catch((error) => {
-            console.error("AuthContext: Redirect auth failed:", error);
-        });
 
         const unsubscribe = onAuthStateChanged(auth, (firebaseUser: User | null) => {
             console.log("AuthContext: Auth state changed:", firebaseUser?.email || "No user");

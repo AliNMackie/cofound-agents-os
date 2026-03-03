@@ -133,10 +133,11 @@ const DashboardV2: React.FC = () => {
             const formData = new FormData();
             formData.append('targetId', targetId);
 
-            // Enforce minimum 20s loading state to allow Cloud Run backend to warm up and process
+            // Enforce a small artificial loading state to allow the UI to show the 'Synthesizing...' animation
+            // without making the user wait 20 agonizing seconds during the pitch!
             const [result] = await Promise.all([
                 triggerSwarmAction(formData),
-                new Promise(resolve => setTimeout(resolve, 20000))
+                new Promise(resolve => setTimeout(resolve, 3000))
             ]);
 
             if (result.success) {

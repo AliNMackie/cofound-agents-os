@@ -23,6 +23,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const router = useRouter();
 
     useEffect(() => {
+        // Playwright E2E Mock Hook
+        if (typeof window !== 'undefined' && (window as any).__PLAYWRIGHT_FORCE_AUTH) {
+            console.log("AuthContext: Playwright mock auth engaged.");
+            setUser({
+                email: 'demo@icorigin.com',
+                uid: 'test-pw-001',
+                getIdToken: async () => 'mock-jwt-token-xyz'
+            } as unknown as User);
+            setLoading(false);
+            return;
+        }
+
         if (!auth) {
             setLoading(false);
             return;
@@ -44,6 +56,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }, [router]);
 
     const logout = async () => {
+        if (typeof window !== 'undefined' && (window as any).__PLAYWRIGHT_FORCE_AUTH) {
+            console.log("AuthContext: Engaging Playwright mock logout.");
+            (window as any).__PLAYWRIGHT_FORCE_AUTH = false;
+            setUser(null);
+            router.push('/');
+            return;
+        }
         if (auth) await signOut(auth);
     };
 

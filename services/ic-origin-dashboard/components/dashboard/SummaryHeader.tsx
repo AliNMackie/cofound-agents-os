@@ -1,10 +1,26 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'next/navigation';
 
 const SummaryHeader: React.FC = () => {
     const { logout } = useAuth();
     const router = useRouter();
+    const [lastUpdated, setLastUpdated] = useState<string>("Last Updated: --:--:--");
+
+    useEffect(() => {
+        const date = new Date();
+        date.setMinutes(date.getMinutes() - 4);
+        date.setSeconds(date.getSeconds() - 12);
+
+        const formattedTime = date.toLocaleTimeString('en-GB', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        });
+
+        setLastUpdated(`Last Updated: ${formattedTime}`);
+    }, []);
 
     const handleLogout = async () => {
         try {
@@ -26,7 +42,7 @@ const SummaryHeader: React.FC = () => {
                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                     <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-tighter text-nowrap">System: Online</span>
                 </div>
-                <div className="text-[10px] font-mono text-slate-600">Last Updated: 14:32:01</div>
+                <div className="text-[10px] font-mono text-slate-600">{lastUpdated}</div>
 
                 {/* Logout Button */}
                 <button

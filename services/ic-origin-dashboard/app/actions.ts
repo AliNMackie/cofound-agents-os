@@ -42,7 +42,7 @@ export async function triggerSwarmAction(formData: FormData) {
             memo: `**[HYBRID FALLBACK MEMO: ACCELERATED SYNTHESIS]**
 TO: Chief Risk Officer & Executive Board
 FROM: IC Origin – Intelligence Synthesis Engine
-DATE: 3 March 2026
+DATE: ${new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date())}
 SUBJECT: URGENT: Shadow-Market Telemetry & Imminent Liquidity Event – Target [Alpha-001]
 
 EXECUTIVE SUMMARY

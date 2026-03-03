@@ -142,6 +142,15 @@ const DashboardV2: React.FC = () => {
 
             if (result.success) {
                 setMemo(result.memo);
+
+                // Automatically export to PDF once the DOM has updated
+                setTimeout(() => {
+                    try {
+                        exportToPDF('strategy-memo-content', 'IC_Origin_Strategic_Dossier');
+                    } catch (e) {
+                        console.error('Auto-PDF export failed:', e);
+                    }
+                }, 500);
             }
         } catch (err) {
             console.error("Orchestration failed", err);
@@ -509,7 +518,7 @@ const DashboardV2: React.FC = () => {
                             <h4 className="text-4xl font-black text-white mb-6 uppercase tracking-tight">Generate Adjacency Discovery Memo</h4>
                             <p className="text-slate-400 text-lg max-w-2xl mx-auto mb-12 leading-relaxed font-medium">
                                 Synthesize all regional telemetry, talent flows, and shadow market signals into a high-fidelity, board-ready strategic roadmap.
-                                <span className="text-slate-600 italic ml-2">Estimated compute time: 14s.</span>
+                                <span className="text-slate-600 italic ml-2">Estimated compute time: 3s.</span>
                             </p>
                             <form onSubmit={handleTriggerSwarm}>
                                 <button

@@ -102,15 +102,15 @@ test.describe('Phase 8 — Strategy Swarm', () => {
         // The orchestrator memo initiation text should appear
         await expect(page.getByText(/EMERALD_ORCHESTRATOR/)).toBeVisible();
 
-        // Wait for the 20s minimum delay + processing to complete
+        // Wait for the 3s minimum delay + processing to complete
         // The button text should revert to "Initialize Strategy Swarm"
         await expect(swarmButton).toHaveText('Initialize Strategy Swarm', { timeout: 45_000 });
 
         const completionTime = Date.now();
         const elapsedSeconds = (completionTime - clickTime) / 1000;
 
-        // Verify the minimum 20s delay was enforced
-        expect(elapsedSeconds).toBeGreaterThanOrEqual(19); // Allow 1s tolerance
+        // Verify the minimum 3s delay was enforced
+        expect(elapsedSeconds).toBeGreaterThanOrEqual(2); // Allow 1s tolerance
 
         // Memo content should now be visible (either real or fallback)
         const memoContent = page.locator('#strategy-memo-content');

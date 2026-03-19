@@ -3,3 +3,4 @@ uvicorn==0.27.0
 pydantic==2.5.3
 google-cloud-bigquery==3.15.0
 gunicorn
+google-cloud-pubsub

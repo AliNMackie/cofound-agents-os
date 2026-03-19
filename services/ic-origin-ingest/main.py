@@ -4,18 +4,36 @@ import json
 import uuid
 import random
 from datetime import datetime
+from google.cloud import pubsub_v1
 
-app = FastAPI(title="IC Origin Ingest API (V2 Status: Dormant)")
+app = FastAPI(title="IC Origin Ingest API (V2 status: LIVE)")
+
+# Initialize Pub/Sub Publisher Client
+publisher = pubsub_v1.PublisherClient()
+topic_path = publisher.topic_path(os.environ.get("PROJECT_ID", "cofound-agents-os-788e"), "signals-ingest-topic")
 
 @app.post("/ingest")
-async def ingest_signals(source: str):
-    """Scale-to-zero ingest endpoint for Companies House & RSS"""
+async def ingest_signals(source: str, payload: dict):
+    """Scale-to-zero ingest endpoint publishing directly to Google Pub/Sub topic."""
     signal_id = str(uuid.uuid4())
-    return {
-        "status": "dormant_buffered",
+    
+    # Construct Message
+    message_data = {
         "signal_id": signal_id,
         "source": source,
-        "message": "Signal accepted and buffered for processing. Dataflow crons are currently paused."
+        "payload": payload,
+        "timestamp": datetime.utcnow().isoformat()
+    }
+    
+    # Publish to Pub/Sub Topic
+    future = publisher.publish(topic_path, json.dumps(message_data).encode("utf-8"))
+    future.result() # Wait for publish confirmation
+    
+    return {
+        "status": "published",
+        "signal_id": signal_id,
+        "source": source,
+        "message": "Signal published for processing successfully."
     }
 
 @app.post("/resolve-entities")

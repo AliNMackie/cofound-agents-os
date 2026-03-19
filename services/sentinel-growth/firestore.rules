@@ -79,6 +79,11 @@ service cloud.firestore {
         allow read, write: if false;
       }
     }
+    // ── User Data ───────────────────────────────────────────
+    // users/{uid}/notebook/{docId}
+    match /users/{uid}/notebook/{docId} {
+      allow read, write: if isAuthenticated() && request.auth.uid == uid;
+    }
 
     // ── Global collections (non-tenant-scoped legacy) ───────
     // These remain accessible for backward compatibility but

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { getApiKeys, createApiKey, revokeApiKey, ApiKey } from "@/lib/api/sentinel";
+import { getApiKeys, createApiKey, revokeApiKey, ApiKey, getSubscription } from "@/lib/api/sentinel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,9 +15,29 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 export default function SettingsPage() {
     const { user } = useAuth();
-    // Mock subscription for launch readiness
-    const subscription = { role: "admin_preview", plan: "Enterprise Pilot", status: "Active" };
+    const [subscription, setSubscription] = useState<{ role: string; plan: string; status: string } | null>(null);
+    const [subLoading, setSubLoading] = useState(true);
     const [activeTab, setActiveTab] = useState("general");
+
+    const renewalDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+        .toLocaleDateString(undefined, { month: 'short', day: '2-digit', year: 'numeric' });
+
+    useEffect(() => {
+        const loadSubscription = async () => {
+            setSubLoading(true);
+            try {
+                const data = await getSubscription();
+                setSubscription(data);
+            } catch (err) {
+                console.error("Failed to load subscription", err);
+                // Fallback to default for demo safety
+                setSubscription({ role: "pilot_admin", plan: "Enterprise Pilot", status: "Active" });
+            } finally {
+                setSubLoading(false);
+            }
+        };
+        loadSubscription();
+    }, []);
 
     // API Keys State
     const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
@@ -207,10 +227,16 @@ export default function SettingsPage() {
                         <CardContent>
                             <div className="p-6 bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl flex justify-between items-center">
                                 <div>
-                                    <p className="font-bold text-white text-lg mb-1">{subscription?.plan || "Free Tier"}</p>
+                                    <p className="font-bold text-white text-lg mb-1 flex items-center gap-2">
+                                        {subscription?.plan || "Free Tier"}
+                                        <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest bg-emerald-900/30 text-emerald-400 border border-emerald-700/50 px-2 py-0.5 rounded-full">
+                                            <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+                                            Live Pilot
+                                        </span>
+                                    </p>
                                     <div className="flex items-center gap-2">
                                         <StatusBadgePill status="success">ACTIVE</StatusBadgePill>
-                                        <span className="text-sm text-gray-500">Renews on Mar 01, 2026</span>
+                                        <span className="text-sm text-gray-500">Renews on {renewalDate}</span>
                                     </div>
                                 </div>
                                 <Button variant="outline" disabled className="border-gray-600 text-gray-400">Manage Billing</Button>

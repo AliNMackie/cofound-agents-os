@@ -16,6 +16,7 @@ from src.api.portfolio import router as portfolio_router
 from src.api.webhooks import router as webhooks_router
 from src.api.telemetry import router as telemetry_router
 from src.api.graph import router as graph_router
+from src.api.user_data import router as user_data_router
 
 from src.services.market_sweep import sweep_service
 import uuid
@@ -103,6 +104,7 @@ app.include_router(portfolio_router)
 app.include_router(webhooks_router)
 app.include_router(telemetry_router)
 app.include_router(graph_router)
+app.include_router(user_data_router)
 
 @app.post("/tasks/sweep")
 async def trigger_market_sweep(background_tasks: BackgroundTasks):

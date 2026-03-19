@@ -12,12 +12,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { cn } from "@/lib/utils";
 import { SourceAttribution } from "@/components/SourceAttribution";
 import { PromptLibrary } from "@/components/PromptLibrary";
-import { getSignals, generateDossier } from "@/lib/api/sentinel";
+import { getSignals, generateDossier, getNotebook, saveNotebook } from "@/lib/api/sentinel";
+import { getAuth } from "firebase/auth";
 import { IntelligenceSignal } from "@/types/sentinel";
 import { VirtualizedFeed } from "@/components/VirtualizedFeed";
 import { NotebookSidebar } from "@/components/NotebookSidebar";
 import { CommandBar } from "@/components/CommandBar";
 import { useWindowSize } from "../../../hooks/useWindowSize";
+import { useAuth } from "@/context/AuthContext";
 
 // Newsletter Templates with Macro-Micro Fusion categories
 const TEMPLATES = [
@@ -29,57 +31,9 @@ const TEMPLATES = [
     { id: "market_sweep", label: "Market Sweep", category: "MICRO" },
 ];
 
-// Notebook context for offline drafting (European Private Credit Landscape)
-const NOTEBOOK_CONTEXT = `
-# European Private Credit Landscape — January 2026
-
-## Key Macro Themes
-
-### 1. The 2026/27 Maturity Wall
-- €1.2tn European private credit refinancing cliff
-- DACH region (Germany, Austria, Switzerland) most exposed
-- German Mittelstand facing compressed EBITDA multiples
-
-### 2. Monetary Policy Divergence
-- BoE: 4% floor maintained through H1 2026
-- Fed: 3.5% terminal rate guidance
-- ECB: Deposit rate at 3.25%
-- GBP/USD refinancing arbitrage emerging
-
-### 3. Zombie Asset Indicators
-- PE hold periods exceeding 5 years
-- Sponsor PIK toggle activation increasing
-- Secondary buyout pricing at all-time lows
-
-## High-Conviction Signals
-
-1. **Aviva CMBS**: £2.1bn refinancing stalled — BoE floor constraint
-2. **Willerby Group**: PE sponsor at 6-year hold, EBITDA compression
-3. **Mamas & Papas**: Third restructuring in 5 years
-4. **SSS Super Alloys**: Manufacturing covenant breach
-
-## IC ORIGIN Institutional Recommendation
-Immediate Capital Structure Review for any target with:
-- Net Debt/EBITDA > 5.0x
-- PE hold > 5 years
-- Maturity in 2026/27 window
-`;
-
-// Fallback data for when API is unavailable
-const FALLBACK_LOTS = [
-    { company_name: "Aviva Investors Portfolio", ebitda: 2100000000, process_status: "Failed Refinancing", source: "The Gazette", company_description: "CMBS portfolio with BoE rate exposure" },
-    { company_name: "Willerby Group", ebitda: 45000000, process_status: "Stalled", source: "Grant Thornton", company_description: "PE-backed caravan manufacturer" },
-    { company_name: "Mamas & Papas", ebitda: 12000000, process_status: "Pre-pack", source: "Rothschild", company_description: "Consumer retail nursery products" },
-    { company_name: "SSS Super Alloys", ebitda: 8500000, process_status: "Covenant Breach", source: "KPMG", company_description: "Manufacturing sector specialist metals" },
-    { company_name: "Paperchase Assets", ebitda: 6200000, process_status: "Administration", source: "Companies House", company_description: "Retail stationery and gifts" },
-    { company_name: "Debenhams Portfolio", ebitda: 34000000, process_status: "Distribution", source: "Deloitte", company_description: "Legacy department store real estate" },
-    { company_name: "Arcadia Residuals", ebitda: 15000000, process_status: "Liquidation", source: "The Gazette", company_description: "Fashion retail wind-down assets" },
-    { company_name: "Cath Kidston IP", ebitda: 4800000, process_status: "Sale Process", source: "Houlihan Lokey", company_description: "Brand and IP assets" },
-    { company_name: "Strada Restaurants", ebitda: 2100000, process_status: "CVA", source: "Companies House", company_description: "Casual dining estate" },
-    { company_name: "Byron Burger Holdings", ebitda: 3400000, process_status: "Restructuring", source: "FTI Consulting", company_description: "QSR restaurant chain" },
-];
 
 export default function NewsroomPage() {
+    const { user } = useAuth();
     // State
     const [selectedLotIds, setSelectedLotIds] = useState<string[]>([]);
     const [selectedTemplate, setSelectedTemplate] = useState("weekly_wrap");
@@ -90,7 +44,7 @@ export default function NewsroomPage() {
     const [lots, setLots] = useState<any[]>([]);
     const [fetchingLots, setFetchingLots] = useState(true);
     const [fetchError, setFetchError] = useState<string | null>(null);
-    const [usingFallback, setUsingFallback] = useState(false);
+
     const [pendingReviewData, setPendingReviewData] = useState<any | null>(null);
     const [uploading, setUploading] = useState(false);
     const [uploadingWatchlist, setUploadingWatchlist] = useState(false);
@@ -109,7 +63,8 @@ export default function NewsroomPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [generatingPdf, setGeneratingPdf] = useState(false);
     const [generatingDossier, setGeneratingDossier] = useState(false);
-    const [notebookContent, setNotebookContent] = useState(NOTEBOOK_CONTEXT);
+    const [swarmRunning, setSwarmRunning] = useState(false);
+    const [notebookContent, setNotebookContent] = useState("");
     const [isNotebookOpen, setIsNotebookOpen] = useState(false);
     const [isCommandBarOpen, setIsCommandBarOpen] = useState(false);
     const [commandBarQuery, setCommandBarQuery] = useState("");
@@ -244,8 +199,13 @@ export default function NewsroomPage() {
         setActiveTab("newsletter");
     };
 
-    // Handler for offline drafting from notebook context
+    // Handler for drafting from notebook context
     const handleDraftFromNotebook = async () => {
+        if (lots.length === 0) {
+            alert("No signals loaded. Wait for the intelligence feed to load before generating a draft.");
+            return;
+        }
+
         setLoading(true);
         setGeneratedDraft("");
 
@@ -255,9 +215,9 @@ export default function NewsroomPage() {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    raw_data: lots.length > 0 ? lots.slice(0, 5) : FALLBACK_LOTS.slice(0, 5),
+                    raw_data: lots.slice(0, 5),
                     template_id: selectedTemplate,
-                    free_form_instruction: `${instructions}\n\n--- MACRO CONTEXT (Notebook) ---\n${NOTEBOOK_CONTEXT}`,
+                    free_form_instruction: `${instructions}${notebookContent ? `\n\n--- NOTEBOOK CONTEXT ---\n${notebookContent}` : ""}`,
                 }),
                 signal: AbortSignal.timeout(60000),
             });
@@ -267,35 +227,15 @@ export default function NewsroomPage() {
                 const headerDraft = `---\n**IC ORIGIN Institutional**\n*Proprietary Capital Structure Intelligence*\n\n---\n\n${result.draft || result.content || "Draft generated."}`;
                 setGeneratedDraft(headerDraft);
             } else {
-                throw new Error("Generation failed");
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.detail || `Draft generation failed (HTTP ${response.status})`);
             }
         } catch (err: any) {
             console.error("[Newsletter] Generation failed:", err);
-            // Generate offline draft using notebook context
-            const offlineDraft = `---
-**IC ORIGIN Institutional**
-*Proprietary Capital Structure Intelligence*
-
----
-
-# ${TEMPLATES.find(t => t.id === selectedTemplate)?.label || "Newsletter"} — Draft
-
-## Macro Analysis (Notebook Context)
-${NOTEBOOK_CONTEXT}
-
-## User Instructions
-${instructions || "No specific instructions provided."}
-
-## Action Items
-Based on the European Private Credit Landscape analysis, immediate capital structure review is recommended for targets with:
-- Net Debt/EBITDA > 5.0x
-- PE hold > 5 years
-- 2026/27 maturity exposure
-
----
-*Generated offline from IC ORIGIN Notebook Context*
-`;
-            setGeneratedDraft(offlineDraft);
+            const errorMsg = err.name === "TimeoutError"
+                ? "Draft generation timed out. The AI synthesis is still processing — please try again in 30 seconds."
+                : `Draft generation failed: ${err.message}`;
+            setGeneratedDraft(`> ⚠️ **Generation Error**\n>\n> ${errorMsg}\n>\n> Please check your connection and try again.`);
         } finally {
             setLoading(false);
         }
@@ -310,10 +250,9 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
             const signals = await getSignals();
 
             // Map Signal -> Table Row Format
-            // This allows the table to display both manual 'AuctionData' and automated 'Signals'
             const activeData = signals.map(s => ({
                 id: s.id,
-                company_name: s.headline, // Use headline as main descriptor
+                company_name: s.headline,
                 company_description: s.analysis,
                 source: s.source || 'Sentinel Sweep',
                 process_status: 'Live Signal',
@@ -327,22 +266,25 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
                 conviction_score: s.conviction
             }));
 
-            if (activeData.length > 0) {
-                setLots(activeData);
-                setUsingFallback(false);
-            } else {
-                console.log("No live signals found, using fallback for demo.");
-                setLots(FALLBACK_LOTS);
-                setUsingFallback(true);
-            }
+            setLots(activeData);
 
         } catch (err: any) {
             console.error("Live fetch failed:", err);
-            setLots(FALLBACK_LOTS);
-            setUsingFallback(true);
-            setFetchError(err.message);
+            setLots([]);
+            setFetchError(err.message || "Failed to load intelligence feed. Check your connection and try again.");
         } finally {
             setFetchingLots(false);
+        }
+    };
+
+    const loadNotebook = async () => {
+        try {
+            const res = await getNotebook();
+            if (res.content) {
+                setNotebookContent(res.content);
+            }
+        } catch (e) {
+            console.error("Failed to fetch notebook", e);
         }
     };
 
@@ -350,15 +292,16 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
         fetchLots();
         // Fetch saved voice profile on load
         fetchSavedVoice();
+        loadNotebook();
     }, []);
 
 
 
     const fetchSavedVoice = async () => {
+        if (!user?.uid) return; // Guard: wait for auth hydration
         try {
             const apiUrl = process.env.NEXT_PUBLIC_NEWSLETTER_API_URL || "https://newsletter-engine-193875309190.europe-west2.run.app";
-            // Hardcoded user_id for demo/prototype; in prod use auth context
-            const response = await fetch(`${apiUrl}/brand-voice/user_123`);
+            const response = await fetch(`${apiUrl}/brand-voice/${user.uid}`);
             if (response.ok) {
                 const data = await response.json();
                 if (data && data.analysis_summary) {
@@ -493,6 +436,96 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
         }
     };
 
+    // Strategy Swarm Handler — synthesizes top signals into an institutional dossier
+    const handleStrategySwarm = async () => {
+        if (lots.length === 0) {
+            alert("No signals available. Wait for the live feed to load.");
+            return;
+        }
+
+        setSwarmRunning(true);
+        try {
+            // 1. Select top 5 signals by conviction score (highest first)
+            const topSignals = [...lots]
+                .filter(l => l.id) // Only signals with real IDs
+                .sort((a, b) => (b.conviction_score || 0) - (a.conviction_score || 0))
+                .slice(0, 5);
+
+            if (topSignals.length === 0) {
+                alert("No valid signals with IDs found for synthesis.");
+                return;
+            }
+
+            // 2. Construct the Strategy Swarm payload
+            const projectScope = topSignals.map(s =>
+                `${s.company_name} — ${s.process_status || 'Active'} (${s.source || 'Sentinel'})`
+            );
+
+            const payload = {
+                client_id: "IC_ORIGIN_STRATEGY_SWARM",
+                domain_profile: "finance",
+                project_scope: projectScope,
+                financial_data: {
+                    signal_ids: topSignals.map(s => s.id),
+                    deals: JSON.stringify(topSignals),
+                    synthesis_mode: "STRATEGY_SWARM",
+                    signal_count: topSignals.length,
+                },
+                template_version: "v1",
+                output_format: "pdf",
+            };
+
+            // 3. Call the proposal endpoint with auth + extended timeout
+            const apiUrl = process.env.NEXT_PUBLIC_SENTINEL_API_URL || "https://sentinel-growth-hc7um252na-nw.a.run.app";
+            const headers: HeadersInit = { "Content-Type": "application/json" };
+
+            // Attach Firebase auth token
+            const auth = getAuth();
+            const currentUser = auth.currentUser;
+            if (currentUser) {
+                const token = await currentUser.getIdToken();
+                headers["Authorization"] = `Bearer ${token}`;
+            }
+
+            const response = await fetch(`${apiUrl}/generate/proposal`, {
+                method: "POST",
+                headers,
+                body: JSON.stringify(payload),
+                signal: AbortSignal.timeout(120000), // 120s timeout for AI generation
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.detail || `Strategy Swarm failed (HTTP ${response.status})`);
+            }
+
+            const data = await response.json();
+
+            // 4. Trigger PDF download
+            if (data.url) {
+                const link = document.createElement("a");
+                link.href = data.url;
+                link.download = `IC_Origin_Strategy_Swarm_${new Date().toISOString().split('T')[0]}.pdf`;
+                link.target = "_blank";
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } else {
+                alert("Swarm synthesis completed but no download URL was returned.");
+            }
+
+        } catch (error: any) {
+            console.error("Strategy Swarm failed:", error);
+            if (error.name === "TimeoutError") {
+                alert("Strategy Swarm timed out. The AI synthesis is still processing — try downloading from the Documents tab in 30 seconds.");
+            } else {
+                alert("Strategy Swarm Error: " + error.message);
+            }
+        } finally {
+            setSwarmRunning(false);
+        }
+    };
+
     // PDF Ingestion Handler
     const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -581,14 +614,14 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
     };
 
     const saveVoiceProfile = async () => {
-        if (!voiceAnalysis) return;
+        if (!voiceAnalysis || !user?.uid) return;
         try {
             const apiUrl = process.env.NEXT_PUBLIC_NEWSLETTER_API_URL || "https://newsletter-engine-193875309190.europe-west2.run.app";
             await fetch(`${apiUrl}/brand-voice/save`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    user_id: "user_123", // Demo ID
+                    user_id: user.uid,
                     voice_data: voiceAnalysis
                 })
             });
@@ -691,7 +724,14 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
                 onToggle={() => setIsNotebookOpen(!isNotebookOpen)}
                 content={notebookContent}
                 onChange={setNotebookContent}
-                onSave={() => alert("Notebook Saved to IC Origin Cloud")}
+                onSave={async () => {
+                    try {
+                        await saveNotebook(notebookContent);
+                        alert("Notebook Saved to IC Origin Cloud");
+                    } catch (e) {
+                        alert("Failed to save notebook");
+                    }
+                }}
                 onClear={() => setNotebookContent("")}
             />
             <CommandBar
@@ -786,8 +826,8 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
                         Brand Identity
                     </button>
 
-                    {/* Draft from Notebook Button - visible when API offline */}
-                    {(fetchError || usingFallback) && (
+                    {/* Draft from Notebook Button - visible when API returns error */}
+                    {fetchError && (
                         <Button
                             variant="outline"
                             size="sm"
@@ -958,6 +998,16 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
                                     variant="outline"
                                     size="sm"
                                     className="gap-2"
+                                    onClick={handleStrategySwarm}
+                                    disabled={swarmRunning || lots.length === 0}
+                                >
+                                    {swarmRunning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles size={14} />}
+                                    {swarmRunning ? "Synthesizing..." : "Strategy Swarm"}
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-2"
                                     onClick={() => handleGenerateDossier(selectedLotIds[0])}
                                     disabled={generatingDossier || selectedLotIds.length !== 1}
                                 >
@@ -998,11 +1048,7 @@ Based on the European Private Credit Landscape analysis, immediate capital struc
                                         >
                                             Reconnect to Sentinel
                                         </button>
-                                        {usingFallback && (
-                                            <span className="text-[10px] font-medium text-red-600/60 items-center flex">
-                                                (Displaying cached historical data)
-                                            </span>
-                                        )}
+
                                     </div>
                                 </div>
                             </div>

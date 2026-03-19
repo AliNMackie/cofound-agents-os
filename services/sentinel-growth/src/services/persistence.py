@@ -325,4 +325,53 @@ class PersistenceService:
             )
 
 
+    # ── User Notebook persistence ──────────────────────────────────
+    async def get_notebook(self, uid: str) -> str:
+        """Read a user's notebook."""
+        try:
+            doc = self.db.collection("users").document(uid).collection("notebook").document("current").get()
+            return doc.to_dict().get("content", "") if doc.exists else ""
+        except Exception as e:
+            logger.error("Failed to get notebook", uid=uid, error=str(e))
+            return ""
+
+    async def save_notebook(self, uid: str, content: str) -> None:
+        """Save a user's notebook."""
+        try:
+            self.db.collection("users").document(uid).collection("notebook").document("current").set({
+                "content": content,
+                "updated_at": datetime.datetime.now(datetime.timezone.utc)
+            })
+            logger.info("Notebook saved", uid=uid)
+        except Exception as e:
+            logger.error("Failed to save notebook", uid=uid, error=str(e))
+            raise
+
+    # ── Subscription persistence ───────────────────────────────────
+    async def get_subscription(self, tenant_id: str) -> dict:
+        """Read a tenant's subscription status."""
+        try:
+            doc = self._tenant_ref(tenant_id).get()
+            if doc.exists:
+                data = doc.to_dict()
+                return data.get("subscription", {
+                    "role": "pilot_admin",
+                    "plan": "Enterprise Pilot",
+                    "status": "Active"
+                })
+            return {
+                "role": "pilot_admin",
+                "plan": "Enterprise Pilot",
+                "status": "Active"
+            }
+        except Exception as e:
+            logger.error("Failed to get subscription", tenant_id=tenant_id, error=str(e))
+            return {
+                "role": "pilot_admin",
+                "plan": "Enterprise Pilot",
+                "status": "Active"
+            }
+
+
 persistence_service = PersistenceService()
+

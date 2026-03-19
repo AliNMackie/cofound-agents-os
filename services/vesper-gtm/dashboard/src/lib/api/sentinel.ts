@@ -78,15 +78,20 @@ export async function deleteSource(url: string): Promise<void> {
 }
 
 export async function getIndustries(): Promise<IndustryContext[]> {
-    const headers = await getAuthHeaders();
-    const response = await fetch(`${SENTINEL_API_URL}/industries`, {
-        headers: headers
-    });
-    if (!response.ok) {
-        console.error(`Failed to fetch industries: ${response.statusText}`);
-        return []; // Fail safe default (empty list will trigger fallback to defaults in Context)
+    try {
+        const headers = await getAuthHeaders();
+        const response = await fetch(`${SENTINEL_API_URL}/industries`, {
+            headers: headers
+        });
+        if (!response.ok) {
+            console.warn(`[Sentinel API] Industries endpoint returned ${response.status}: ${response.statusText}. Falling back to defaults.`);
+            return [];
+        }
+        return response.json();
+    } catch (error) {
+        console.warn("[Sentinel API] Failed to fetch industries — network error or backend unreachable. Falling back to defaults.", error);
+        return [];
     }
-    return response.json();
 }
 
 export async function getSignals(industryId?: string, days?: number, query?: string, sourceFamily?: string): Promise<IntelligenceSignal[]> {
@@ -208,6 +213,35 @@ export async function revokeApiKey(keyId: string): Promise<void> {
 }
 
 
+export async function getNotebook(): Promise<{ content: string }> {
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${SENTINEL_API_URL}/api/v1/user/notebook`, {
+        headers: headers
+    });
+    if (!response.ok) throw new Error("Failed to fetch notebook");
+    return response.json();
+}
+
+export async function saveNotebook(content: string): Promise<void> {
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${SENTINEL_API_URL}/api/v1/user/notebook`, {
+        method: "POST",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify({ content })
+    });
+    if (!response.ok) throw new Error("Failed to save notebook");
+}
+
+export async function getSubscription(): Promise<any> {
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${SENTINEL_API_URL}/api/v1/user/subscription`, {
+        headers: headers
+    });
+    if (!response.ok) throw new Error("Failed to fetch subscription");
+    return response.json();
+}
+
+
 // Re-export types
 export type { IntelligenceSignal } from '@/types/sentinel';
 
@@ -230,22 +264,4 @@ export async function triggerMorningPulse(): Promise<any> {
     return response.json();
 }
 
-// Mock data for development
-export function getMockAuction(): AuctionData {
-    return {
-        company_name: "GameNation",
-        company_description: "Leading gaming venue operator across the UK",
-        ebitda: "£5.5m",
-        ownership: "Morgan Stanley Private Equity",
-        advisor: "Global Leisure Partners",
-        process_status: "Postponed - H1 2024",
-        company_profile: {
-            registration_number: "12345678",
-            incorporation_date: "2010-05-20",
-            sic_codes: ["92000 - Gambling and betting activities"],
-            registered_address: "123 High Street, London, SW1A 1AA",
-            company_status: "active",
-            company_type: "ltd"
-        }
-    };
-}
+

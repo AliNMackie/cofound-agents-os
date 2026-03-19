@@ -37,4 +37,4 @@ EXPOSE 8080
 
 # Command to run the application
 # Use shell form to allow PORT env var substitution
-CMD exec uvicorn src.main:app --host 0.0.0.0 --port ${PORT:-8080}
+CMD exec gunicorn -k uvicorn.workers.UvicornWorker -w 4 -b 0.0.0.0:${PORT:-8080} src.main:app

@@ -22,13 +22,14 @@ jobs:
     - name: Build Dashboard
       run: |
         cd services/vesper-gtm/dashboard
-        echo "NEXT_PUBLIC_FIREBASE_API_KEY=dummy" > .env.local
-        echo "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=dummy" >> .env.local
-        echo "NEXT_PUBLIC_FIREBASE_PROJECT_ID=dummy" >> .env.local
-        echo "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=dummy" >> .env.local
-        echo "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=dummy" >> .env.local
-        echo "NEXT_PUBLIC_FIREBASE_APP_ID=dummy" >> .env.local
-        echo "NEXT_PUBLIC_SENTINEL_API_URL=https://dummy-sentinel.com" >> .env.local
+        rm -rf .next
+        echo "NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyBhAKjnd3eSvtACDzEC7ine067J0Q7Crvw" > .env.local
+        echo "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=ic-origin.firebaseapp.com" >> .env.local
+        echo "NEXT_PUBLIC_FIREBASE_PROJECT_ID=ic-origin" >> .env.local
+        echo "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=ic-origin.firebasestorage.app" >> .env.local
+        echo "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=279427639144" >> .env.local
+        echo "NEXT_PUBLIC_FIREBASE_APP_ID=1:279427639144:web:eb8c5a2a2fccad1b7818dd" >> .env.local
+        echo "NEXT_PUBLIC_SENTINEL_API_URL=https://sentinel-growth-hc7um252na-nw.a.run.app" >> .env.local
         npm ci
         npm run build
     - name: Install Playwright Browsers

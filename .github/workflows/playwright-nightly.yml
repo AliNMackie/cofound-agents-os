@@ -23,7 +23,13 @@ jobs:
       run: |
         cd services/vesper-gtm/dashboard
         npm install
-        npm run build
+        npm run build > build_log.txt 2>&1
+    - name: Upload Build Log
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: next-build-log
+        path: services/vesper-gtm/dashboard/build_log.txt
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps
     - name: Run Playwright tests

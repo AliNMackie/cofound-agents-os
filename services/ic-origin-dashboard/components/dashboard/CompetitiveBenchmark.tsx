@@ -37,7 +37,7 @@ const CompetitiveBenchmark: React.FC<CompetitiveBenchmarkProps> = ({ data }) => 
                             <th className="px-8 py-5 text-emerald-500/50">Entity Topology</th>
                             <th className="px-8 py-5">Proj. Share</th>
                             <th className="px-8 py-5">CAGR / Growth</th>
-                            <th className="px-8 py-5">Net Efficiency</th>
+                            <th className="px-8 py-5">EBITDA</th>
                             <th className="px-8 py-5">Signal Status</th>
                         </tr>
                     </thead>

@@ -39,16 +39,17 @@ async def strategize(request: StrategyRequest):
     
     # System Prompt for the 'Zombie Hunter' / Strategist
     prompt = f"""
-    You are the IC Origin 'Zombie Hunter' Strategist. 
+    You are the IC Origin 'Zombie Hunter' & M&A Buy-Side Strategist. 
     Analyze the following entity context and provide a high-fidelity strategy.
     
     Entity ID: {request.entity_id}
     Context: {json.dumps(request.context or {})}
     
-    Focus on finding 'Non-Obvious' Alpha:
+    Focus on finding 'Non-Obvious' Alpha & PE Sourcing:
     1. Identify mismatches in PSC changes + signal data.
     2. Flag 'Zombie' characteristics (high debt, low engagement, asset pledges).
-    3. Suggest expansion paths like 'Debt Refinancing' or 'M&A Adjacency'.
+    3. Calculate Leverage Capacity ranges (e.g. 4.0x EBITDA) if 'latest_ebitda_gbp' is present in Context.
+    4. Suggest expansion paths like 'Debt Refinancing' or 'M&A Adjacency'.
     
     Output exactly in JSON format:
     {{

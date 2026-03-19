@@ -134,6 +134,10 @@ async def get_signals(
                 cat = "REFINANCING"
             elif "rate" in desc_lower or "fomc" in desc_lower or "boe" in desc_lower:
                 cat = "FOMC_PIVOT"
+            elif "debenture" in desc_lower or "mortgage" in desc_lower or "charge satisfied" in desc_lower:
+                cat = "DEBT_OR_CARVEOUT"
+            elif "margin" in desc_lower or "ebitda" in desc_lower:
+                cat = "EBITDA_TREND"
 
             # Source - check both 'source' (historical imports) and 'query_source' (live sweeps)
             src = data.get("source") or data.get("query_source") or "Sentinel Sweep"

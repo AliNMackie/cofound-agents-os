@@ -34,6 +34,8 @@ class PortfolioEntity(BaseModel):
         description="Relationship type (defaults to BORROWER if not specified in CSV)"
     )
     risk_tier: RiskTier = Field(RiskTier.UNSCORED, description="Initial risk tier")
+    latest_ebitda_gbp: Optional[float] = Field(None, description="Optional EBITDA margin from CSV")
+    primary_advisors: list[str] = Field(default_factory=list, description="Optional primary advisors list from CSV")
 
 
 class PortfolioUploadResponse(BaseModel):
@@ -81,6 +83,15 @@ def _parse_counterparty_type(raw: Optional[str]) -> CounterpartyType:
     if normalised in _VALID_COUNTERPARTY_TYPES:
         return CounterpartyType(normalised)
     return CounterpartyType.BORROWER
+
+def _parse_float(raw: Optional[str]) -> Optional[float]:
+    if not raw:
+        return None
+    try:
+        cleaned = raw.replace(",", "").replace("£", "").replace("$", "").strip()
+        return float(cleaned)
+    except ValueError:
+        return None
 
 
 # ──────────────── Endpoints ────────────────
@@ -141,6 +152,8 @@ async def upload_portfolio(
             company_name=row.get("company_name", "").strip() or None,
             counterparty_type=_parse_counterparty_type(row.get("counterparty_type")),
             risk_tier=RiskTier.UNSCORED,
+            latest_ebitda_gbp=_parse_float(row.get("ebitda")) or _parse_float(row.get("latest_ebitda_gbp")),
+            primary_advisors=[a.strip() for a in row.get("advisor", "").split(",")] if row.get("advisor") else [],
         )
         entities.append(entity)
 

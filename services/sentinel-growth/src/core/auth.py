@@ -180,15 +180,12 @@ def get_current_user(token: dict = Depends(verify_token)) -> AuthenticatedUser:
                 provider=sign_in_provider,
             )
 
-    # Pitch Demo Fallback: If no tenant_id exists, assign a default demo tenant
-    # instead of blocking access with a 403, as custom claims may not be set.
+    # Enforce tenant_id presence (removed pitch fallback)
     if not tenant_id:
-        logger.warning(
-            "User has no tenant_id claim. Assigning default 'demo-tenant' for pitch purposes.",
-            email=email,
-            uid=uid,
+        raise HTTPException(
+            status_code=403,
+            detail="Forbidden: User has no tenant_id claim"
         )
-        tenant_id = "demo-tenant"
 
     # ── Role Resolution ──
     if role_str:

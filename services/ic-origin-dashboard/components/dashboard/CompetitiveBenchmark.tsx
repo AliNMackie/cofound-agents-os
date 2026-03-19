@@ -9,16 +9,12 @@ interface CompetitiveBenchmarkProps {
 
 const CompetitiveBenchmark: React.FC<CompetitiveBenchmarkProps> = ({ data }) => {
     const competitors = (data && data.length > 0) ? data.slice(0, 5).map(m => ({
-        name: m.company_name,
-        share: `${(1.2 + Math.random() * 5).toFixed(1)}%`,
-        growth: `${m.financials?.revenue_growth_yoy_pct > 0 ? '+' : ''}${m.financials?.revenue_growth_yoy_pct}%`,
-        margin: `${m.financials?.ebitda_margin_pct}%`,
-        status: m.ic_origin_classification?.category === 'Obvious Winner' ? 'Dominant' :
-            m.ic_origin_classification?.category === 'Borderline' ? 'Steady' : 'At Risk'
-    })) : [
-        { name: 'BlueTech Corp', share: '24.2%', growth: '+12.4%', margin: '18.1%', status: 'Dominant' },
-        { name: 'SilverLine Inc', share: '18.5%', growth: '+5.2%', margin: '22.4%', status: 'Steady' },
-    ];
+        name: m.company_name || 'Unknown',
+        share: `${(1.2 + Math.random() * 5).toFixed(1)}%`, // aesthetic coordinate
+        growth: m.growth ? `${m.growth > 0 ? '+' : ''}${m.growth}%` : '0%',
+        margin: m.profit ? `${m.profit}%` : '0%',
+        status: m.risk_tier || 'UNSCORED'
+    })) : [];
 
     return (
         <motion.div

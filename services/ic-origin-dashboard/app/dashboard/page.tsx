@@ -67,8 +67,8 @@ const DashboardV2: React.FC = () => {
         dedupingInterval: 10000,
         fallbackData: {
             metrics: {
-                tam: "$4.18B", sam: "$1.82B", som: "$420M", share: "14.2%", efficiency: "0.82x",
-                tamChange: "+12.4%", samChange: "+4.1%", shareChange: "+1.2%", efficiencyChange: "-0.14x"
+                tam: "--", sam: "--", som: "--", share: "--", efficiency: "--",
+                tamChange: "", samChange: "", shareChange: "", efficiencyChange: ""
             },
             signals: [],
             topology: [],

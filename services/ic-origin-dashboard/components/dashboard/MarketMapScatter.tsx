@@ -51,17 +51,13 @@ const MarketMapScatter: React.FC<MarketMapScatterProps> = ({ onNodeClick, isLoad
 
     // [BOARD-READY DATA MAPPING]
     const currentData = (data && data.length > 0) ? data.map(m => ({
-        growth: m.financials?.revenue_growth_yoy_pct || 0,
-        profit: m.financials?.ebitda_margin_pct || 0,
-        size: m.financials?.latest_revenue_gbp || 1000000,
-        name: m.company_name,
-        cat: m.ic_origin_classification?.category,
-        id: m.company_id
-    })) : [
-        { growth: 92, profit: 24, size: 25000000, name: 'Quantum Leap AI', cat: 'Obvious Winner' },
-        { growth: 45, profit: 12, size: 12000000, name: 'GreenGrid UK', cat: 'Borderline' },
-        { growth: 12, profit: 28, size: 8000000, name: 'BlueTech Corp', cat: 'Distressed / Contrarian' }
-    ];
+        growth: m.growth || 0,
+        profit: m.profit || 0,
+        size: m.size || 50,
+        name: m.name || m.company_name,
+        cat: m.cat || 'General',
+        id: m.id || m.company_id
+    })) : [];
 
     const getEntityColor = (cat: string) => {
         if (cat === 'Obvious Winner') return '#10B981'; // Emerald

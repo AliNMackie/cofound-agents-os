@@ -14,12 +14,22 @@ export async function GET() {
         const topology = entitiesSnapshot.docs.map(doc => {
             const data = doc.data();
             return {
-                id: doc.id,
-                name: data.entity_id || 'Unknown Entity',
-                growth: data.current_score || 0,
-                profit: Math.floor(Math.random() * 20) + 5, // Mocked for demo aesthetics
-                size: (data.score_history?.length || 1) * 20 + 50,
-                context: data.last_context
+                company_id: doc.id,
+                company_name: data.company_name || 'Unknown',
+                company_number: data.company_number || 'N/A',
+                counterparty_type: data.counterparty_type || 'BORROWER',
+                risk_tier: data.risk_tier || 'UNSCORED',
+                region: data.region || 'UK',
+                conviction_score: data.conviction_score || 0,
+                last_signal_date: data.last_signal_date || '-',
+                last_signal_description: data.last_signal_description || 'Pending Analysis',
+                statutory_signals: {
+                    total_active_charges: data.statutory_signals?.total_active_charges || 0,
+                    director_churn_index: data.statutory_signals?.director_churn_index || 0,
+                    recent_mr01_count_24mo: data.statutory_signals?.recent_mr01_count_24mo || 0,
+                    recent_mr04_count_24mo: data.statutory_signals?.recent_mr04_count_24mo || 0,
+                },
+                score_history: data.score_history || []
             };
         });
 
@@ -54,15 +64,8 @@ export async function GET() {
                 shareChange: "+1.2%",
                 efficiencyChange: "-0.14x"
             },
-            signals: signals.length > 0 ? signals : [
-                { id: 'S1', entity: 'Quantum Leap AI', type: 'Series A Target', confidence: 0.95, sentiment: 'positive', urgency: 'high', tags: ['ip_rich', 'founder_led'] },
-                { id: 'S2', entity: 'BlueTech Corp', type: 'Encroachment Alert', confidence: 0.88, sentiment: 'negative', urgency: 'medium', tags: ['regional_overlap'] },
-            ],
-            topology: topology.length > 0 ? topology : [
-                { name: 'Quantum Leap', growth: 85, profit: 12, size: 120 },
-                { name: 'BlueTech', growth: 15, profit: 25, size: 100 },
-                { name: 'Nexus', growth: 45, profit: -5, size: 80 },
-            ],
+            signals: signals,
+            topology: topology,
             timestamp: new Date().toISOString(),
             status: "LIVE_TELEMETRY_ACTIVE"
         };

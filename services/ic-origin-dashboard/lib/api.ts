@@ -62,13 +62,8 @@ export const fetchSignals = async (): Promise<Signal[]> => {
             tags: s.tags || ['strategic_alpha']
         })).slice(0, 4);
     } catch (e) {
-        console.warn("Falling back to simulated signal swarm", e);
-        return [
-            { id: 'S1', entity: 'Quantum Leap AI', type: 'Series A Target', confidence: 0.95, sentiment: 'positive' as const, urgency: 'high' as const, tags: ['ip_rich', 'founder_led', 'stealth_origination'] },
-            { id: 'S2', entity: 'BlueTech Corp', type: 'Encroachment Alert', confidence: 0.88, sentiment: 'negative' as const, urgency: 'medium' as const, tags: ['regional_overlap', 'talent_drain'] },
-            { id: 'S3', entity: 'Confidential Alpha', type: 'OTC Secondary', confidence: 0.99, sentiment: 'neutral' as const, urgency: 'high' as const, tags: ['shadow_market', 'tier_1_nexus'] },
-            { id: 'S4', entity: 'GreenGrid UK', type: 'M&A Adjacency', confidence: 0.92, sentiment: 'positive' as const, urgency: 'low' as const, tags: ['synergy_high', 'undervalued_asset'] },
-        ];
+        console.warn("Sentinel signals unreachable, returning empty set", e);
+        return [];
     }
 };
 

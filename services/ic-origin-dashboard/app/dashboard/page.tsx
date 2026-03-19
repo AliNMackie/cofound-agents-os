@@ -440,12 +440,7 @@ const DashboardV2: React.FC = () => {
                     )}
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {(telemetry.signals.length > 0 ? telemetry.signals : [
-                            { id: 'S1', entity: 'Quantum Leap AI', type: 'Series A Target', confidence: 0.95, sentiment: 'positive' as const, urgency: 'high' as const, tags: ['ip_rich', 'founder_led'] },
-                            { id: 'S2', entity: 'BlueTech Corp', type: 'Encroachment Alert', confidence: 0.88, sentiment: 'negative' as const, urgency: 'medium' as const, tags: ['regional_overlap'] },
-                            { id: 'S3', entity: 'Confidential Alpha', type: 'OTC Secondary', confidence: 0.99, sentiment: 'neutral' as const, urgency: 'high' as const, tags: ['shadow_market'] },
-                            { id: 'S4', entity: 'GreenGrid UK', type: 'M&A Adjacency', confidence: 0.92, sentiment: 'positive' as const, urgency: 'low' as const, tags: ['synergy_high'] },
-                        ]).map((signal: any) => (
+                        {(telemetry.signals || []).map((signal: any) => (
                             <SignalCard key={signal.id} {...signal} />
                         ))}
                     </div>
@@ -489,10 +484,10 @@ const DashboardV2: React.FC = () => {
                         </motion.div>
                     </div>
 
-                    <PortfolioRisk entities={DEMO_COUNTERPARTIES} />
+                    <PortfolioRisk entities={filteredTopology} />
 
                     <div className="mt-8">
-                        <RiskTrend entities={DEMO_COUNTERPARTIES} />
+                        <RiskTrend entities={filteredTopology} />
                     </div>
                 </motion.section>
 

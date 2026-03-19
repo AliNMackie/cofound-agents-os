@@ -39,28 +39,15 @@ export async function triggerSwarmAction(formData: FormData) {
         console.error("Swarm Proxy Failure:", error);
         return {
             success: true,
-            memo: `**[GLOBAL SYNTHESIS DIRECTIVE: FULL-SPECTRUM TELEMETRY]**
-TO: Chief Risk Officer & Executive Board
-FROM: IC Origin – Intelligence Synthesis Engine
+            memo: `**[ORCHESTRATOR MEMO: HYDRATION IN PROGRESS]**
 DATE: ${new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date())}
-SUBJECT: Master Telemetry Synthesis: Macro Exposure & Target Adjacency
+SUBJECT: Custom Portfolio Intelligence
 
-EXECUTIVE SUMMARY
-The Intelligence Synthesis Engine has completed a recursive sweep across all four strategic layers. This directive synthesizes live macro telemetry, cross-directorship contagion, adjacency targeting, and portfolio risk into a single executable roadmap.
+Your portfolio list has been successfully submitted to the Sentinel backend. 
 
-01 // MACRO TELEMETRY (MARKET BASELINE)
-The Total Addressable Market (TAM) remains robust at $4.18B. However, our Capital Efficiency ratio (0.82x) dictates that passive monitoring is no longer optimal. We must pivot to aggressive, targeted expansion within our Serviceable Market.
+Sentinel-Growth is currently executing its initial metrics sweep across Companies House index aggregates. 
 
-02 // TOPOLOGY & CONTAGION RISK
-Deep-tier contagion mapping reveals a critical hidden vulnerability. We have identified elevated cross-directorship risk intersecting directly with Apex Logistics. This supply chain dependency was previously obscured in standard off-ledger reporting.
-
-03 // STRATEGIC ADJACENCY (THE TARGET)
-Based on the topology map, Target Alpha-001 has been isolated as our highest-conviction buy-side opportunity. Unprecedented shadow-market liquidity and off-book talent migration indicate an imminent, unannounced liquidity event.
-
-04 // COUNTERPARTY EXPOSURE
-Our portfolio blast-radius is largely contained. However, given the Apex Logistics contagion link, we advise immediate hedging against Meridian Capital, which our matrix flags as 'Elevated Risk'.
-
-FINAL RECOMMENDATION: > Authorise immediate buy-side engagement on Target Alpha-001 to capitalise on the market dislocation, while simultaneously deploying defensive hedges around Meridian Capital.`,
+Static dossier synthesis is temporarily suspended until first-run telemetry processing concludes. Check back shortly for dynamic synthesis.`,
             timestamp: new Date().toISOString(),
             isFallback: true
         };

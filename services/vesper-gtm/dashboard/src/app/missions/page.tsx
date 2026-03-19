@@ -1,8 +1,9 @@
 'use client';
+// Trigger clean build
 
 import { useState, useEffect } from 'react';
 import { AuctionData, IntelligenceSignal } from '@/types/sentinel';
-import { ingestAuction, getMockAuction, getSignals } from '@/lib/api/sentinel';
+import { ingestAuction, getSignals } from '@/lib/api/sentinel';
 import CompanyProfileCard from '@/components/CompanyProfileCard';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -193,10 +194,7 @@ function AnalystWorkbench() {
         }
     };
 
-    const loadMockData = () => {
-        setResult(getMockAuction());
-        setSourceText('GameNation, owned by Morgan Stanley Private Equity, has postponed its sale process. The business has an EBITDA of £5.5m. Global Leisure Partners is advising on the process, which was expected in H1 2024.');
-    };
+
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -208,12 +206,6 @@ function AnalystWorkbench() {
                         <h2 className="text-lg font-semibold text-brand-text-primary dark:text-white">
                             Raw Intelligence Ingestion
                         </h2>
-                        <button
-                            onClick={loadMockData}
-                            className="text-xs text-blue-600 hover:text-blue-800 font-medium"
-                        >
-                            Load Demo Data
-                        </button>
                     </div>
 
                     <label htmlFor="intelligence-input" className="sr-only">Analyze Market Intelligence</label>

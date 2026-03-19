@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useSaaSContext } from "@/context/SaaSContext";
 import {
     getLatestPulse,
@@ -23,41 +23,82 @@ interface PulseData {
     executive_summary?: string;
 }
 
+const POLL_INTERVAL_MS = 5000;
+const MAX_POLL_ATTEMPTS = 24; // 2 minutes max
+
 export function MorningPulse() {
     const { currentIndustry } = useSaaSContext();
     const [pulse, setPulse] = useState<PulseData | null>(null);
     const [loading, setLoading] = useState(true);
     const [generating, setGenerating] = useState(false);
     const [briefingLoading, setBriefingLoading] = useState(false);
+    const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const pollCountRef = useRef(0);
 
     useEffect(() => {
         loadPulse();
+        // Cleanup polling on unmount
+        return () => {
+            if (pollRef.current) clearInterval(pollRef.current);
+        };
     }, [currentIndustry]);
 
     async function loadPulse() {
         setLoading(true);
         try {
-            // In a real app, we'd filter by industry here if the backend supports it
             const data = await getLatestPulse();
             setPulse(data);
         } catch (err) {
             console.error(err);
-            // Don't show error toast on initial load if just empty
         } finally {
             setLoading(false);
         }
     }
 
+    const stopPolling = useCallback(() => {
+        if (pollRef.current) {
+            clearInterval(pollRef.current);
+            pollRef.current = null;
+        }
+        pollCountRef.current = 0;
+        setGenerating(false);
+    }, []);
+
     async function handleGeneratePulse() {
         setGenerating(true);
         try {
             await triggerMorningPulse();
-            // Poll or wait a bit, then reload
-            setTimeout(loadPulse, 3000);
             toast.success("Morning Pulse generation started");
+
+            // Poll for completion every 5 seconds
+            pollCountRef.current = 0;
+            pollRef.current = setInterval(async () => {
+                pollCountRef.current += 1;
+
+                try {
+                    const data = await getLatestPulse();
+                    // Check if we got a newer pulse than what we had
+                    const isNewer = !pulse || !data?.generated_at ||
+                        new Date(data.generated_at) > new Date(pulse.generated_at);
+
+                    if (data && data.signals && data.signals.length > 0 && isNewer) {
+                        setPulse(data);
+                        toast.success("Morning Pulse updated");
+                        stopPolling();
+                    }
+                } catch (err) {
+                    console.error("[MorningPulse] Poll error:", err);
+                }
+
+                // Give up after max attempts
+                if (pollCountRef.current >= MAX_POLL_ATTEMPTS) {
+                    toast.info("Pulse generation is still processing. Refresh manually in a moment.");
+                    stopPolling();
+                }
+            }, POLL_INTERVAL_MS);
+
         } catch (err) {
             toast.error("Failed to trigger pulse");
-        } finally {
             setGenerating(false);
         }
     }
@@ -100,6 +141,30 @@ export function MorningPulse() {
     const growthCount = growthSignals.length;
     const lastSweepTime = pulse?.generated_at ? new Date(pulse.generated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "N/A";
 
+    // WoW metric — compute from signal timestamps if available
+    const wowLabel = useMemo(() => {
+        if (signals.length === 0) return "";
+        const now = new Date();
+        const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+
+        const thisWeek = signals.filter(s => {
+            const ts = s.timestamp ? new Date(s.timestamp) : null;
+            return ts && ts >= oneWeekAgo;
+        }).length;
+
+        const lastWeek = signals.filter(s => {
+            const ts = s.timestamp ? new Date(s.timestamp) : null;
+            return ts && ts >= twoWeeksAgo && ts < oneWeekAgo;
+        }).length;
+
+        if (lastWeek === 0 && thisWeek > 0) return `+${thisWeek} new`;
+        if (lastWeek === 0) return "";
+        const pctChange = Math.round(((thisWeek - lastWeek) / lastWeek) * 100);
+        if (pctChange === 0) return "Flat WoW";
+        return `${pctChange > 0 ? "+" : ""}${pctChange}% WoW`;
+    }, [signals]);
+
     return (
         <LayoutShell>
             <div className="flex justify-between items-center mb-8">
@@ -112,7 +177,7 @@ export function MorningPulse() {
                 <div className="flex gap-3">
                     <Button variant="outline" onClick={handleGeneratePulse} disabled={generating} className="border-[var(--color-border)] bg-transparent hover:bg-[var(--color-surface)] text-white">
                         {generating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <RefreshCw className="w-4 h-4 mr-2" />}
-                        Refresh
+                        {generating ? "Generating..." : "Refresh"}
                     </Button>
                     <button className="btn-primary" onClick={handleDownloadBriefing} disabled={briefingLoading}>
                         {briefingLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <FileDown className="w-4 h-4 mr-2" />}
@@ -126,9 +191,9 @@ export function MorningPulse() {
                 <ProgressiveMetricCard
                     label="Signals Today"
                     value={totalSignals}
-                    subValue={totalSignals > 0 ? "+12% WoW" : ""}
+                    subValue={wowLabel}
                     progress={100}
-                    trend="up"
+                    trend={wowLabel.startsWith("+") ? "up" : wowLabel.startsWith("-") ? "down" : "neutral"}
                     icon={<TrendingUp className="w-5 h-5" />}
                 />
                 <ProgressiveMetricCard

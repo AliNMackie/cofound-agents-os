@@ -1,25 +1,8 @@
 "use client"
 
 import * as React from "react"
-// Imports removed
 import { ChevronDown, Building2 } from "lucide-react"
-import { IndustryContext } from "@/types/settings"
 import { useSaaSContext } from "@/context/SaaSContext"
-
-const MOCK_INDUSTRIES: IndustryContext[] = [
-    {
-        id: "private-credit",
-        name: "Private Credit",
-        macroContext: "Context: 2026 Refi Cliff. Focus: EBITDA, Covenant Breaches.",
-        defaultPlaybooks: []
-    },
-    {
-        id: "real-estate",
-        name: "Commercial Real Estate",
-        macroContext: "Context: Office Vacancy Rates. Focus: Cap Rates, Occupancy.",
-        defaultPlaybooks: []
-    }
-]
 
 export function IndustrySwitcher() {
     const { currentIndustry, setCurrentIndustry, availableIndustries } = useSaaSContext()

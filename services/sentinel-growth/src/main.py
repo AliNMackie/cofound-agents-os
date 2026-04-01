@@ -17,6 +17,7 @@ from src.api.webhooks import router as webhooks_router
 from src.api.telemetry import router as telemetry_router
 from src.api.graph import router as graph_router
 from src.api.user_data import router as user_data_router
+from src.services.dispatch_alerts import router as scoring_router
 
 from src.services.market_sweep import sweep_service
 import uuid
@@ -105,6 +106,7 @@ app.include_router(webhooks_router)
 app.include_router(telemetry_router)
 app.include_router(graph_router)
 app.include_router(user_data_router)
+app.include_router(scoring_router, prefix="/api/v1")
 
 @app.post("/tasks/sweep")
 async def trigger_market_sweep(background_tasks: BackgroundTasks):
@@ -164,4 +166,4 @@ async def favicon():
 
 @app.get("/version")
 def version_check():
-    return {"version": "1.2.2-date-filter"}
+    return {"version": "1.3.0-scoring-engine", "dataset": "ic_origin_themav2", "scoring_view": "v_risk_scores"}
